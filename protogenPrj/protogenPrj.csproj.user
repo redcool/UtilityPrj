@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <StartArguments>-o:"../outputs/TargetProto.cs" -ns:com.test -protosPath:D:\Tmp/protogenPrj/Build/protos -protogenPath:D:\Tmp/protogenPrj/Build\../3rd/proto_net/ProtoGen/protogen.exe</StartArguments>
+    <StartWorkingDirectory>
+    </StartWorkingDirectory>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <StartArguments>-o:"../outputs/TargetProto.cs" -ns:com.test -protosPath:D:\Tmp/protogenPrj/Build/protos -protogenPath:D:\Tmp/protogenPrj/Build\../3rd/proto_net/ProtoGen/protogen.exe</StartArguments>
+    <StartWorkingDirectory>
+    </StartWorkingDirectory>
+  </PropertyGroup>
+</Project>

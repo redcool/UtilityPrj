@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
+    <StartArguments>excelPath=demoA.xlsx headerRowNum=1 dataRowNum=4 typeRowNum=2 commentRowNum=3 dbPath=e:/tmp/a.db sheetName=TableA excludeColumns= codeDirPath=tmp nsName=CodeGenerator</StartArguments>
+    <StartAction>Project</StartAction>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
+    <StartArguments>excelPath=../../demo.xlsx headerRowNum=1 dataRowNum=4 typeRowNum=2 dbPath=d:/tmp/a.db sheetName=Conf_Test</StartArguments>
+    <StartAction>Project</StartAction>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PublishUrlHistory>publish\</PublishUrlHistory>
+    <InstallUrlHistory />
+    <SupportUrlHistory />
+    <UpdateUrlHistory />
+    <BootstrapperUrlHistory />
+    <ErrorReportUrlHistory />
+    <FallbackCulture>zh-CN</FallbackCulture>
+    <VerifyUploadedFiles>false</VerifyUploadedFiles>
+  </PropertyGroup>
+</Project>
