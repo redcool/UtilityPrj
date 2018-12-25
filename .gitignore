@@ -1,0 +1,21 @@
+﻿################################################################################
+# 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
+################################################################################
+
+/protogenPrj/obj/Debug
+/CodeGenerator/obj/Debug
+/PrecompilePrj/obj/Debug
+/.vs
+/Excel2Sqlite3Prj/obj/Debug
+/packages
+/UtilityLib/obj/Debug
+/UtilityLib/bin/Debug
+/TestConsoleApp1/obj/Debug
+/TestConsoleApp1/bin/Debug
+/protogenPrj/bin/Debug
+/PrecompilePrj/bin/Debug
+/PrecompilePrj/obj/Release
+/Excel2Sqlite3Prj/obj/Release
+/bin/Debug
+/.svn
+/protogenPrj/obj/Release
