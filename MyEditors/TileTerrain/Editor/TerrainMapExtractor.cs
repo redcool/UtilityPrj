@@ -1,0 +1,31 @@
+﻿#if UNITY_EDITOR
+using MyTools;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+
+public class TerrainMapExtractor
+{
+    const string PATH_FORMAT = "Assets/TileTerrain/{0}_blend.png";
+
+    [MenuItem("MyEditors/Terrain/Command/ExtractAlphaMap")]
+    static void ExtractBlendMap()
+    {
+        var t = Terrain.activeTerrain;
+        if (t)
+        {
+            var path = string.Format(PATH_FORMAT, t.name);
+            PathTools.CreateAbsFolderPath(path);
+            TerrainTools.ExtractAlphaMapToPNG(t, path);
+            AssetDatabase.Refresh();
+        }
+        else
+        {
+            Debug.LogError("select a Terrain first.");
+        }
+    }
+
+
+}
+#endif
