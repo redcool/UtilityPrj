@@ -2,7 +2,9 @@
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
+        _MainTex ("Texture", 2D) = "" {}
+	_MainTexMask("Texture Mask",2d) = "white"{}
+
 		_NormalMap("NormalMap",2d) = ""{}
 		_Tile("Tile",vector) = (5,5,2,2)
 		_Direction("Direction",vector) = (1,0,0,0)
@@ -11,9 +13,9 @@
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "RenderType"="Opaque" "Queue"="Geometry+1"}
         LOD 100
-
+		
         Pass
         {
             CGPROGRAM
@@ -42,6 +44,9 @@
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
+
+			sampler2D _MainTexMask;
+
 			sampler2D _NormalMap;
 			float4 _Tile;
 			float4 _Direction;
@@ -75,8 +80,11 @@
 				refl += tex2D(_FakeReflectionTex, i.refl + n.xy * 2);
 
                 // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv + n.xy * 0.02);
-				col += col.a * refl *0.1;
+				fixed4 mainMask = tex2D(_MainTexMask, i.uv);
+                fixed4 col = tex2D(_MainTex, i.uv + mainMask.r * n.xy * 0.02);
+				col += mainMask.r * col.a * refl *0.1;
+
+
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
