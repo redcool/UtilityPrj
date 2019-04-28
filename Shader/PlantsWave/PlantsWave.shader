@@ -13,17 +13,21 @@
 
         Pass
         {
+			Tags {"LightMode" = "ForwardBase"}
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-
+			#pragma multi_compile_fwdbase
             #include "UnityCG.cginc"
-#include "../Weather.cginc"
+			#include "lighting.cginc"
+			#include "AutoLight.cginc"
+			#include "../Weather.cginc"
 
             struct v2f
             {
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
+				SHADOW_COORDS(1)
             };
 
             sampler2D _MainTex;
@@ -40,15 +44,17 @@
 
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.texcoord, _MainTex);
+				TRANSFER_SHADOW(o)
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
+				float atten = SHADOW_ATTENUATION(i);
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
 			clip(col.a - 0.2);
-                return col;
+                return col * atten;
             }
             ENDCG
         }
@@ -97,4 +103,5 @@
 			ENDCG
 		}
     }
+
 }
