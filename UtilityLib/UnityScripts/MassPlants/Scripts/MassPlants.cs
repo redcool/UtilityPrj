@@ -17,7 +17,7 @@ public class PlantProfile
     uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
     public ComputeBuffer[] argsBuffers;
 
-    public Vector3 minPos,maxPos;
+    public Bounds bounds;
     public Vector2 sizeRange = new Vector2(0.5f, 1);
 
     Vector4[] positions;
@@ -28,9 +28,9 @@ public class PlantProfile
         for (int i = 0; i < instanceCount; i++)
         {
             positions[i] = new Vector4(
-                Random.Range(minPos.x, maxPos.x),
-                Random.Range(minPos.y, maxPos.y),
-                Random.Range(minPos.z, maxPos.z),
+                Random.Range(bounds.min.x, bounds.max.x),
+                Random.Range(bounds.min.y, bounds.max.y),
+                Random.Range(bounds.min.z, bounds.max.z),
                 Random.Range(sizeRange.x, sizeRange.y)
                 );
         }
@@ -91,13 +91,11 @@ public class PlantProfile
     {
         for (int i = 0; i < subMeshCountNeedDraw; i++)
         {
-            var b = new Bounds { min = minPos,max = maxPos};
-
             Graphics.DrawMeshInstancedIndirect(
                 mesh,
                 i,
                 materials[i],
-                b,
+                bounds,
                 argsBuffers[i]
                 );
         }
@@ -109,20 +107,22 @@ public class MassPlants : MonoBehaviour
 {
     public PlantProfile[] profiles;
 
-    public Vector3 minPos = new Vector3(-50, 0, -50);
-    public Vector3 maxPos = new Vector3(50, 0, 50);
+    public Vector3 radius = new Vector3(50,0,50);
+
+    private void Start()
+    {
+    }
 
     void Update()
     {
+
         foreach (var p in profiles)
         {
             if (p.needUpdate)
             {
                 p.needUpdate = false;
 
-                p.minPos = minPos;
-                p.maxPos = maxPos;
-
+                p.bounds = new Bounds(transform.position, radius);
                 p.Update();
             }
 
