@@ -1,5 +1,6 @@
 import UnityEngine
 
+# ironPython will set value
 transform = None
 speed = 4
 
