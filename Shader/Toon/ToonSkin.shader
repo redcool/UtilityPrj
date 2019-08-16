@@ -12,7 +12,7 @@ Shader "Unlit/ToonSkin"
 		_RampMap("RampMap",2d) = ""{}
 		_RampMap2("RampMap2",2d) = ""{}
 
-		_Value("Value(Test)",vector)=(0,0,0,0)
+		_Value("Value(Test)",vector)=(1,1,1,1)
     }
     SubShader
     {
@@ -77,15 +77,18 @@ Shader "Unlit/ToonSkin"
 				float3 n = normalize(i.worldNormal);
 				float nl = dot(n, l) * 0.5 + 0.5;
 				float nv = dot(n,v);
-				float invertNV = 1 - nv;
+				float invertNV = clamp((1 - nv),0.03,0.99);
                 // sample the texture
                 fixed4 mainCol = tex2D(_MainTex, i.uv);
 				//return mainCol;
-				fixed4 ramp = tex2D(_RampMap, float2(invertNV, 0));
-				fixed4 fc = lerp(mainCol,ramp * mainCol,ramp.r);
 
+				//fresnal
+				fixed4 ramp = tex2D(_RampMap, float2(invertNV, 0.25));
+				fixed4 fc = lerp(mainCol,ramp * mainCol,ramp.r);
+				
+				//rim
 				fixed4 ramp2 = tex2D(_RampMap2, float2(invertNV * nl, 0));
-				fc += ramp2.r * mainCol * _Value.x;
+				fc += ramp2.r * mainCol;
 				return fc;
             }
             ENDCG
