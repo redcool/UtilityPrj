@@ -33,7 +33,8 @@ Shader "Unlit/TestFresnal"
             #pragma fragment frag
             #include "UnityCG.cginc"
 #include "../NodeLib.cginc"
-
+#include "Lighting.cginc"
+#include "AutoLight.cginc"
             struct appdata
             {
                 float4 vertex : POSITION;
@@ -54,7 +55,7 @@ Shader "Unlit/TestFresnal"
             float4 _Color;
 
 			float _SpecPower;
-            float4 _SpecColor;
+            //float4 _SpecColor;
 
             float _ReflectPower;
             float4 _ReflectColor;
@@ -81,7 +82,7 @@ Shader "Unlit/TestFresnal"
 				float3 h = normalize(l + v);
 				float3 r = reflect(-v,n);
 
-				float nl = dot(n, l) ;
+				float nl = dot(n, l) *0.5+0.5;
 				float nh = dot(n, h);
 				float vr = max(0,dot(r, v));
 
@@ -95,7 +96,7 @@ Shader "Unlit/TestFresnal"
 
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv) * _Color;
-				return col + specCol + refCol;
+				return (col + specCol + refCol) * nl * _LightColor0 ;
             }
             ENDCG
         }

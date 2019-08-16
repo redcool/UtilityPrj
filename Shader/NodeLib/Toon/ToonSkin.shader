@@ -1,4 +1,8 @@
-﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 
 // Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 
@@ -12,6 +16,7 @@ Shader "Unlit/ToonSkin"
 		_RampMap("RampMap",2d) = ""{}
 		_RampMap2("RampMap2",2d) = ""{}
 
+        _OutlineThick("Outline Thick",float) = 2
 		_Value("Value(Test)",vector)=(1,1,1,1)
     }
     SubShader
@@ -21,6 +26,9 @@ Shader "Unlit/ToonSkin"
 
         Pass
         {
+			Cull back
+			ztest lequal
+
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -80,8 +88,6 @@ Shader "Unlit/ToonSkin"
 				float invertNV = clamp((1 - nv),0.03,0.99);
                 // sample the texture
                 fixed4 mainCol = tex2D(_MainTex, i.uv);
-				//return mainCol;
-
 				//fresnal
 				fixed4 ramp = tex2D(_RampMap, float2(invertNV, 0.25));
 				fixed4 fc = lerp(mainCol,ramp * mainCol,ramp.r);
@@ -89,8 +95,54 @@ Shader "Unlit/ToonSkin"
 				//rim
 				fixed4 ramp2 = tex2D(_RampMap2, float2(invertNV * nl, 0));
 				fc += ramp2.r * mainCol;
-				return fc;
+				return fc * nl * _LightColor0;
             }
+            ENDCG
+        }
+
+        pass{
+            cull front
+            ztest less
+            Tags{"LightMode"="ForwardBase"}
+
+            CGPROGRAM
+			#include "UnityCG.cginc"
+            #pragma vertex vert
+            #pragma fragment frag
+
+            float _OutlineThick;
+            sampler2D _MainTex;
+
+            struct appdata
+            {
+                float4 vertex : POSITION;
+                float2 uv : TEXCOORD0;
+                float3 normal:NORMAL;
+            };
+            struct v2f{
+                float4 pos:SV_POSITION;
+                float2 uv:TEXCOORD0;
+            };
+
+            v2f vert(appdata v){
+                v2f o = (v2f)o;
+                o.pos = UnityObjectToClipPos(v.vertex);
+                o.uv = v.uv;
+
+                float4 n = UnityObjectToClipPos(float4(v.normal,0));
+                n *= _OutlineThick * 0.0256;
+                n.z += 0.00001;
+
+                o.pos.xyz += n.xyz;
+                return o;
+            }
+
+            float4 frag(v2f i):SV_Target{
+                float4 diffCol = tex2D(_MainTex,i.uv);
+                float m = max(max(diffCol.r,diffCol.g),diffCol.b);
+                return lerp(diffCol*0.5,diffCol,m) * diffCol;
+            }
+
             ENDCG
         }
     }
