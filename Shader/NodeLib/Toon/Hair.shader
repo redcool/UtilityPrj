@@ -8,7 +8,7 @@ Shader "Unlit/Hair"
         _Color("Color",color) = (1,1,1,1)
 
         _NormalMap("NormalMap",2d) = ""{}
-        _SpecMaskMap("SpecMaskMap(g:shift,a:Mask)",2d) = ""{}
+        _SpecMaskMap("SpecMaskMap(r:shift)",2d) = ""{}
 
         _SpecIntensity("SpecIntensity",range(0,1)) = 1
 
@@ -106,7 +106,7 @@ Shader "Unlit/Hair"
                 float3 l = UnityWorldSpaceLightDir(worldPos);
                 float3 v = UnityWorldSpaceViewDir(worldPos);
 
-                float3 pn = UnpackNormal(tex2D(_MainTex,i.uv));
+                float3 pn = UnpackNormal(tex2D(_NormalMap,i.uv));
                 float3 n = normalize(float3(dot(i.TW0.xyz,pn),dot(i.TW1.xyz,pn),dot(i.TW2.xyz,pn)));
                 float3 t = normalize(float3(i.TW0.x,i.TW1.x,i.TW2.x));
                 float3 b = normalize(float3(i.TW0.y,i.TW1.y,i.TW2.y));
