@@ -1,5 +1,61 @@
+// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+
 #ifndef NODE_LIB_CGINC
 #define NODE_LIB_CGINC
+
+// -- tangent to world matrix v2f.
+#define V2F_TANGENT_TO_WORLD(id0,id1,id2) \
+	float4 t2w0:TEXCOORD##id0; \
+	float4 t2w1:TEXCOORD##id1; \
+	float4 t2w2:TEXCOORD##id2
+
+// -- tangent to world matrix vertex.
+void TangentToWorldVertex(float3 vertex,float3 objectNormal,float4 objectTangent,out float4 t2w0,out float4 t2w1,out float4 t2w2){
+	float3 n = UnityObjectToWorldNormal(objectNormal);
+	float3 t = UnityObjectToWorldDir(objectTangent);
+	float3 b = cross(n,t) * objectTangent.w;
+	float3 worldPos = mul(unity_ObjectToWorld,vertex);
+
+	t2w0 = float4(t.x,b.x,n.x,worldPos.x);
+	t2w1 = float4(t.y,b.y,n.y,worldPos.y);
+	t2w2 = float4(t.z,b.z,n.z,worldPos.z);
+}
+
+// -- tangent to world matrix fragment.
+void TangentToWorldFrag(float3 packedNormal,float4 t2w0,float4 t2w1,float4 t2w2,
+	out float3 worldPos,out float3 t,out float3 b,out float3 n)
+{
+	worldPos = float3(t2w0.w,t2w1.w,t2w2.w);
+	t = normalize(float3(t2w0.x,t2w1.x,t2w2.x));
+	b = normalize(float3(t2w0.y,t2w1.y,t2w2.y));
+	n = normalize(float3(dot(t2w0.xyz,packedNormal),dot(t2w1.xyz,packedNormal),dot(t2w2.xyz,packedNormal)));
+}
+
+float3 BlendNormal(float3 a, float3 b) {
+	return normalize(float3(a.rb + b.rg, a.b*b.b));
+}
+
+float SimpleFresnal(float3 v, float3 n, float power) {
+	return pow(1 - saturate(dot(normalize(n), normalize(v))), power);
+}
+
+float SchlickFresnal2(float3 v, float h, float f0) {
+	float base = 1 - dot(v, h);
+	float power = pow(base, 5.0);
+	return power + f0 * (1 - power);
+}
+
+float SchlickFresnal(float3 v, float3 n, float f0) {
+	return f0 + (1 - f0) * pow(1 - dot(v, n), 5);
+}
+
+float Random(float s) {
+	return frac(sin(s) * 100000);
+}
+
+float Gray(float3 rgb){
+	return dot(float3(0.07,0.7,0.2),rgb);
+}
 
 //input
 
@@ -16,31 +72,6 @@ float _Camera_Height() { return unity_OrthoParams.y; }
 float3 NormalStrength(float3 n, float strength) {
 	return float3(n.rg * strength, lerp(1, n.b, saturate(strength)));
 }
-
-float3 BlendNormal(float3 a, float3 b) {
-	return normalize(float3(a.rb + b.rg, a.b*b.b));
-}
-
-float SimpleFresnal(float3 v, float3 n, float power) {
-	return pow(1 - saturate(dot(normalize(n), normalize(v))), power);
-}
-
-
-float SchlickFresnal2(float3 v, float h, float f0) {
-	float base = 1 - dot(v, h);
-	float power = pow(base, 5.0);
-	return power + f0 * (1 - power);
-}
-
-
-float SchlickFresnal(float3 v, float3 n, float f0) {
-	return f0 + (1 - f0) * pow(1 - dot(v, n), 5);
-}
-
-float Random(float s) {
-	return frac(sin(s) * 100000);
-}
-
 inline float unity_noise_randomValue(float2 uv)
 {
 	return frac(sin(dot(uv, float2(12.9898, 78.233)))*43758.5453);

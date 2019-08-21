@@ -56,7 +56,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalMap:
-        m_Texture: {fileID: 2800000, guid: 9eea3b9b4b755f64da2c821145616f44, type: 3}
+        m_Texture: {fileID: 2800000, guid: 1d15eaf70c974cd4a852a8364d97d72b, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
@@ -107,20 +107,21 @@ Material:
     - _OutlineThick: 0
     - _Parallax: 0.02
     - _ReflectPower: 27.99
+    - _Saturate: 0.83
     - _Shift: 0
-    - _Shift2: 0.7
+    - _Shift2: 0
     - _SmoothnessTextureChannel: 0
     - _SpecColor: 1
     - _SpecColor2: 1
-    - _SpecIntensity: 0.277
-    - _SpecPower: 200
-    - _SpecPower2: 100
+    - _SpecIntensity: 1
+    - _SpecPower: 100
+    - _SpecPower2: 7.45
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 1, g: 0.9764151, b: 0.9764151, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _ReflectColor: {r: 0, g: 1, b: 0.9706273, a: 1}
     - _SpecColor: {r: 1, g: 1, b: 1, a: 1}

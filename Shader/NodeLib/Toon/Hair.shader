@@ -19,6 +19,8 @@ Shader "Unlit/Hair"
         _SpecColor2("SpecColor2",color) = (1,1,1,1)
         _SpecPower2("SpecPower2",float) = 1
         _Shift2("Shift2",float) = 0
+
+        _Saturate("Saturate",range(0.5,3)) = 0
     }
     SubShader
     {
@@ -35,6 +37,7 @@ Shader "Unlit/Hair"
             #include "UnityCG.cginc"
             //#include "AutoLight.cginc"
             #include "Lighting.cginc"
+            #include "../NodeLib.cginc"
 
             struct appdata
             {
@@ -48,9 +51,7 @@ Shader "Unlit/Hair"
             {
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
-                float4 TW0:TEXCOORD1;
-                float4 TW1:TEXCOORD2;
-                float4 TW2:TEXCOORD3;
+                V2F_TANGENT_TO_WORLD(1,2,3);
             };
 
             sampler2D _MainTex;
@@ -70,6 +71,7 @@ Shader "Unlit/Hair"
             float _Shift;
             float _Shift2;
 
+            float _Saturate;
 
             float3 ShiftTangent(float3 t,float3 n,float shift){
                 return normalize(t + n * shift);
@@ -91,25 +93,19 @@ Shader "Unlit/Hair"
 
                 float4 worldPos = mul(unity_ObjectToWorld,v.vertex);
 
-                float3 t = UnityObjectToWorldDir(v.t.xyz);
-                float3 n = UnityObjectToWorldNormal(v.n);
-                float3 b = cross(n,t) * v.t.w;
-                o.TW0 = float4(t.x,b.x,n.x,worldPos.x);
-                o.TW1 = float4(t.y,b.y,n.y,worldPos.y);
-                o.TW2 = float4(t.z,b.z,n.z,worldPos.z);
+                TangentToWorldVertex(v.vertex,v.n,v.t,o.t2w0,o.t2w1,o.t2w2);
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float3 worldPos = float3(i.TW0.w,i.TW1.w,i.TW2.w);
+                float3 pn = UnpackNormal(tex2D(_NormalMap,i.uv));
+                
+                float3 worldPos,t,b,n;
+                TangentToWorldFrag(pn,i.t2w0,i.t2w1,i.t2w2,worldPos,t,b,n);
+
                 float3 l = UnityWorldSpaceLightDir(worldPos);
                 float3 v = UnityWorldSpaceViewDir(worldPos);
-
-                float3 pn = UnpackNormal(tex2D(_NormalMap,i.uv));
-                float3 n = normalize(float3(dot(i.TW0.xyz,pn),dot(i.TW1.xyz,pn),dot(i.TW2.xyz,pn)));
-                float3 t = normalize(float3(i.TW0.x,i.TW1.x,i.TW2.x));
-                float3 b = normalize(float3(i.TW0.y,i.TW1.y,i.TW2.y));
 
                 float4 specMask = tex2D(_SpecMaskMap,i.uv);
                 float3 t1 = ShiftTangent(b,n,specMask.r + _Shift);
@@ -118,10 +114,15 @@ Shader "Unlit/Hair"
                 float3 spec1 = StrandSpecular(t1,v,l,_SpecPower) * _SpecColor;
                 float3 spec2 = StrandSpecular(t2,v,l,_SpecPower2) * _SpecColor2;
 
+                float nl = dot(n,l) * 0.5+0.5;
                 //return float4(spec1+spec2,1);
                 float4 col = tex2D(_MainTex,i.uv) * _Color;
-                //float diff = lerp(0.8,0.98,dot(n,l));
-                col.rgb = col + (spec1 + spec2) *_SpecIntensity;
+                
+                float3 diff = lerp(col,col*nl,nl);
+                float g = Gray(diff);
+                diff = lerp((float3)g,diff,_Saturate);
+
+                col.rgb = diff + (spec1 + spec2) * nl *_SpecIntensity;
                 col.rgb *= _LightColor0.rgb;
                 return col;
             }
