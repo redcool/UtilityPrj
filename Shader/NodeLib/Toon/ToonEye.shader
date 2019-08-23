@@ -20,6 +20,11 @@ Shader "Unlit/ToonEye"
 		_F0("F0",float) = 1
 
         _CubeMap("CubeMap",cube) = ""{}
+
+        //---
+        _ReflectSize("ReflectSize",range(0.2,1)) = 1
+        _SpecSize("SpecSize",range(0.1,2)) = 1
+        _SpecWidth("SpecWidth",range(0.01,0.99)) = 1
     }
     SubShader
     {
@@ -63,6 +68,8 @@ Shader "Unlit/ToonEye"
 			float _F0;
 
             samplerCUBE _CubeMap;
+            float _ReflectSize;
+            float _SpecWidth,_SpecSize;
 
             v2f vert (appdata v)
             {
@@ -90,10 +97,10 @@ Shader "Unlit/ToonEye"
                 //return fresnal;
 				float rr = pow(vr,_ReflectPower);
 				float4 refCol =  texCUBE(_CubeMap,r) * rr * _ReflectColor;
-                //return refCol;
+                refCol = smoothstep(refCol,refCol*0.9,_ReflectSize);
 
                 float4 specCol = pow(nh, _SpecPower) * nl * _SpecColor * fresnal ;
-
+                specCol = smoothstep(specCol,specCol*_SpecWidth,_SpecSize) ;
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv) * _Color;
 				return (col + specCol + refCol) * nl * _LightColor0 ;
