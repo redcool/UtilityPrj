@@ -12,6 +12,14 @@
             return Application.dataPath + "/" + assetPath.Substring("Assets".Length);
         }
 
+        public static string GetAssetPath(string absPath)
+        {
+            var index = absPath.IndexOf("Assets");
+            if (index != -1)
+                return absPath.Substring(index);
+            return absPath;
+        }
+
         public static void CreateAbsFolderPath(string assetPath)
         {
             var absPath = GetAssetAbsPath(assetPath);
