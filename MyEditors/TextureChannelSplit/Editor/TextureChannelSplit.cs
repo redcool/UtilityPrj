@@ -11,8 +11,6 @@ namespace MyTools
     public class TextureChannelSplit
     {
 
-        const string ATLAS_SPLIT_TAG = "split";
-
         [MenuItem("MyEditors/TextureTools/Split Selected Textures")]
         static void SplitSelectedTexutes()
         {
@@ -31,9 +29,9 @@ namespace MyTools
 
                 //3 save rgb,a
                 var path = AssetDatabase.GetAssetPath(tex);
-                var dir = Path.GetDirectoryName(path);
-                dir += "/" + tex.name;
-
+                //var dir = Path.GetDirectoryName(path);
+                //dir += "/" + tex.name;
+                var dir = PathTools.GetAssetDir(path,"/",tex.name);
                 var rgbTexPath = dir + "_rgb.png";
                 var alphaTexPath = dir + "_r.png";
 
@@ -54,27 +52,38 @@ namespace MyTools
         {
             // get all uiAtlas
             var gos = EditorTools.GetFilteredFromSelection<GameObject>(SelectionMode.Assets | SelectionMode.DeepAssets);
-            var q = gos.Where(go => go.GetComponent<UIAtlas>() && !go.name.Contains(ATLAS_SPLIT_TAG))
+            var q = gos.Where(go => go.GetComponent<UIAtlas>())
                 .Select(go => go.GetComponent<UIAtlas>());
+            Debug.Log(gos.Length + ":" + q.ToArray().Length);
             // get uiAtlas materials
             foreach (var item in q)
             {
-                var assetPath = Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(item));
-                var rgbTex = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath + "_rgb.png");
-                var aTex = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath + "_a.png");
-                var alphaTex = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath + "_alpha.png");
-
-                var mat = item.spriteMaterial;
-                mat.shader = Shader.Find("Unlit/Transparent Colored (rgb+a)");
-                mat.SetTexture("_MainTex", rgbTex);
-                mat.SetTexture("_AlphaTex", aTex);
-                if (Application.platform == RuntimePlatform.Android)
-                {
-                    // rgb + alpha
-                    mat.SetTexture("_AlphaTex", alphaTex);
-                    mat.EnableKeyword("_ALPHATEXCHANNEL_A");
-                }
+                UpdateAtlasMaterial(item);
             }
+            Debug.Log("UpdateSelectedAtals done.");
+        }
+
+        static void UpdateAtlasMaterial(UIAtlas atlas)
+        {
+            var assetPath = AssetDatabase.GetAssetPath(atlas);
+            var prefabName = Path.GetFileNameWithoutExtension(assetPath);
+            var path = PathTools.GetAssetDir(assetPath, "/", prefabName);
+
+            var rgbTex = AssetDatabase.LoadAssetAtPath<Texture2D>(path + "_rgb.png");
+            var rTex = AssetDatabase.LoadAssetAtPath<Texture2D>(path + "_r.png");
+            var alphaTex = AssetDatabase.LoadAssetAtPath<Texture2D>(path + "_alpha.png");
+
+            var mat = atlas.spriteMaterial;
+            mat.shader = Shader.Find("Unlit/Transparent Colored (rgb+a)");
+            mat.SetTexture("_MainTex", rgbTex);
+            mat.SetTexture("_AlphaTex", rTex);
+
+#if UNITY_ANDROID
+            // rgb + alpha
+            mat.SetTexture("_AlphaTex", alphaTex);
+            mat.EnableKeyword("_ALPHATEXCHANNEL_A");
+            mat.SetFloat("_AlphaTexChannel", 1);
+#endif
         }
 
         static void SplitRGBA(Texture2D tex, out Texture2D rgbTex, out Texture2D alphaTex)
@@ -111,28 +120,28 @@ namespace MyTools
         static void SetTextureFormat(string path, string rgbTexPath, string alphaTexPath)
         {
             // prepare settings
-            var set0 = new TextureImporterPlatformSettings
+            var alphaTexSeting = new TextureImporterPlatformSettings
             {
                 format = TextureImporterFormat.Alpha8
             };
 
-            var set = new TextureImporterPlatformSettings();
-            set.textureCompression = TextureImporterCompression.Compressed;
+            var rgbTexSeting = new TextureImporterPlatformSettings();
+            rgbTexSeting.textureCompression = TextureImporterCompression.Compressed;
 
             if (Application.platform == RuntimePlatform.IPhonePlayer)
-                set.format = TextureImporterFormat.PVRTC_RGB4;
+                rgbTexSeting.format = TextureImporterFormat.PVRTC_RGB4;
             else if (Application.platform == RuntimePlatform.Android)
-                set.format = TextureImporterFormat.ETC_RGB4;
+                rgbTexSeting.format = TextureImporterFormat.ETC_RGB4;
 
-            var sets = new[] { set0, set, set };
+            var setings = new[] { alphaTexSeting, rgbTexSeting, rgbTexSeting };
             var texPaths = new[] { path, rgbTexPath, alphaTexPath };
 
-            for (int i = 0; i < sets.Length; i++)
+            for (int i = 0; i < setings.Length; i++)
             {
                 AssetDatabase.LoadAssetAtPath<Texture2D>(PathTools.GetAssetPath(texPaths[i])).Setting(
                     imp =>
                     {
-                        imp.SetPlatformTextureSettings(sets[i]);
+                        imp.SetPlatformTextureSettings(setings[i]);
                         imp.mipmapEnabled = false;
                         imp.SaveAndReimport();
                     }

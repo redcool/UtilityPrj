@@ -3,10 +3,26 @@
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
+    using System.Text;
     using UnityEngine;
+    using System.Linq;
 
     public static class PathTools
     {
+
+        public static string GetAssetDir(string assetPath,params object[] combineStrings)
+        {
+            if (string.IsNullOrEmpty(assetPath))
+                return "";
+
+            var dir = Path.GetDirectoryName(assetPath);
+
+            var sb = new StringBuilder();
+            sb.Append(dir);
+            foreach (var item in combineStrings)
+                sb.Append(item);
+            return sb.ToString();
+        }
         public static string GetAssetAbsPath(string assetPath)
         {
             return Application.dataPath + "/" + assetPath.Substring("Assets".Length);
