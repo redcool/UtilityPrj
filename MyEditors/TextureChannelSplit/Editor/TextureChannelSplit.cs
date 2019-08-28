@@ -8,59 +8,81 @@ namespace MyTools
     using System.Linq;
     using System.IO;
 
-    public class TextureChannelSplit
+    /// <summary>
+    /// 分离rgba32为rgb图,r图,alpha8图
+    /// 分离后的图片使用压缩格式.
+    /// 
+    /// 操作:
+    /// 1 选中要分离通道的目录或图片. 点击 MyEditors/TextureTools/Split Selected Textures
+    /// 2 旋转要更新atlasPrefab的目录或prefabs,点击 MyEditors/TextureTools/Update Selected NGUI Atalses
+    /// 
+    /// android : rgb(etc) , alpha8
+    /// ios : rgb , r (pvrtc)
+    /// </summary>
+    public static class TextureChannelSplit
     {
 
         [MenuItem("MyEditors/TextureTools/Split Selected Textures")]
         static void SplitSelectedTexutes()
         {
-            var texs = EditorTools.GetFilteredFromSelection<Texture2D>(SelectionMode.Assets);
-            foreach (var tex in texs)
+            var texs = EditorTools.GetFilteredFromSelection<Texture2D>(SelectionMode.Assets | SelectionMode.DeepAssets);
+            var q = texs.Where(t => !(t.name.EndsWith("_r") || t.name.EndsWith("_rgb") || t.name.EndsWith("_alpha")));
+
+            foreach (var tex in q)
             {
-                Texture2D rgbTex;
-                Texture2D alphaTex;
-                //1 setttings
-                tex.Setting(ti => {
-                    ti.isReadable = true;
-                    ti.SaveAndReimport();
-                });
-                //2 split channels
-                SplitRGBA(tex, out rgbTex, out alphaTex);
-
-                //3 save rgb,a
-                var path = AssetDatabase.GetAssetPath(tex);
-                //var dir = Path.GetDirectoryName(path);
-                //dir += "/" + tex.name;
-                var dir = PathTools.GetAssetDir(path,"/",tex.name);
-                var rgbTexPath = dir + "_rgb.png";
-                var alphaTexPath = dir + "_r.png";
-
-                Save(rgbTexPath, rgbTex);
-                Save(alphaTexPath, alphaTex);
-                var newAlphaPath = SaveAlphaTex(path);
-                AssetDatabase.Refresh();
-
-                //4 compress
-                SetTextureFormat(newAlphaPath, rgbTexPath, alphaTexPath);
-                //5
-                AssetDatabase.Refresh();
+                SplitTexture(tex);
             }
         }
 
-        [MenuItem("MyEditors/TextureTools/Update Selected NGUI Atals")]
+        [MenuItem("MyEditors/TextureTools/Update Selected NGUI Atalses")]
         static void UpdateSelectedAtals()
         {
             // get all uiAtlas
             var gos = EditorTools.GetFilteredFromSelection<GameObject>(SelectionMode.Assets | SelectionMode.DeepAssets);
             var q = gos.Where(go => go.GetComponent<UIAtlas>())
                 .Select(go => go.GetComponent<UIAtlas>());
-            Debug.Log(gos.Length + ":" + q.ToArray().Length);
+
             // get uiAtlas materials
             foreach (var item in q)
             {
                 UpdateAtlasMaterial(item);
             }
             Debug.Log("UpdateSelectedAtals done.");
+        }
+
+        static void SplitTexture(Texture2D tex)
+        {
+            Texture2D rgbTex;
+            Texture2D alphaTex;
+            //1 setttings
+            tex.Setting(imp => {
+                imp.isReadable = true;
+                imp.SetPlatformTextureSettings(new TextureImporterPlatformSettings
+                {
+                    format = TextureImporterFormat.RGBA32,
+                });
+                imp.SaveAndReimport();
+            });
+            //2 split channels
+            SplitRGBA(tex, out rgbTex, out alphaTex);
+
+            //3 save rgb,a
+            var path = AssetDatabase.GetAssetPath(tex);
+            //var dir = Path.GetDirectoryName(path);
+            //dir += "/" + tex.name;
+            var dir = PathTools.GetAssetDir(path, "/", tex.name);
+            var rgbTexPath = dir + "_rgb.png";
+            var alphaTexPath = dir + "_r.png";
+
+            Save(rgbTexPath, rgbTex);
+            Save(alphaTexPath, alphaTex);
+            var newAlphaPath = SaveAlphaTex(path);
+            AssetDatabase.Refresh();
+
+            //4 compress
+            SetTextureFormat(newAlphaPath, rgbTexPath, alphaTexPath);
+            //5
+            AssetDatabase.Refresh();
         }
 
         static void UpdateAtlasMaterial(UIAtlas atlas)
