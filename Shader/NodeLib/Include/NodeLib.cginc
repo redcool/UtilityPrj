@@ -3,33 +3,6 @@
 #ifndef NODE_LIB_CGINC
 #define NODE_LIB_CGINC
 
-// -- tangent to world matrix v2f.
-#define V2F_TANGENT_TO_WORLD(id0,id1,id2) \
-	float4 t2w0:TEXCOORD##id0; \
-	float4 t2w1:TEXCOORD##id1; \
-	float4 t2w2:TEXCOORD##id2
-
-// -- tangent to world matrix vertex.
-void TangentToWorldVertex(float3 vertex,float3 objectNormal,float4 objectTangent,out float4 t2w0,out float4 t2w1,out float4 t2w2){
-	float3 n = UnityObjectToWorldNormal(objectNormal);
-	float3 t = UnityObjectToWorldDir(objectTangent);
-	float3 b = cross(n,t) * objectTangent.w;
-	float3 worldPos = mul(unity_ObjectToWorld,vertex);
-
-	t2w0 = float4(t.x,b.x,n.x,worldPos.x);
-	t2w1 = float4(t.y,b.y,n.y,worldPos.y);
-	t2w2 = float4(t.z,b.z,n.z,worldPos.z);
-}
-
-// -- tangent to world matrix fragment.
-void TangentToWorldFrag(float3 packedNormal,float4 t2w0,float4 t2w1,float4 t2w2,
-	out float3 worldPos,out float3 t,out float3 b,out float3 n)
-{
-	worldPos = float3(t2w0.w,t2w1.w,t2w2.w);
-	t = normalize(float3(t2w0.x,t2w1.x,t2w2.x));
-	b = normalize(float3(t2w0.y,t2w1.y,t2w2.y));
-	n = normalize(float3(dot(t2w0.xyz,packedNormal),dot(t2w1.xyz,packedNormal),dot(t2w2.xyz,packedNormal)));
-}
 
 float3 BlendNormal(float3 a, float3 b) {
 	return normalize(float3(a.rb + b.rg, a.b*b.b));
@@ -53,6 +26,10 @@ float Random(float s) {
 	return frac(sin(s) * 100000);
 }
 
+float Random(float2 st){
+	return frac(sin(dot(st,float2(12.123,78.789))) * 65432);
+}
+
 float Gray(float3 rgb){
 	return dot(float3(0.07,0.7,0.2),rgb);
 }
@@ -72,6 +49,62 @@ float _Camera_Height() { return unity_OrthoParams.y; }
 float3 NormalStrength(float3 n, float strength) {
 	return float3(n.rg * strength, lerp(1, n.b, saturate(strength)));
 }
+
+
+void Unity_TilingAndOffset_float(float2 UV, float2 Tiling, float2 Offset, out float2 Out)
+{
+	Out = UV * Tiling + Offset;
+}
+
+
+//   Procedural
+
+void Unity_Checkerboard_float(float2 UV, float3 ColorA, float3 ColorB, float2 Frequency, out float3 Out)
+{
+    UV = (UV.xy + 0.5) * Frequency;
+    float4 derivatives = float4(ddx(UV), ddy(UV));
+    float2 duv_length = sqrt(float2(dot(derivatives.xz, derivatives.xz), dot(derivatives.yw, derivatives.yw)));
+    float width = 1.0;
+    float2 distance3 = 4.0 * abs(frac(UV + 0.25) - 0.5) - width;
+    float2 scale = 0.35 / duv_length.xy;
+    float freqLimiter = sqrt(clamp(1.1f - max(duv_length.x, duv_length.y), 0.0, 1.0));
+    float2 vector_alpha = clamp(distance3 * scale.xy, -1.0, 1.0);
+    float alpha = saturate(0.5f + 0.5f * vector_alpha.x * vector_alpha.y * freqLimiter);
+    Out = lerp(ColorA, ColorB, alpha.xxx);
+}
+
+float3 Checkerboard(float2 uv,float3 color1,float3 color2,float2 frequency){
+	float2 c = floor(uv * frequency)/2;
+	float checker = frac(c.x+c.y)*2;
+	return lerp(color1,color2,checker);
+}
+
+float2 unity_gradientNoise_dir(float2 p)
+{
+    p = p % 289;
+    float x = (34 * p.x + 1) * p.x % 289 + p.y;
+    x = (34 * x + 1) * x % 289;
+    x = frac(x / 41) * 2 - 1;
+    return normalize(float2(x - floor(x + 0.5), abs(x) - 0.5));
+}
+
+float unity_gradientNoise(float2 p)
+{
+    float2 ip = floor(p);
+    float2 fp = frac(p);
+    float d00 = dot(unity_gradientNoise_dir(ip), fp);
+    float d01 = dot(unity_gradientNoise_dir(ip + float2(0, 1)), fp - float2(0, 1));
+    float d10 = dot(unity_gradientNoise_dir(ip + float2(1, 0)), fp - float2(1, 0));
+    float d11 = dot(unity_gradientNoise_dir(ip + float2(1, 1)), fp - float2(1, 1));
+    fp = fp * fp * fp * (fp * (fp * 6 - 15) + 10);
+    return lerp(lerp(d00, d01, fp.y), lerp(d10, d11, fp.y), fp.x);
+}
+
+void Unity_GradientNoise_float(float2 UV, float Scale, out float Out)
+{
+    Out = unity_gradientNoise(UV * Scale) + 0.5;
+}
+
 inline float unity_noise_randomValue(float2 uv)
 {
 	return frac(sin(dot(uv, float2(12.9898, 78.233)))*43758.5453);
@@ -121,11 +154,6 @@ void Unity_SimpleNoise_float(float2 UV, float Scale, out float Out)
 	t += unity_valueNoise(float2(UV.x*Scale / freq, UV.y*Scale / freq))*amp;
 
 	Out = t;
-}
-
-void Unity_TilingAndOffset_float(float2 UV, float2 Tiling, float2 Offset, out float2 Out)
-{
-	Out = UV * Tiling + Offset;
 }
 
 #endif
