@@ -37,7 +37,7 @@ Shader "Unlit/ToonEye"
             #pragma vertex vert
             #pragma fragment frag
             #include "UnityCG.cginc"
-#include "../NodeLib.cginc"
+#include "../Include/NodeLib.cginc"
 #include "Lighting.cginc"
 #include "AutoLight.cginc"
             struct appdata

@@ -37,7 +37,7 @@ Shader "Unlit/Hair"
             #include "UnityCG.cginc"
             //#include "AutoLight.cginc"
             #include "Lighting.cginc"
-            #include "../NodeLib.cginc"
+            #include "../Include/NodeLib.cginc"
 
             struct appdata
             {

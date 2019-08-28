@@ -30,7 +30,7 @@ Shader "Unlit/ToonSkinNormalmap"
             #include "UnityCG.cginc"
 #include "Lighting.cginc"
 #include "AutoLight.cginc"
-#include "../NodeLib.cginc"
+#include "../Include/NodeLib.cginc"
 
             struct appdata
             {
