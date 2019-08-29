@@ -38,6 +38,7 @@ Shader "Unlit/Hair"
             //#include "AutoLight.cginc"
             #include "Lighting.cginc"
             #include "../Include/NodeLib.cginc"
+            #include "../Include/TangentLib.cginc"
 
             struct appdata
             {

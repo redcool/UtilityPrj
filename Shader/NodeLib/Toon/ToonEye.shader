@@ -11,20 +11,21 @@ Shader "Unlit/ToonEye"
         _MainTex ("Texture", 2D) = "white" {}
         _Color("Color",color) = (1,1,1,1)
 
-		_SpecPower("SpecPower",float) = 32
+        [Header(Fresnal)]
+        _F0("F0",range(1,10)) = 1
+
+        [Header(Specular)]
+		_Glossiness("Glossiness",range(0.04,1)) = 0.5
         _SpecColor("SpecColor",color) = (1,1,1,1)
-
-        _ReflectPower("Reflect Power",float) = 32
-        _ReflectColor("ReflectColor",color) = (1,1,1,1)
-
-		_F0("F0",float) = 1
-
-        _CubeMap("CubeMap",cube) = ""{}
-
-        //---
-        _ReflectSize("ReflectSize",range(0.2,1)) = 1
         _SpecSize("SpecSize",range(0.1,2)) = 1
-        _SpecWidth("SpecWidth",range(0.01,0.99)) = 1
+        _SpecWidth("SpecWidth",range(0.01,2) )= 0.1
+
+        [Header(Reflection)]
+        _CubeMap("CubeMap",cube) = ""{}
+        _ReflectPower("Reflect Power",range(0,3)) = 1
+        _ReflectColor("ReflectColor",color) = (1,1,1,1)
+        _ReflectSize("ReflectSize",range(0.2,1)) = 1
+
     }
     SubShader
     {
@@ -59,7 +60,7 @@ Shader "Unlit/ToonEye"
             float4 _MainTex_ST;
             float4 _Color;
 
-			float _SpecPower;
+			float _Glossiness;
             //float4 _SpecColor;
 
             float _ReflectPower;
@@ -93,16 +94,23 @@ Shader "Unlit/ToonEye"
 				float nh = dot(n, h);
 				float vr = max(0,dot(r, v));
 
+                //----- fresnal
 				float fresnal = SchlickFresnal(v,n, _F0);
                 //return fresnal;
+
+                //----- reflection
 				float rr = pow(vr,_ReflectPower);
 				float4 refCol =  texCUBE(_CubeMap,r) * rr * _ReflectColor;
-                refCol = smoothstep(refCol,refCol*0.9,_ReflectSize);
+                refCol = smoothstep(refCol,refCol-0.01,_ReflectSize);
 
-                float4 specCol = pow(nh, _SpecPower) * nl * _SpecColor * fresnal ;
-                specCol = smoothstep(specCol,specCol*_SpecWidth,_SpecSize) ;
+                //----- specular
+                float4 specCol = pow(nh, _Glossiness * 128) * nl * _SpecColor * fresnal ;
+                specCol = smoothstep(specCol,specCol-_SpecWidth,_SpecSize) ;
+
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv) * _Color;
+                col *= fresnal;
+
 				return (col + specCol + refCol) * nl * _LightColor0 ;
             }
             ENDCG

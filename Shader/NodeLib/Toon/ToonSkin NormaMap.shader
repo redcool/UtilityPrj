@@ -31,6 +31,7 @@ Shader "Unlit/ToonSkinNormalmap"
 #include "Lighting.cginc"
 #include "AutoLight.cginc"
 #include "../Include/NodeLib.cginc"
+#include "../Include/TangentLib.cginc"
 
             struct appdata
             {
@@ -137,7 +138,7 @@ Shader "Unlit/ToonSkinNormalmap"
 
                 float4 n = UnityObjectToClipPos(float4(v.normal,0));
                 n *= _OutlineThick * 0.0256;
-                n.z += 0.00001;
+                //n.z += 0.00001;
 
                 o.pos.xyz += n.xyz;
                 return o;
