@@ -8,6 +8,12 @@ float3 BlendNormal(float3 a, float3 b) {
 	return normalize(float3(a.rb + b.rg, a.b*b.b));
 }
 
+float SimpleSubSurface(float3 l,float3 v,float3 n,float distortion,float power,float thick){
+	float3 h = normalize(l+n * distortion);
+	float scatter = pow(saturate(dot(v,h)),power) * thick;
+	return scatter;
+}
+
 float SimpleFresnal(float3 v, float3 n, float power) {
 	return pow(1 - saturate(dot(normalize(n), normalize(v))), power);
 }
