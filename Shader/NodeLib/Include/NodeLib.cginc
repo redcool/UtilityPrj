@@ -85,6 +85,16 @@ float3 Checkerboard(float2 uv,float3 color1,float3 color2,float2 frequency){
 	return lerp(color1,color2,checker);
 }
 
+// Interleaved gradient function from Jimenez 2014
+// http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
+float GradientNoise(float2 uv)
+{
+    uv = floor(uv * _ScreenParams.xy);
+    float f = dot(float2(0.06711056, 0.00583715), uv);
+    return frac(52.9829189 * frac(f));
+}
+
+//------------- ShaderGraph
 float2 unity_gradientNoise_dir(float2 p)
 {
     p = p % 289;
@@ -110,6 +120,8 @@ void Unity_GradientNoise_float(float2 UV, float Scale, out float Out)
 {
     Out = unity_gradientNoise(UV * Scale) + 0.5;
 }
+
+//---------------------------
 
 inline float unity_noise_randomValue(float2 uv)
 {
