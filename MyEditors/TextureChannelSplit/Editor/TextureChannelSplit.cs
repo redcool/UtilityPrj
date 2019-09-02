@@ -41,13 +41,13 @@ namespace MyTools
             var gos = EditorTools.GetFilteredFromSelection<GameObject>(SelectionMode.Assets | SelectionMode.DeepAssets);
             var q = gos.Where(go => go.GetComponent<UIAtlas>())
                 .Select(go => go.GetComponent<UIAtlas>());
-
+            var count = q.Count();
             // get uiAtlas materials
             foreach (var item in q)
             {
                 UpdateAtlasMaterial(item);
             }
-            Debug.Log("UpdateSelectedAtals done.");
+            Debug.Log("UpdateSelectedAtals done. "+ count);
         }
 
         static void SplitTexture(Texture2D tex)
@@ -85,6 +85,11 @@ namespace MyTools
             AssetDatabase.Refresh();
         }
 
+        /// <summary>
+        /// 根据atlas的name获取rgb图片
+        /// 更新material
+        /// </summary>
+        /// <param name="atlas"></param>
         static void UpdateAtlasMaterial(UIAtlas atlas)
         {
             var assetPath = AssetDatabase.GetAssetPath(atlas);
@@ -106,6 +111,8 @@ namespace MyTools
             mat.EnableKeyword("_ALPHATEXCHANNEL_A");
             mat.SetFloat("_AlphaTexChannel", 1);
 #endif
+            if (!rgbTex)
+                Debug.LogError("Cannot fount texture:" + path);
         }
 
         static void SplitRGBA(Texture2D tex, out Texture2D rgbTex, out Texture2D alphaTex)

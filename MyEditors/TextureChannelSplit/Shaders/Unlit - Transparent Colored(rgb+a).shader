@@ -32,6 +32,7 @@ Shader "Unlit/Transparent Colored (rgb+a)"
 			#pragma vertex vert
 			#pragma fragment frag			
 			#include "UnityCG.cginc"
+			#pragma multi_compile _ALPHATEXCHANNEL_R _ALPHATEXCHANNEL_A
 
 			sampler2D _MainTex;
 			float4 _MainTex_ST;
@@ -68,10 +69,9 @@ Shader "Unlit/Transparent Colored (rgb+a)"
 			fixed4 frag (v2f IN) : SV_Target
 			{
 				float4 c = tex2D(_MainTex, IN.texcoord) * IN.color;
-
-#if _ALPHATEXCHANNEL_A
 				c.a = tex2D(_AlphaTex, IN.texcoord).a;
-#elif _ALPHATEXCHANNEL_R
+
+#if _ALPHATEXCHANNEL_R
 				c.a = tex2D(_AlphaTex, IN.texcoord).r;
 #endif
 				return c;

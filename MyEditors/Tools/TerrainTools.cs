@@ -4,9 +4,9 @@
     using System.Collections.Generic;
     using System.IO;
     using UnityEngine;
-
     public static class TerrainTools
     {
+#if UNITY_2018_3_OR_NEWER
         public static void ExtractAlphaMapToPNG(Terrain terrain, string path)
         {
             var tex = GetBlendSplatMap(terrain);
@@ -34,7 +34,6 @@
                     for (int z = 0; z < td.alphamapLayers; z++)
                     {
                         var alpha = maps[y, x, z];
-
                         var layer = td.terrainLayers[z];
                         var tile = new Vector2(td.size.x, td.size.z) / layer.tileSize;
 
@@ -56,7 +55,7 @@
 
             return tex;
         }
+#endif
 
     }
-
 }
