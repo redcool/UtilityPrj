@@ -6,6 +6,7 @@ namespace MyTools
     using UnityEditor;
     using System.IO;
     using System;
+    using System.Linq;
     using Object = UnityEngine.Object;
     using System.Collections.Generic;
     using System.Text;
@@ -112,7 +113,41 @@ namespace MyTools
             GameObjectUtility.SetStaticEditorFlags(go, existFlags | flags);
         }
         #endregion
+        #region AssetDatabase Tools
+        /// <summary>
+        /// 找寻assetPaths下面的gameObject并返回T组件
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <param name="assetPaths"></param>
+        /// <returns></returns>
+        public static T[] FindComponentFromAssets<T>(string filter,params string[] assetPaths)
+            where T : Component
+        {
+            var gos = FindObjectFromAssets<GameObject>(filter+" t:GameObject", assetPaths);
+            var q = gos.Select(go => go.GetComponent<T>());
+            return q.ToArray();
+        }
 
+        /// <summary>
+        /// 找寻assetPaths下面的T Object
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <param name="assetPaths"></param>
+        /// <returns></returns>
+        public static T[] FindObjectFromAssets<T>(string filter, params string[] assetPaths)
+            where T :Object
+        {
+            var guids = AssetDatabase.FindAssets(filter, assetPaths);
+            var q = guids.Select(g =>
+            {
+                var obj = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(g));
+                return obj as T;
+            }).Where(obj => obj);
+            return q.ToArray();
+        }
+        #endregion
     }
 }
 #endif

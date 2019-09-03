@@ -26,12 +26,7 @@ namespace MyTools
         static void SplitSelectedTexutes()
         {
             var texs = EditorTools.GetFilteredFromSelection<Texture2D>(SelectionMode.Assets | SelectionMode.DeepAssets);
-            var q = texs.Where(t => !(t.name.EndsWith("_r") || t.name.EndsWith("_rgb") || t.name.EndsWith("_alpha")));
-
-            foreach (var tex in q)
-            {
-                SplitTexture(tex);
-            }
+            SplitTextures(texs);
         }
 
         [MenuItem("MyEditors/TextureTools/Update Selected NGUI Atalses")]
@@ -41,15 +36,53 @@ namespace MyTools
             var gos = EditorTools.GetFilteredFromSelection<GameObject>(SelectionMode.Assets | SelectionMode.DeepAssets);
             var q = gos.Where(go => go.GetComponent<UIAtlas>())
                 .Select(go => go.GetComponent<UIAtlas>());
-            var count = q.Count();
+            UpdateAtlases(q.ToArray());
+        }
+
+        public static void SplitTextureUpdateAtlas(params string[] assetPaths)
+        {
+            SplitSelectedTexutes(assetPaths);
+            UpdateAtlasInPath(assetPaths);
+        }
+        /// <summary>
+        ///  更新assetPaths的UIAtlas材质并使用分离通道的图
+        /// </summary>
+        /// <param name="assetPaths"></param>
+        public static void UpdateAtlasInPath(params string[] assetPaths)
+        {
+            var items = EditorTools.FindComponentFromAssets<UIAtlas>("t:GameObject", assetPaths);
+            
+            UpdateAtlases(items);
+        }
+        static void UpdateAtlases(UIAtlas[] items)
+        {
             // get uiAtlas materials
-            foreach (var item in q)
+            foreach (var item in items)
             {
                 UpdateAtlasMaterial(item);
             }
-            Debug.Log("UpdateSelectedAtals done. "+ count);
+            Debug.Log("UpdateSelectedAtals done. " + items.Length);
         }
 
+        /// <summary>
+        /// 对指定目录下的texture2D分离通道
+        /// </summary>
+        /// <param name="assetPaths"></param>
+        public static void SplitSelectedTexutes(params string[] assetPaths)
+        {
+            var items = EditorTools.FindObjectFromAssets<Texture2D>("t:Texture2D", assetPaths);
+            SplitTextures(items);
+        }
+
+        static void SplitTextures(Texture2D[] texs)
+        {
+            var q = texs.Where(t => !(t.name.EndsWith("_r") || t.name.EndsWith("_rgb") || t.name.EndsWith("_alpha")));
+
+            foreach (var tex in q)
+            {
+                SplitTexture(tex);
+            }
+        }
         static void SplitTexture(Texture2D tex)
         {
             Texture2D rgbTex;
