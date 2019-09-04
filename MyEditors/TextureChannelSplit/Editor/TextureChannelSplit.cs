@@ -7,6 +7,7 @@ namespace MyTools
     using UnityEditor;
     using System.Linq;
     using System.IO;
+    using System;
 
     /// <summary>
     /// 分离rgba32为rgb图,r图,alpha8图
@@ -21,6 +22,18 @@ namespace MyTools
     /// </summary>
     public static class TextureChannelSplit
     {
+        const string ARG_AlphaTexChannel = "_AlphaTexChannel";
+        const string KEY_ALPHATEXCHANNEL_NO = "_ALPHATEXCHANNEL_NO";
+        const string KEY_ALPHATEXCHANNEL_R = "_ALPHATEXCHANNEL_R";
+        const string KEY_ALPHATEXCHANNEL_A = "_ALPHATEXCHANNEL_A";
+
+        const string NAME_MAIN_TEX = "_MainTex";
+        const string NAME_ALPHA_TEX = "_AlphaTex";
+
+        const string TAG_R = "_r";
+        const string TAG_ALPHA = "_alpha";
+        const string TAG_RGB = "_rgb";
+        const string TEX_EXTNAME = ".png";
 
         [MenuItem("MyEditors/TextureTools/Split Selected Textures")]
         static void SplitSelectedTexutes()
@@ -39,6 +52,33 @@ namespace MyTools
             UpdateAtlases(q.ToArray());
         }
 
+        [MenuItem("MyEditors/TextureTools/Restore Atlas(use rgba)")]
+        static void RestoreAtals()
+        {
+            var gos = EditorTools.GetFilteredFromSelection<GameObject>(SelectionMode.Assets | SelectionMode.DeepAssets);
+            var q = gos.Where(go => go.GetComponent<UIAtlas>())
+                .Select(go => go.GetComponent<UIAtlas>());
+            RestoreAtlases(q.ToArray());
+        }
+
+        private static void RestoreAtlases(UIAtlas[] items)
+        {
+            foreach (var item in items)
+            {
+                var path = GetAtlasPrefabPath(item);
+                var mainTex = AssetDatabase.LoadAssetAtPath<Texture2D>(path + TEX_EXTNAME);
+                var mat = item.spriteMaterial;
+                mat.SetTexture(NAME_MAIN_TEX, mainTex);
+                mat.SetTexture(NAME_ALPHA_TEX,null);
+                mat.SetFloat(ARG_AlphaTexChannel, 0);
+
+                mat.DisableKeyword(KEY_ALPHATEXCHANNEL_A);
+                mat.DisableKeyword(KEY_ALPHATEXCHANNEL_R);
+                mat.DisableKeyword(KEY_ALPHATEXCHANNEL_NO);
+            }
+            Debug.Log("UpdateSelectedAtals done. " + items.Length);
+        }
+
         public static void SplitTextureUpdateAtlas(params string[] assetPaths)
         {
             SplitSelectedTexutes(assetPaths);
@@ -51,7 +91,7 @@ namespace MyTools
         public static void UpdateAtlasInPath(params string[] assetPaths)
         {
             var items = EditorTools.FindComponentFromAssets<UIAtlas>("t:GameObject", assetPaths);
-            
+
             UpdateAtlases(items);
         }
         static void UpdateAtlases(UIAtlas[] items)
@@ -76,7 +116,7 @@ namespace MyTools
 
         static void SplitTextures(Texture2D[] texs)
         {
-            var q = texs.Where(t => !(t.name.EndsWith("_r") || t.name.EndsWith("_rgb") || t.name.EndsWith("_alpha")));
+            var q = texs.Where(t => !(t.name.EndsWith(TAG_R) || t.name.EndsWith(TAG_RGB) || t.name.EndsWith(TAG_ALPHA)));
 
             foreach (var tex in q)
             {
@@ -118,6 +158,14 @@ namespace MyTools
             AssetDatabase.Refresh();
         }
 
+        static string GetAtlasPrefabPath(UIAtlas atlas)
+        {
+            var assetPath = AssetDatabase.GetAssetPath(atlas);
+            var prefabName = Path.GetFileNameWithoutExtension(assetPath);
+            var path = PathTools.GetAssetDir(assetPath, "/", prefabName);
+            return path;
+        }
+
         /// <summary>
         /// 根据atlas的name获取rgb图片
         /// 更新material
@@ -125,27 +173,27 @@ namespace MyTools
         /// <param name="atlas"></param>
         static void UpdateAtlasMaterial(UIAtlas atlas)
         {
-            var assetPath = AssetDatabase.GetAssetPath(atlas);
-            var prefabName = Path.GetFileNameWithoutExtension(assetPath);
-            var path = PathTools.GetAssetDir(assetPath, "/", prefabName);
-
-            var rgbTex = AssetDatabase.LoadAssetAtPath<Texture2D>(path + "_rgb.png");
-            var rTex = AssetDatabase.LoadAssetAtPath<Texture2D>(path + "_r.png");
-            var alphaTex = AssetDatabase.LoadAssetAtPath<Texture2D>(path + "_alpha.png");
+            var prefabPath = GetAtlasPrefabPath(atlas);
+            var rgbTex = AssetDatabase.LoadAssetAtPath<Texture2D>(prefabPath + "_rgb.png");
+            var rTex = AssetDatabase.LoadAssetAtPath<Texture2D>(prefabPath + "_r.png");
+            var alphaTex = AssetDatabase.LoadAssetAtPath<Texture2D>(prefabPath + "_alpha.png");
 
             var mat = atlas.spriteMaterial;
-            mat.shader = Shader.Find("Unlit/Transparent Colored (rgb+a)");
-            mat.SetTexture("_MainTex", rgbTex);
-            mat.SetTexture("_AlphaTex", rTex);
+            //mat.shader = Shader.Find("Unlit/Transparent Colored (rgb+a)");
+            mat.SetTexture(NAME_MAIN_TEX, rgbTex);
+            mat.SetTexture(NAME_ALPHA_TEX, rTex);
 
 #if UNITY_ANDROID
             // rgb + alpha
-            mat.SetTexture("_AlphaTex", alphaTex);
-            mat.EnableKeyword("_ALPHATEXCHANNEL_A");
-            mat.SetFloat("_AlphaTexChannel", 1);
+            mat.SetTexture(NAME_ALPHA_TEX, alphaTex);
+            mat.EnableKeyword(KEY_ALPHATEXCHANNEL_A);
+            mat.SetFloat(ARG_AlphaTexChannel, 2);
+#else
+            mat.EnableKeyword(KEY_ALPHATEXCHANNEL_R);
+            mat.SetFloat(ARG_AlphaTexChannel, 1);
 #endif
             if (!rgbTex)
-                Debug.LogError("Cannot fount texture:" + path);
+                Debug.LogError("Cannot fount texture:" + prefabPath);
         }
 
         static void SplitRGBA(Texture2D tex, out Texture2D rgbTex, out Texture2D alphaTex)
@@ -190,10 +238,11 @@ namespace MyTools
             var rgbTexSeting = new TextureImporterPlatformSettings();
             rgbTexSeting.textureCompression = TextureImporterCompression.Compressed;
 
-            if (Application.platform == RuntimePlatform.IPhonePlayer)
-                rgbTexSeting.format = TextureImporterFormat.PVRTC_RGB4;
-            else if (Application.platform == RuntimePlatform.Android)
-                rgbTexSeting.format = TextureImporterFormat.ETC_RGB4;
+#if UNITY_ANDROID
+            rgbTexSeting.format = TextureImporterFormat.PVRTC_RGB4;
+#elif UNITY_IOS
+            rgbTexSeting.format = TextureImporterFormat.ETC_RGB4;
+#endif
 
             var setings = new[] { alphaTexSeting, rgbTexSeting, rgbTexSeting };
             var texPaths = new[] { path, rgbTexPath, alphaTexPath };
