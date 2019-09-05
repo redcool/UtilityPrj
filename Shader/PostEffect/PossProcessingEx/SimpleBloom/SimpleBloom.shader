@@ -64,7 +64,7 @@
 
 			float4 Frag(VaryingsDefault i) :SV_Target{
 				float4 col = SAMPLE_TEXTURE2D(_MainTex,sampler_BloomTex,i.texcoord);
-				col.rgb += SAMPLE_TEXTURE2D(_BloomTex, sampler_BloomTex,i.texcoord).rgb * _BloomColor;
+				col.rgb += SAMPLE_TEXTURE2D(_BloomTex, sampler_BloomTex,i.texcoord).rgb * _BloomColor.rgb;
 				return col;
 			}
 
