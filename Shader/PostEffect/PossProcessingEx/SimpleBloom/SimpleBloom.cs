@@ -11,7 +11,10 @@
     [PostProcess(typeof(SimpleBloomRenderer), PostProcessEvent.AfterStack, "Custom/SimpleBloom")]
     public sealed class SimpleBloom : PostProcessEffectSettings
     {
-        [Range(2, 5)]
+        [Range(0.5f,2)]
+        public FloatParameter intensity = new FloatParameter { value = 1 };
+
+        [Range(1, 5)]
         public IntParameter downSample = new IntParameter { value = 2 };
 
         [Range(0, 1), Tooltip("Threshold")]
@@ -25,10 +28,10 @@
 
         public ColorParameter bloomColor = new ColorParameter { value = Color.white };
 
-        public override bool IsEnabledAndSupported(PostProcessRenderContext context)
-        {
-            return enabled.value || threshold < 0.99f;
-        }
+        //public override bool IsEnabledAndSupported(PostProcessRenderContext context)
+        //{
+        //    return enabled.value;
+        //}
     }
 
     public sealed class SimpleBloomRenderer : PostProcessEffectRenderer<SimpleBloom>
@@ -56,8 +59,10 @@
                 RenderTexture.ReleaseTemporary(buffer0);
 
                 buffer0 = buffer1;
+
             }
             //pass 2
+            sheet.properties.SetFloat("_Intensity",settings.intensity);
             sheet.properties.SetTexture("_BloomTex", buffer0);
             sheet.properties.SetColor("_BloomColor", settings.bloomColor);
             context.command.BlitFullscreenTriangle(context.source, context.destination, sheet, 2);
