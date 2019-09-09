@@ -1,10 +1,12 @@
 ﻿
-Shader "Unlit/Snow"
+Shader "Unlit/Snow Cutoff"
 {
 	Properties
 	{
 		_MainTex("Texture", 2D) = "white" {}
 		_NormalMap("Normal map",2d) = ""{}
+
+		_Cutoff("Cutoff",float) = 0.5
 
 		_SnowDirection("Direction",vector) = (1,0,0,0)
 		_SnowColor("Snow Color",color) = (1,1,1,1)
@@ -14,9 +16,11 @@ Shader "Unlit/Snow"
 
 			SubShader
 		{
-			Tags { "RenderType" = "Opaque" }
+			Tags { "RenderType" = "Transparent" "Queue"="Transparent"}
 			LOD 100
-			
+			blend srcAlpha oneMinusSrcAlpha
+			Cull off
+
 			Pass
 			{
 				CGPROGRAM
@@ -46,6 +50,7 @@ Shader "Unlit/Snow"
 				float4 _MainTex_ST;
 
 				sampler2D _NormalMap;
+				float _Cutoff;
 
 				v2f vert(appdata v)
 				{
@@ -67,6 +72,8 @@ Shader "Unlit/Snow"
 				{
 					// sample the texture
 					fixed4 col = tex2D(_MainTex, i.uv);
+				clip(col.a - _Cutoff);
+				
 					return SnowColor(_NormalMap,i.normalUV,col,i.n);
 				}
 				ENDCG

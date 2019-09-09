@@ -1,7 +1,7 @@
 #ifndef SNOW_CGINC
 #define SNOW_CGINC
 
-
+#ifdef PLANTS
 #include "UnityBuiltin3xTreeLibrary.cginc"
 
 inline float4 ClampWave(appdata_full v, float4 wave, float yRadius, float xzRadius) {
@@ -16,25 +16,51 @@ inline float4 ClampWave(appdata_full v, float4 wave, float yRadius, float xzRadi
 	float4 vertex = lerp(worldPos, wavePos, atten);
 	return mul(unity_WorldToObject, vertex);
 }
+// end PLANTS
+#endif
 
+#ifdef SNOW
+#define SNOW_V2F(idx) float4 normalUV:TEXCOORD##idx
+#define SNOW_VERTEX(v2f) v2f.normalUV = v2f.uv.xyxy * _SnowTile;
 
-float3 SnowDir(float3 vertex, float3 normal, float3 snowDir, float snowIntensity) {
-	normal = normalize(normal);
-	snowDir = normalize(snowDir);
-	snowIntensity = clamp(snowIntensity, 0, .2);
+float4 _SnowColor;
+float4 _SnowTile;
 
-	float snowDot = saturate(dot(normal, snowDir)) * snowIntensity;
-	float upDot = saturate(dot(vertex, float3(0, 1, 0)));
-	return  snowDir * snowDot * upDot;
+float4 _SnowDirection;
+float _SnowColorPower;
+float4 _GlobalSnowDirection;
+float _GlobalSnowColorPower;
+
+//vertex : compute final position
+void SnowDir(float3 vertex, float3 normal,out float3 pos, out float3 worldNormal) {
+	float3 worldPos = mul(unity_ObjectToWorld,vertex);
+	worldNormal = UnityObjectToWorldNormal(normal);
+
+	float3 snowDir = normalize(_SnowDirection.xyz + _GlobalSnowDirection.xyz);
+	float snowIntensity = clamp(_SnowDirection.w + _GlobalSnowDirection.w, 0, .2);
+
+	float snowDot = saturate(dot(worldNormal, snowDir)) * snowIntensity;
+	float upDot = saturate(dot(worldPos, float3(0, 1, 0)));
+
+	pos = snowDir * snowDot * upDot;
+	pos = mul(unity_WorldToObject,worldPos + pos);
 }
-float4 SnowColor(float4 mainColor, float4 snowColor, float3 normal, float3 snowDir, float snowPower) {
-	normal = normalize(normal);
-	snowDir = normalize(snowDir);
-	snowPower = max(snowPower, 0.01);
+
+//fragment : final color
+float4 SnowColor(sampler2D normalMap,float4 normalUV,float4 mainColor,float3 worldNormal) {
+	float3 normal = UnpackNormal(tex2D(normalMap,normalUV.xy));
+	normal += UnpackNormal(tex2D(normalMap, normalUV.zw));
+	normal = normalize(worldNormal + normal);
+
+	float snowPower = max(_SnowColorPower + _GlobalSnowColorPower, 0.01);
+	float3 snowDir = normalize(_SnowDirection.xyz + _GlobalSnowDirection.xyz);
 
 	float snowDot = saturate(dot(normal, snowDir));
-	snowDot = saturate(pow(snowDot, snowPower));
-
-	return lerp(mainColor, snowColor, snowDot);
+	snowDot =  saturate(pow(snowDot, snowPower));
+	return lerp(mainColor, _SnowColor, snowDot);
 }
+// end SNOW
+#endif
+
+// end outer
 #endif
