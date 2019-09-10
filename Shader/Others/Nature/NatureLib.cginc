@@ -26,6 +26,7 @@ inline float4 ClampWave(appdata_full v, float4 wave, float yRadius, float xzRadi
 sampler2D _SnowNoiseMap;
 float4 _SnowColor;
 float4 _SnowTile;
+float _SnowIntensity;
 
 float4 _SnowDirection;
 float _SnowColorPower;
@@ -51,14 +52,16 @@ void SnowDir(float3 vertex, float3 normal,out float3 pos, out float3 worldNormal
 float4 SnowColor(sampler2D normalMap,float4 normalUV,float4 mainColor,float3 worldNormal) {
 	float3 normal = UnpackNormal(tex2D(normalMap,normalUV.xy));
 	normal += UnpackNormal(tex2D(normalMap, normalUV.zw));
-	normal = normalize(worldNormal + normal);
+	normal = normalize(worldNormal + worldNormal * normal );
 
 	float snowPower = max(_SnowColorPower + _GlobalSnowColorPower, 0.01);
 	float3 snowDir = normalize(_SnowDirection.xyz + _GlobalSnowDirection.xyz);
-
 	float snowDot = saturate(dot(normal, snowDir));
-	snowDot =  saturate(pow(snowDot, snowPower));
-	return lerp(mainColor, _SnowColor, snowDot);
+	snowDot = saturate(pow(snowDot, snowPower));
+	//return _SnowColor * snowDot;
+	float4 lerpColor = lerp(mainColor, _SnowColor, snowDot);
+	return lerp(mainColor,lerpColor,step(snowDot,_SnowIntensity));
+
 }
 // end SNOW
 #endif
