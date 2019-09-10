@@ -21,7 +21,9 @@
             #include "UnityCG.cginc"
 			#include "lighting.cginc"
 			#include "AutoLight.cginc"
-			#include "../Weather.cginc"
+
+			#define PLANTS
+			#include "../NatureLib.cginc"
 
             struct v2f
             {
@@ -68,7 +70,8 @@
 			#pragma fragment frag
 
 			#include "UnityCG.cginc"
-#include "../Weather.cginc"
+#define PLANTS
+#include "../NatureLib.cginc"
 
 			struct v2f
 			{

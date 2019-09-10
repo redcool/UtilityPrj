@@ -23,6 +23,7 @@ inline float4 ClampWave(appdata_full v, float4 wave, float yRadius, float xzRadi
 #define SNOW_V2F(idx) float4 normalUV:TEXCOORD##idx
 #define SNOW_VERTEX(v2f) v2f.normalUV = v2f.uv.xyxy * _SnowTile;
 
+sampler2D _SnowNoiseMap;
 float4 _SnowColor;
 float4 _SnowTile;
 

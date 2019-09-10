@@ -13,8 +13,10 @@
     {
         [Range(0.5f,2)]
         public FloatParameter intensity = new FloatParameter { value = 1 };
+        [Range(0.5f,2)]
+        public FloatParameter power = new FloatParameter { value = 1 };
 
-        [Range(1, 5)]
+        [Range(1, 10)]
         public IntParameter downSample = new IntParameter { value = 2 };
 
         [Range(0, 1), Tooltip("Threshold")]
@@ -39,17 +41,23 @@
         public override void Render(PostProcessRenderContext context)
         {
             var sheet = context.propertySheets.Get(Shader.Find("Hidden/Custom/SimpleBloom"));
-            sheet.properties.SetFloat("_Threshold", settings.threshold);
 
             var w = context.width / settings.downSample;
             var h = context.height / settings.downSample;
+            
 
             // pass 0
+            sheet.properties.SetFloat("_Threshold", settings.threshold);
             var buffer0 = RenderTexture.GetTemporary(w, h, 0);
             context.command.BlitFullscreenTriangle(context.source, buffer0, sheet, 0);
 
+            // bloom1 buffer
+            var mainBloomBuffer = RenderTexture.GetTemporary(w, h, 0);
+            context.command.BlitFullscreenTriangle(buffer0, mainBloomBuffer, sheet, 1);
+
+
             //pass 1
-            for (int i = 0; i < settings.iterators; i++)
+            for (int i = 0; i < settings.iterators-1; i++)
             {
                 var blurSize = 1 + i * settings.blurIntensity;
                 sheet.properties.SetFloat("_BlurSize", blurSize);
@@ -59,14 +67,17 @@
                 RenderTexture.ReleaseTemporary(buffer0);
 
                 buffer0 = buffer1;
-
             }
             //pass 2
-            sheet.properties.SetFloat("_Intensity",settings.intensity);
+            sheet.properties.SetFloat("_Intensity",Mathf.GammaToLinearSpace(settings.intensity));
+            sheet.properties.SetFloat("_Power", Mathf.GammaToLinearSpace(settings.power));
             sheet.properties.SetTexture("_BloomTex", buffer0);
             sheet.properties.SetColor("_BloomColor", settings.bloomColor);
+            sheet.properties.SetTexture("_MainBloomTex",mainBloomBuffer);
+
             context.command.BlitFullscreenTriangle(context.source, context.destination, sheet, 2);
             RenderTexture.ReleaseTemporary(buffer0);
+            RenderTexture.ReleaseTemporary(mainBloomBuffer);
         }
     }
 

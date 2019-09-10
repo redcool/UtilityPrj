@@ -29,7 +29,7 @@ Shader "Unlit/Snow Cutoff"
 
 				#include "UnityCG.cginc"
 			#define SNOW
-			#include "../Weather.cginc"
+			#include "../NatureLib.cginc"
 
 				struct appdata
 				{
