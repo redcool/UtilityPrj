@@ -24,14 +24,29 @@ inline float4 ClampWave(appdata_full v, float4 wave, float yRadius, float xzRadi
 #define SNOW_VERTEX(v2f) v2f.normalUV = v2f.uv.xyxy * _SnowTile;
 
 sampler2D _SnowNoiseMap;
+float _SnowNoiseIntensity;
+
 float4 _SnowColor;
 float4 _SnowTile;
 float _SnowIntensity;
 
 float4 _SnowDirection;
-float _SnowColorPower;
+float _SnowAmount;
 float4 _GlobalSnowDirection;
-float _GlobalSnowColorPower;
+float _GlobalSnowAmount;
+
+float4 _SnowRimColor;
+float _SnowRimPower;
+
+float4 SnowRimColor(float3 worldNormal, float3 worldPos) {
+	float3 v = UnityWorldSpaceViewDir(worldPos);
+	float3 l = UnityWorldSpaceLightDir(worldPos);
+	float3 h = normalize(l + v);
+
+	float nv = saturate(dot(worldNormal, h));
+	float rim = pow(1 - nv, _SnowRimPower);
+	return _SnowRimColor * rim;
+}
 
 //vertex : compute final position
 void SnowDir(float3 vertex, float3 normal,out float3 pos, out float3 worldNormal) {
@@ -49,20 +64,30 @@ void SnowDir(float3 vertex, float3 normal,out float3 pos, out float3 worldNormal
 }
 
 //fragment : final color
-float4 SnowColor(sampler2D normalMap,float4 normalUV,float4 mainColor,float3 worldNormal) {
-	float3 normal = UnpackNormal(tex2D(normalMap,normalUV.xy));
-	normal += UnpackNormal(tex2D(normalMap, normalUV.zw));
-	normal = normalize(worldNormal + worldNormal * normal );
+float4 SnowColor(sampler2D noiseMap,float4 normalUV,float4 mainColor,float3 worldNormal,float3 worldPos) {
+	// normal 
+	normalUV *= _SnowTile;
 
-	float snowPower = max(_SnowColorPower + _GlobalSnowColorPower, 0.01);
+	// rim
+	float4 snowRimColor = SnowRimColor(worldNormal, worldPos);
+
+	// noise 
+	float3 noise = tex2D(noiseMap, normalUV.xy) ;
+	float gray = dot(float3(0.2, 0.7, 0.07), noise) * _SnowNoiseIntensity;
+
+	// 
+	float snowRate = max(_SnowAmount + _GlobalSnowAmount, 0.01);
 	float3 snowDir = normalize(_SnowDirection.xyz + _GlobalSnowDirection.xyz);
-	float snowDot = saturate(dot(normal, snowDir));
-	snowDot = saturate(pow(snowDot, snowPower));
+	float snowDot = saturate(dot(worldNormal, snowDir));
 	//return _SnowColor * snowDot;
-	float4 lerpColor = lerp(mainColor, _SnowColor, snowDot);
-	return lerp(mainColor,lerpColor,step(snowDot,_SnowIntensity));
 
+	// final color
+	float4 snowColor = _SnowColor - gray;
+	float4 lerpColor = lerp(mainColor, snowColor, step(_SnowAmount,snowDot));
+	return lerp(mainColor,lerpColor,step(snowDot,_SnowIntensity));
 }
+
+
 // end SNOW
 #endif
 
