@@ -1,3 +1,4 @@
+
 #ifndef SNOW_CGINC
 #define SNOW_CGINC
 
@@ -37,16 +38,11 @@ float4 _GlobalSnowDirection;
 float _GlobalSnowAngleIntensity;
 
 float4 _SnowRimColor;
-float _SnowRimPower;
+float _BorderWidth;
+float _Distance;//(高度)
 
-float4 SnowRimColor(float3 worldNormal, float3 worldPos) {
-	float3 v = UnityWorldSpaceViewDir(worldPos);
-	float3 l = UnityWorldSpaceLightDir(worldPos);
-	float3 h = normalize(l + v);
-
-	float nv = saturate(dot(worldNormal, h));
-	float rim = pow(1 - nv, _SnowRimPower);
-	return _SnowRimColor * rim;
+float Gray(float3 c) {
+	return dot(float3(0.2, 0.7, 0.07), c);
 }
 
 //vertex : compute final position
@@ -65,31 +61,38 @@ void SnowDir(float3 vertex, float3 normal, out float3 pos, out float3 worldNorma
 }
 
 //fragment : final color
-float4 SnowColor(float4 mainColor, float3 worldNormal, float3 worldPos) {
-	float2 noiseUV = worldPos.xz*0.01 * _SnowTile;
+float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPos,float vertexY) {
+	//return mainColor;
+	// uv
+	float2 noiseUV = worldPos.xz * _SnowTile;
 
 	// normal 
 	float4 noise = tex2D(_SnowNoiseMap, noiseUV);
 	float3 n = UnpackNormal(noise);
 	n = worldNormal + n * _NoiseDistortNormalIntensity;
 	n = normalize(n);
-	// rim
-	//float4 snowRimColor = SnowRimColor(n, worldPos);
 
 	// dot
-	float nl = dot(n, float3(0, 1, 0));
 	float3 snowDir = normalize(_SnowDirection.xyz);
 	float snowDot = saturate(dot(n, snowDir));
-	float snowRate = step(_SnowAngleIntensity, snowDot);
+
+	//float snowHardRate = step(_SnowAngleIntensity, snowDot); // 硬边界效果
+	float snowRate = smoothstep(snowDot, 0.1, _SnowAngleIntensity) * 2 * snowDot;
+	// mask
+	float border = Gray(mainColor.rgb);
 
 	// final color
-	float gray = dot(float3(0.2, 0.7, 0.07), noise.rgb);
-	float4 snowColor = lerp(mainColor, _SnowColor, snowRate) * gray*1.4;
-	//return snowColor;
-	float4 lerpColor = lerp(mainColor, snowColor, snowRate);
-	return lerpColor;
-}
+	//float noiseGray = Gray(noise.rgb);
+	float edge = smoothstep(border, border - 0.3, _BorderWidth); // 混合出缝隙
+	float4 snowColor = lerp(_SnowColor, mainColor, edge);
+	snowColor = lerp(mainColor, snowColor, snowRate);
 
+#ifdef DISTANCE
+	float yRate = lerp(0,1, saturate(vertexY - abs(_Distance)));
+	return lerp(mainColor, snowColor, yRate);
+#endif
+	return snowColor;
+}
 // end SNOW
 #endif
 
