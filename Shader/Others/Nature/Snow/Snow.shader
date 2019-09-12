@@ -6,10 +6,16 @@ Shader "Unlit/Snow"
 		_MainTex("Texture", 2D) = "white" {}
 		_NormalMap("Normal map",2d) = ""{}
 
-		_SnowDirection("Direction",vector) = (1,0,0,0)
-		_SnowColor("Snow Color",color) = (1,1,1,1)
-		_SnowColorPower("SnowColorPower",range(0,4)) = 1
-		_SnowTile("tile",vector) = (1,1,1,1)
+	[Header(Snow)]
+	[noscaleoffset]_SnowNoiseMap("SnowNoiseMap",2d) = "bump"{}
+	_NoiseDistortNormalIntensity("NoiseDistortNormalIntensity",range(0,1)) = 0
+
+	_SnowDirection("Direction",vector) = (1,0,0,0)
+	_SnowColor("Snow Color",color) = (1,1,1,1)
+	_SnowAngleIntensity("SnowAngleIntensity",range(0.1,1)) = 1
+	_SnowTile("tile",vector) = (1,1,1,1)
+	_BorderWidth("BorderWidth",range(-0.2,0.4)) = 0.01
+	//_Distance("Distance",vector) = (10,10,1,1)
 	}
 
 			SubShader
@@ -20,6 +26,8 @@ Shader "Unlit/Snow"
 			Pass
 			{
 				CGPROGRAM
+// Upgrade NOTE: excluded shader from DX11; has structs without semantics (struct v2f members worldPos)
+#pragma exclude_renderers d3d11
 				#pragma vertex vert
 				#pragma fragment frag
 
@@ -39,6 +47,7 @@ Shader "Unlit/Snow"
 					float2 uv : TEXCOORD0;
 					float4 vertex : SV_POSITION;
 					float3 n:NORMAL;
+					float3 worldPos;
 					SNOW_V2F(1);
 				};
 
@@ -58,7 +67,7 @@ Shader "Unlit/Snow"
 					o.vertex = UnityObjectToClipPos(v.vertex);
 					o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 					o.n = worldNormal;
-					//o.normalUV = o.uv.xyxy * _SnowTile;
+					o.worldPos = worldPos;
 					SNOW_VERTEX(o)
 					return o;
 				}
@@ -66,9 +75,9 @@ Shader "Unlit/Snow"
 				fixed4 frag(v2f i) : SV_Target
 				{ 
 					// sample the texture
-					fixed4 col = tex2D(_MainTex, i.uv);
-				
-					return SnowColor(_NormalMap,i.normalUV,col,i.n);
+					fixed4 c = tex2D(_MainTex, i.uv);
+					fixed4 snowColor = SnowColor(i.uv,c, i.n,i.worldPos,0);
+					return snowColor;
 				}
 				ENDCG
 			}
