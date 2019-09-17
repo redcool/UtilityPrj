@@ -26,8 +26,6 @@ Shader "Unlit/Snow"
 			Pass
 			{
 				CGPROGRAM
-// Upgrade NOTE: excluded shader from DX11; has structs without semantics (struct v2f members worldPos)
-#pragma exclude_renderers d3d11
 				#pragma vertex vert
 				#pragma fragment frag
 
@@ -47,8 +45,7 @@ Shader "Unlit/Snow"
 					float2 uv : TEXCOORD0;
 					float4 vertex : SV_POSITION;
 					float3 n:NORMAL;
-					float3 worldPos;
-					SNOW_V2F(1);
+					float3 worldPos:TEXCOORD1;
 				};
 
 				sampler2D _MainTex;
@@ -67,8 +64,7 @@ Shader "Unlit/Snow"
 					o.vertex = UnityObjectToClipPos(v.vertex);
 					o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 					o.n = worldNormal;
-					o.worldPos = worldPos;
-					SNOW_VERTEX(o)
+					o.worldPos = pos;
 					return o;
 				}
 

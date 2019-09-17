@@ -80,7 +80,7 @@ CGPROGRAM
 #include "AutoLight.cginc"
 
 #define SNOW
-#include "../../../Weather/Nature/NatureLib.cginc"
+#include "../../NatureLib.cginc"
 
 #define INTERNAL_DATA
 #define WorldReflectionVector(data,normal) data.worldRefl

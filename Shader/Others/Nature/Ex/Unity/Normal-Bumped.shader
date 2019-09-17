@@ -16,7 +16,7 @@ Properties {
 	_SnowTile("tile",vector) = (1,1,1,1)
 	_BorderWidth("BorderWidth",range(-0.2,0.4)) = 0.01
 }
-
+ 
 CGINCLUDE
 ENDCG
 
@@ -28,7 +28,7 @@ SubShader {
 CGPROGRAM
 #pragma surface surf Lambert vertex:vert
 #define SNOW
-#include "Weather/Nature/NatureLib.cginc"
+#include "../../NatureLib.cginc"
 
 sampler2D _MainTex;
 float4 _MainTex_TexelSize;

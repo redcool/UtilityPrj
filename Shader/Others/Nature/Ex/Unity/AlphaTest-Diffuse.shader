@@ -30,7 +30,7 @@ CGPROGRAM
 #pragma surface surf Lambert alphatest:_Cutoff vertex:vert
 #define SNOW
 #define DISTANCE
-#include "Weather/Nature/NatureLib.cginc"
+#include "../../NatureLib.cginc"
 
 
 sampler2D _MainTex;

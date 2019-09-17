@@ -43,7 +43,7 @@ Shader "Unlit/Snow Cutoff"
 					float2 uv : TEXCOORD0;
 					float4 vertex : SV_POSITION;
 					float3 n:NORMAL;
-					SNOW_V2F(1);
+					float3 worldPos:TEXCOORD1;
 				};
 
 				sampler2D _MainTex;
@@ -63,8 +63,7 @@ Shader "Unlit/Snow Cutoff"
 					o.vertex = UnityObjectToClipPos(v.vertex);
 					o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 					o.n = worldNormal;
-					//o.normalUV = o.uv.xyxy * _SnowTile;
-					SNOW_VERTEX(o)
+					o.worldPos = pos;
 					return o;
 				}
 
@@ -74,7 +73,7 @@ Shader "Unlit/Snow Cutoff"
 					fixed4 col = tex2D(_MainTex, i.uv);
 				clip(col.a - _Cutoff);
 				
-					return SnowColor(_NormalMap,i.normalUV,col,i.n);
+					return SnowColor(i.uv,col,i.n,i.worldPos,0);
 				}
 				ENDCG
 			}
