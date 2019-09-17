@@ -22,7 +22,6 @@ inline float4 ClampWave(appdata_full v, float4 wave, float yRadius, float xzRadi
 #endif
 
 #ifdef SNOW
-#define DISTANCE
 #define SNOW_V2F(idx) float4 noiseUV:TEXCOORD##idx
 #define SNOW_VERTEX(v2f) v2f.noiseUV = v2f.uv.xyxy * _SnowTile;
 
@@ -41,8 +40,10 @@ float _GlobalSnowAngleIntensity;
 float4 _SnowRimColor;
 float _BorderWidth;
 //-------
+#ifdef SNOW_DISTANCE
 float _Distance;//(¸ß¶È)
 float _DistanceAttenWidth;
+#endif
 
 float Gray(float3 c) {
 	return dot(float3(0.2, 0.7, 0.07), c);
@@ -50,7 +51,7 @@ float Gray(float3 c) {
 
 //vertex : compute final position
 void SnowDir(float3 vertex, float3 normal, out float3 pos, out float3 worldNormal) {
-	float3 worldPos = mul(unity_ObjectToWorld, vertex);
+	float3 worldPos = mul((float3x3)unity_ObjectToWorld, vertex);
 	worldNormal = UnityObjectToWorldNormal(normal);
 
 	float3 snowDir = normalize(_SnowDirection.xyz + _GlobalSnowDirection.xyz);
@@ -60,7 +61,7 @@ void SnowDir(float3 vertex, float3 normal, out float3 pos, out float3 worldNorma
 	float upDot = saturate(dot(worldPos, float3(0, 1, 0)));
 
 	pos = snowDir * snowDot * upDot;
-	pos = mul(unity_WorldToObject, worldPos + pos);
+	pos = mul((float3x3)unity_WorldToObject, worldPos + pos);
 }
 
 //fragment : final color
@@ -89,13 +90,12 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 	//float noiseGray = Gray(noise.rgb);
 	float4 snowColor = lerp(_SnowColor, mainColor, edge);
 	snowColor = lerp(mainColor, snowColor, snowRate);
-
-#ifdef DISTANCE
+#ifdef SNOW_DISTANCE
 	float yDist = (vertexY - abs(_Distance)) * _DistanceAttenWidth + _DistanceAttenWidth;
 	float yRate = lerp(0, 1, saturate(yDist));
 	//return yRate ;//lerp(0, 1, yRate);
 	//yRate = smoothstep(yRate,0,_DistanceAttenWidth);
-	return lerp(mainColor, snowColor, yRate);
+	snowColor = lerp(mainColor, snowColor, yRate);
 #endif
 	return snowColor;
 }
