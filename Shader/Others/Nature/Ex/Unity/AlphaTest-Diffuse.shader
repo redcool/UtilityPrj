@@ -29,7 +29,7 @@ SubShader {
 CGPROGRAM
 #pragma surface surf Lambert alphatest:_Cutoff vertex:vert
 #define SNOW
-#define DISTANCE
+#define SNOW_DISTANCE
 #include "../../NatureLib.cginc"
 
 
