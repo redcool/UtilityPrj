@@ -11,6 +11,8 @@
 //
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using System.Text;
 
 namespace UnityChan
 {
@@ -29,7 +31,7 @@ namespace UnityChan
 		public SpringBone[] springBones;
 
         [Space(5f)]
-        [Header("根骨")]public GameObject rootBone;
+        [Header("根骨")]public Transform rootBone;
         [Header("根骨硬度")] public float stiffnessRootBone = 0.009f;
         [Header("硬度递减")]public float stiffnessDecrement = 0.001f;
 
@@ -71,6 +73,9 @@ namespace UnityChan
 	
 		private void UpdateParameter (string fieldName, float baseValue, AnimationCurve curve)
 		{
+            if (curve.keys.Length == 0)
+                return;
+
 			var start = curve.keys [0].time;
 			var end = curve.keys [curve.length - 1].time;
 			//var step	= (end - start) / (springBones.Length - 1);
@@ -86,7 +91,7 @@ namespace UnityChan
 			}
 		}
 
-        public void AutoConfig()
+        public void AutoConfigs()
         {
             if (!rootBone)
                 return;
@@ -97,14 +102,30 @@ namespace UnityChan
             {
                 var curBone = trs[i];
 
-                var sb = curBone.GetComponent<SpringBone>();
-                if (!sb)
-                    sb = curBone.gameObject.AddComponent<SpringBone>();
+                var bone = curBone.GetComponent<SpringBone>();
+                if (!bone)
+                    bone = curBone.gameObject.AddComponent<SpringBone>();
 
-                sb.stiffnessForce = stiffnessRootBone - i * stiffnessDecrement;
-                sb.child = trs[i + 1];
+                bone.stiffnessForce = stiffnessRootBone - i * stiffnessDecrement;
+                bone.child = trs[i + 1];
             }
             springBones = rootBone.GetComponentsInChildren<SpringBone>();
+        }
+
+        public void RemoveConfigs()
+        {
+            if (!rootBone)
+                return;
+
+            var sbs = rootBone.GetComponentsInChildren<SpringBone>();
+            foreach (var item in sbs)
+            {
+#if UNITY_EDITOR
+                DestroyImmediate(item);
+#else
+                Destroy(item);
+#endif
+            }
         }
 	}
 }
