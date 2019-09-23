@@ -11,7 +11,7 @@
     [PostProcess(typeof(SimpleBloomRenderer), PostProcessEvent.AfterStack, "Custom/SimpleBloom")]
     public sealed class SimpleBloom : PostProcessEffectSettings
     {
-        [Range(0.5f,2)]
+        [Range(0,10)]
         public FloatParameter intensity = new FloatParameter { value = 1 };
         [Range(0.5f,2)]
         public FloatParameter power = new FloatParameter { value = 1 };
@@ -51,11 +51,6 @@
             var buffer0 = RenderTexture.GetTemporary(w, h, 0);
             context.command.BlitFullscreenTriangle(context.source, buffer0, sheet, 0);
 
-            // bloom1 buffer
-            var mainBloomBuffer = RenderTexture.GetTemporary(w, h, 0);
-            context.command.BlitFullscreenTriangle(buffer0, mainBloomBuffer, sheet, 1);
-
-
             //pass 1
             for (int i = 0; i < settings.iterators-1; i++)
             {
@@ -73,11 +68,9 @@
             sheet.properties.SetFloat("_Power", Mathf.GammaToLinearSpace(settings.power));
             sheet.properties.SetTexture("_BloomTex", buffer0);
             sheet.properties.SetColor("_BloomColor", settings.bloomColor);
-            sheet.properties.SetTexture("_MainBloomTex",mainBloomBuffer);
 
             context.command.BlitFullscreenTriangle(context.source, context.destination, sheet, 2);
             RenderTexture.ReleaseTemporary(buffer0);
-            RenderTexture.ReleaseTemporary(mainBloomBuffer);
         }
     }
 
