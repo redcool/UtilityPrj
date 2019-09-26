@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: PlaneWave
-  m_Shader: {fileID: 4800000, guid: 52fa04238b0091347903b535af626e79, type: 3}
+  m_Name: SurfaceWave
+  m_Shader: {fileID: 4800000, guid: 1fbf364fc5f18e4409eb6d761b501f66, type: 3}
   m_ShaderKeywords: _VERTEXWAVE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
