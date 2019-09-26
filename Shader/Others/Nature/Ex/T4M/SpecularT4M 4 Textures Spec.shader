@@ -16,7 +16,7 @@ Properties {
 	_Control ("Control (RGBA)", 2D) = "white" {}
 	_MainTex ("Never Used", 2D) = "white" {}
 	_SpecDir("Specular Direction",Vector)=(1,1,0,0)
- 
+	
 	[Header(Snow)]
 	[noscaleoffset]_SnowNoiseMap("SnowNoiseMap",2d) = "bump"{}
 	_NoiseDistortNormalIntensity("NoiseDistortNormalIntensity",range(0,1)) = 0

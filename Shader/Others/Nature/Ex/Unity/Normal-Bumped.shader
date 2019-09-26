@@ -16,7 +16,7 @@ Properties {
 	_SnowTile("tile",vector) = (1,1,1,1)
 	_BorderWidth("BorderWidth",range(-0.2,0.4)) = 0.01
 }
- 
+	
 CGINCLUDE
 ENDCG
 

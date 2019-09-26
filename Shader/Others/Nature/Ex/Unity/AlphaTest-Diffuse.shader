@@ -20,7 +20,7 @@ Properties {
 	_Distance("Distance",range(0,15)) = 2
 	_DistanceAttenWidth("DistanceAttenWidth",range(0.2,1)) = 0
 }
-
+	
 
 SubShader {
 	Tags {"Queue"="AlphaTest" "IgnoreProjector"="True" "RenderType"="TransparentCutout"}

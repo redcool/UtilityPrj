@@ -38,7 +38,7 @@ float4 _GlobalSnowDirection;
 float _GlobalSnowAngleIntensity;
 
 float4 _SnowRimColor;
-float _BorderWidth;
+float _BorderWidth,_BorderWidthScale;
 //-------
 #ifdef SNOW_DISTANCE
 float _Distance;//(高度)
@@ -84,7 +84,8 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 	float snowRate = smoothstep(snowDot, 0.1, _SnowAngleIntensity) * 2 * snowDot;
 	// mask
 	float border = Gray(mainColor.rgb);
-	float edge = smoothstep(border, border - 0.3, _BorderWidth); // 混合出缝隙
+	float borderWidth = lerp(_BorderWidthScale,1,step(_BorderWidthScale,0)) * _BorderWidth;
+	float edge = smoothstep(border, border - 0.3, borderWidth); // 混合出缝隙
 
 	// final color
 	//float noiseGray = Gray(noise.rgb);
