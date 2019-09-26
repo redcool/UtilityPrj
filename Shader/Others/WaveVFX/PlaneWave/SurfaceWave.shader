@@ -1,6 +1,6 @@
 ﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 
-Shader "Unlit/Transparent/Wave/PlaneWave"
+Shader "Unlit/Transparent/Wave/SurfaceWave"
 {
     Properties
     {
@@ -29,24 +29,12 @@ Shader "Unlit/Transparent/Wave/PlaneWave"
         _Glossness("Glossness",range(0,1)) = 1
         _SpecWidth("SpecWidth",range(0,1)) = 0.2
     }
-    SubShader
-    {
-        Tags { "RenderType"="Transparent" "LightMode"="ForwardBase" "Queue"="Transparent"}
-        LOD 100
-        blend one oneMinusSrcAlpha
 
-        Pass
-        {
-            CGPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            // make fog work
-            #pragma multi_compile_fog
-            #pragma shader_feature _VERTEXWAVE_ON
+    CGINCLUDE
+
 
             #include "UnityCG.cginc"
             #include "Lighting.cginc"
-            //#include "../Include/NodeLib.cginc"
 
             struct appdata
             {
@@ -54,6 +42,7 @@ Shader "Unlit/Transparent/Wave/PlaneWave"
                 float2 uv : TEXCOORD0;
                 float3 normal:NORMAL;
                 float4 color:COLOR;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct v2f
@@ -65,38 +54,51 @@ Shader "Unlit/Transparent/Wave/PlaneWave"
                 float3 worldPos:TEXCOORD2;
                 float3 normal:TEXCOORD3;
                 float4 screenPos:TEXCOORD4;
+                UNITY_VERTEX_INPUT_INSTANCE_ID 
             };
+
+            UNITY_INSTANCING_BUFFER_START(Props)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _Tile)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _Direction)
+                UNITY_DEFINE_INSTANCED_PROP(float, _FresnalWidth)
+                UNITY_DEFINE_INSTANCED_PROP(float, _VertexWaveIntensity)
+                UNITY_DEFINE_INSTANCED_PROP(float, _VertexWaveSpeed)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SpecPower)
+                UNITY_DEFINE_INSTANCED_PROP(float, _Glossness)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SpecWidth)
+            UNITY_INSTANCING_BUFFER_END(Props)
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
-            float4 _Color;
 
             sampler2D _NormalMap;
-            float4 _Tile;
-            float4 _Direction;
-            float _FresnalWidth;
             samplerCUBE _ReflectionTex;
             sampler2D _FakeReflectionTex;
-
             sampler2D _VertexWaveNoiseTex;
-            float _VertexWaveIntensity,_VertexWaveSpeed;
-
-            float _SpecPower,_Glossness,_SpecWidth;
 
             v2f vert (appdata v)
             {
+                UNITY_SETUP_INSTANCE_ID(v);
                 v2f o = (v2f)0;
+                UNITY_TRANSFER_INSTANCE_ID(v, o); 
+
+                // get instancing props.
+                float4 tile = UNITY_ACCESS_INSTANCED_PROP(Props,_Tile);
+                float4 direction = UNITY_ACCESS_INSTANCED_PROP(Props,_Direction);
+                float vertexWaveIntensity = UNITY_ACCESS_INSTANCED_PROP(Props,_VertexWaveIntensity);
+                float vertexWaveSpeed = UNITY_ACCESS_INSTANCED_PROP(Props,_VertexWaveSpeed);
 
                 o.worldPos = mul(unity_ObjectToWorld,v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                o.normalUV = o.uv.xyxy * _Tile + _Time.xxxx* _Direction;
+                o.normalUV = o.uv.xyxy * tile + _Time.xxxx* direction;
                 o.normal = v.normal;
                 o.screenPos = ComputeScreenPos(o.vertex);
 
                 // random vertex motion.
                 #if _VERTEXWAVE_ON
-                    float3 n = tex2Dlod(_VertexWaveNoiseTex,float4(o.uv + _Time.xx * _VertexWaveSpeed,0,1));
-                    float3 fv = v.color * v.normal * (n) * 0.1 * _VertexWaveIntensity;
+                    float3 n = tex2Dlod(_VertexWaveNoiseTex,float4(o.uv + _Time.xx * vertexWaveSpeed,0,1));
+                    float3 fv = v.color * v.normal * (n) * 0.1 * vertexWaveIntensity;
                     o.vertex = UnityObjectToClipPos(v.vertex + fv);
                 #else
                     o.vertex = UnityObjectToClipPos(v.vertex);
@@ -104,9 +106,35 @@ Shader "Unlit/Transparent/Wave/PlaneWave"
                 UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
+    ENDCG
+
+    SubShader
+    {
+        Tags { "RenderType"="Transparent" "Queue"="Transparent"}
+        LOD 100
+        blend one oneMinusSrcAlpha
+
+        Pass
+        {
+            Tags{ "LightMode"="ForwardBase"}
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            // make fog work
+            #pragma multi_compile_fog
+            #pragma shader_feature _VERTEXWAVE_ON
+            #pragma multi_compile_instancing
 
             fixed4 frag (v2f i) : SV_Target
             {
+                //for instancing props
+                UNITY_SETUP_INSTANCE_ID(i); 
+                float4 color = UNITY_ACCESS_INSTANCED_PROP(Props,_Color);
+                float fresnalWidth =  UNITY_ACCESS_INSTANCED_PROP(Props,_FresnalWidth);
+                float specPower = UNITY_ACCESS_INSTANCED_PROP(Props,_SpecPower);
+                float glossness = UNITY_ACCESS_INSTANCED_PROP(Props,_Glossness);
+                float specWidth = UNITY_ACCESS_INSTANCED_PROP(Props,_SpecWidth);
+
                 //float2 uv = i.worldPos.xz;
                 float3 worldNormal = UnityObjectToWorldNormal(i.normal);
                 float3 l = normalize(UnityWorldSpaceLightDir(i.worldPos));
@@ -117,7 +145,7 @@ Shader "Unlit/Transparent/Wave/PlaneWave"
                 n += UnpackNormal(tex2D(_NormalMap,i.normalUV.zw));
                 
                 // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv +n.xy * 0.02) * _Color;
+                fixed4 col = tex2D(_MainTex, i.uv +n.xy * 0.02) * color;
                 //-------------- diffuse
 				float nl = saturate(dot(worldNormal, l));
                 fixed3 diffCol = nl * col.rgb;
@@ -125,13 +153,12 @@ Shader "Unlit/Transparent/Wave/PlaneWave"
                 //--------------- fresnal
                 float nv = dot(worldNormal,v);
                 float invertNV = 1-nv;
-                fixed3 fresnal = pow(invertNV , _FresnalWidth);//smoothstep(invertNV,invertNV*0.9,_FresnalWidth);
-
+                fixed3 fresnal = pow(invertNV ,fresnalWidth);//smoothstep(invertNV,invertNV*0.9,_FresnalWidth);
 
                 //--------------specular
                 float nh = saturate(dot(worldNormal,h));
-                float spec = pow(nh,_SpecPower * 128) * _Glossness;
-                spec += smoothstep(spec,spec*0.9,_SpecWidth);
+                float spec = pow(nh,specPower * 128) * glossness;
+                spec += smoothstep(spec,spec*0.9,specWidth);
 				float3 specCol = spec * _LightColor0.rgb;
 
                 //--------------- reflection
@@ -149,5 +176,24 @@ Shader "Unlit/Transparent/Wave/PlaneWave"
             }
             ENDCG
         }
+
+
+    pass{
+        Tags{"LightMode"="ShadowCaster"}
+
+        CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            
+            #pragma shader_feature _VERTEXWAVE_ON
+            #pragma multi_compile_instancing
+
+            float4 frag(v2f i):SV_Target{
+                return 0;
+            }
+
+        ENDCG
+    }
+
     }
 }

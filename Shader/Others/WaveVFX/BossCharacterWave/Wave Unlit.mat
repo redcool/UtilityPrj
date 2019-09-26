@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Wave2
-  m_Shader: {fileID: 4800000, guid: 52fa04238b0091347903b535af626e79, type: 3}
+  m_Name: Wave Unlit
+  m_Shader: {fileID: 4800000, guid: 9f07834beb0b4ef4a98940806bf48a47, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -39,20 +39,12 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _FakeReflectionTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
         m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _NormalMap:
-        m_Texture: {fileID: 2800000, guid: e08c295755c0885479ad19f518286ff2, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
@@ -63,31 +55,39 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _ReflectionTex:
-        m_Texture: {fileID: 8900000, guid: 45d5a4069354a354a8536c12c2b775d0, type: 3}
+    - _WaveTex:
+        m_Texture: {fileID: 2800000, guid: 2d116e9cc33b1f24fb74f7192b33ba2f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _WaveTex2:
+        m_Texture: {fileID: 2800000, guid: 4d6c994b9ad45b847bc67ec5f857fc78, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
+    - _Bright: 5.4
+    - _BrightThreshold: 0
     - _BumpScale: 1
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
-    - _FresnalWidth: 2
     - _GlossMapScale: 1
-    - _Glossiness: 0.5
+    - _Glossiness: 0
     - _GlossyReflections: 1
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
+    - _RimPower: 1.79
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
-    - _VertexWaveIntensity: 0.23
+    - _WaveColorSaturation: -33.7
+    - _WaveSpeed: 0.9
+    - _WaveSpeed2: 0.01
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 1, g: 0, b: 0, a: 1}
-    - _Direction: {r: 0, g: 1, b: 0, a: -1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _Tile: {r: 0.27, g: 0.21, b: 1, a: 1}
+    - _WaveColor: {r: 0.4392157, g: 0.34705883, b: 0.039215688, a: 1}
+    - _WaveColor2: {r: 0.0141509175, g: 1, b: 0.110802725, a: 1}

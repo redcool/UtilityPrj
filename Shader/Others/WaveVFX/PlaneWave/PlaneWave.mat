@@ -7,11 +7,11 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Wave Unlit
-  m_Shader: {fileID: 4800000, guid: 9f07834beb0b4ef4a98940806bf48a47, type: 3}
-  m_ShaderKeywords: 
+  m_Name: PlaneWave
+  m_Shader: {fileID: 4800000, guid: 52fa04238b0091347903b535af626e79, type: 3}
+  m_ShaderKeywords: _VERTEXWAVE_ON
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
@@ -39,12 +39,20 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _FakeReflectionTex:
+        m_Texture: {fileID: 2800000, guid: bc6e7e1374ff3e1459f65bf72da64c85, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 6187a99e4d3e63141a964daf066e0561, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
         m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 2800000, guid: e08c295755c0885479ad19f518286ff2, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
@@ -55,39 +63,52 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _WaveTex:
-        m_Texture: {fileID: 2800000, guid: 2d116e9cc33b1f24fb74f7192b33ba2f, type: 3}
+    - _ReflectionTex:
+        m_Texture: {fileID: 8900000, guid: 45d5a4069354a354a8536c12c2b775d0, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _WaveTex2:
-        m_Texture: {fileID: 2800000, guid: 4d6c994b9ad45b847bc67ec5f857fc78, type: 3}
+    - _VertexWaveNoiseTex:
+        m_Texture: {fileID: 2800000, guid: 2af5d181f2276764da90d84a6347d509, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _WaveNoise:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _WaveNoiseTex:
+        m_Texture: {fileID: 2800000, guid: 832dc5a2501052b4d8f685a7cda3b30b, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _Bright: 2
-    - _BrightThreshold: 0
+    - SpecWidth: 0
     - _BumpScale: 1
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
+    - _FresnalWidth: 3.24
+    - _Gloss: 4.05
     - _GlossMapScale: 1
-    - _Glossiness: 0
+    - _Glossiness: 0.629
+    - _Glossness: 0.178
     - _GlossyReflections: 1
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _RimPower: 1.42
     - _SmoothnessTextureChannel: 0
+    - _SpecPower: 0.193
+    - _SpecWidth: 0.173
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
-    - _WaveColorSaturation: 8.32
-    - _WaveSpeed: -0.15
-    - _WaveSpeed2: 0.01
+    - _VertexWave: 1
+    - _VertexWaveIntensity: 6.76
+    - _VertexWaveSpeed: 5.39
+    - _WaveSpeed: 1
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Direction: {r: 0.24, g: 0.3, b: -0.25, a: 0.25}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _WaveColor: {r: 0, g: 0.1814518, b: 1, a: 1}
-    - _WaveColor2: {r: 0.04739228, g: 0.6698113, b: 0.24460036, a: 0}
+    - _Tile: {r: 0.49, g: 0.21, b: 1, a: 1}
+    - _VertexWaveTileOffset: {r: 1001, g: 100, b: 0.1, a: 0.2}
