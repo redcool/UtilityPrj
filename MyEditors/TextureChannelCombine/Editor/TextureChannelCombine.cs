@@ -58,7 +58,7 @@ namespace MyTools
         };
 
         DefaultAsset folderAsset;
-        TextureSize texSize;
+        TextureSize texSize = TextureSize.size512;
         private void OnGUI()
         {
             EditorGUILayout.HelpBox(helpStr,MessageType.Info);
