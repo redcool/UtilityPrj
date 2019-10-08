@@ -78,7 +78,6 @@
                 //blur1
                 var buffer1 = textures[i] = RenderTexture.GetTemporary(w, h, 0, format);
                 context.command.BlitFullscreenTriangle(buffer0, buffer1, sheet, BOX_DOWN);
-                RenderTexture.ReleaseTemporary(buffer0);
 
                 buffer0 = buffer1;
             }
