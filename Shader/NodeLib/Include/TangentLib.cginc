@@ -28,4 +28,17 @@ void TangentToWorldFrag(float3 packedNormal,float4 t2w0,float4 t2w1,float4 t2w2,
 	b = normalize(float3(t2w0.y,t2w1.y,t2w2.y));
 	n = normalize(float3(dot(t2w0.xyz,packedNormal),dot(t2w1.xyz,packedNormal),dot(t2w2.xyz,packedNormal)));
 }
+
+/*
+	使用 切线空间数据
+		vertex shader计算即可.
+		fragment shader直接使用 法线图数据即可.
+
+	t: objectTangent
+	n: objectNormal
+*/
+float3 WorldToTangent(float4 t,float3 n,float3 worldDir){
+	float3 b = cross(n,t) * t.w;
+	return float3(dot(float3(t.x,t.y,t.z),worldDir),dot(float3(b.x,b.y,b.z),worldDir),dot(float3(n.x,n.y,n.z),worldDir));
+}
 #endif
