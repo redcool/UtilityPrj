@@ -10,7 +10,7 @@ using MyTools;
 
 public class AnalysisUtils
 {
-    public const string ANALYSIS_UTILS = "AnalysisUtils";
+    public const string ANALYSIS_UTILS = "MyEditors/AnalysisUtils";
     [MenuItem(ANALYSIS_UTILS+"/ShowMaterials")]
     static void Init()
     {
