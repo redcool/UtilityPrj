@@ -110,7 +110,7 @@ namespace MyTools
         /// <param name="assetPaths"></param>
         public static void SplitSelectedTexutes(params string[] assetPaths)
         {
-            var items = EditorTools.FindObjectFromAssets<Texture2D>("t:Texture2D", assetPaths);
+            var items = EditorTools.FindAssetsInProject<Texture2D>("t:Texture2D", assetPaths);
             SplitTextures(items);
         }
 
@@ -239,9 +239,9 @@ namespace MyTools
             rgbTexSeting.textureCompression = TextureImporterCompression.Compressed;
 
 #if UNITY_ANDROID
-            rgbTexSeting.format = TextureImporterFormat.PVRTC_RGB4;
-#elif UNITY_IOS
             rgbTexSeting.format = TextureImporterFormat.ETC_RGB4;
+#elif UNITY_IOS
+            rgbTexSeting.format = TextureImporterFormat.PVRTC_RGB4;
 #endif
 
             var setings = new[] { alphaTexSeting, rgbTexSeting, rgbTexSeting };

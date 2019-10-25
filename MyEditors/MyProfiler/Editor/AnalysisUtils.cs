@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using System.IO;
+using MyTools;
 
 public class AnalysisUtils
 {
@@ -29,13 +31,9 @@ public class AnalysisUtils
                 && go.hideFlags != HideFlags.HideAndDontSave
                 //&& EditorUtility.IsPersistent(r.transform.root.gameObject)
                 select go;
-        var list = new List<GameObject>();
-        foreach (var item in q)
-        {
-            list.Add(item);
-        }
-        return list.ToArray();
+        return q.ToArray();
     }
+
 
     public static Material[] GetSceneMaterials(GameObject[] gos)
     {

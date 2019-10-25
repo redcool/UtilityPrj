@@ -124,7 +124,7 @@ namespace MyTools
         public static T[] FindComponentFromAssets<T>(string filter,params string[] assetPaths)
             where T : Component
         {
-            var gos = FindObjectFromAssets<GameObject>(filter+" t:GameObject", assetPaths);
+            var gos = FindAssetsInProject<GameObject>(filter+" t:GameObject", assetPaths);
             var q = gos.Select(go => go.GetComponent<T>());
             return q.ToArray();
         }
@@ -134,17 +134,20 @@ namespace MyTools
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="filter"></param>
-        /// <param name="assetPaths"></param>
+        /// <param name="searchInFolders"></param>
         /// <returns></returns>
-        public static T[] FindObjectFromAssets<T>(string filter, params string[] assetPaths)
+        public static T[] FindAssetsInProject<T>(string filter, params string[] searchInFolders)
             where T :Object
         {
-            var guids = AssetDatabase.FindAssets(filter, assetPaths);
-            var q = guids.Select(g =>
-            {
-                var obj = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(g));
-                return obj as T;
-            }).Where(obj => obj);
+            var paths = AssetDatabase.FindAssets(filter,searchInFolders);
+            var q = paths.Select(pathStr => AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(pathStr)));
+            return q.ToArray();
+        }
+
+        public static T[] FindAssetsInProject<T>() where T : UnityEngine.Object
+        {
+            var paths = AssetDatabase.FindAssets("t:" + typeof(T).Name);
+            var q = paths.Select(pathStr => AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(pathStr)));
             return q.ToArray();
         }
         #endregion
