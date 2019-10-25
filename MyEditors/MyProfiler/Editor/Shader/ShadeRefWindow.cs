@@ -11,6 +11,10 @@ namespace MyTools
     /// </summary>
     public class ShaderRefWindow : EditorWindow
     {
+        bool isUpdate;
+        IEnumerable<Material> materials;
+
+        Vector2 scrollPosition;
 
         [MenuItem(ShaderAnalysis.SHADER_ANALYSIS+"/Show Ref Window",priority =1)]
         static void Init()
@@ -22,6 +26,7 @@ namespace MyTools
         private void OnSelectionChange()
         {
             Repaint();
+            isUpdate = true;
         }
 
         public void OnGUI()
@@ -35,21 +40,34 @@ namespace MyTools
                 return;
             }
 
-            var q = ShaderAnalysis.GetShaderInfo(shader);
-            if (q == null)
-                return;
-
-            if (q.Count() == 0)
+            if (isUpdate)
             {
-                EditorGUILayout.LabelField("No Material used.");
+                materials = ShaderAnalysis.GetShaderInfo(shader);
+                isUpdate = false;
             }
 
-            GUILayout.BeginVertical("Box");
-            q.ForEach(item =>
+            if (materials == null)
+                return;
+            //---------------- shader
+            GUILayout.Label("Shader:");
+            EditorGUILayout.ObjectField(shader, typeof(Shader), false);
+
+            //--------- materials
+            if (materials.Count() == 0)
+                EditorGUILayout.LabelField("No Material used.");
+            else
             {
-                EditorGUILayout.ObjectField(item, typeof(Material), false);
-            });
-            GUILayout.EndVertical();
+                GUILayout.Label("Materials:");
+
+                scrollPosition = GUILayout.BeginScrollView(scrollPosition, "box");
+                GUILayout.BeginVertical("Box");
+                materials.ForEach(item =>
+                {
+                    EditorGUILayout.ObjectField(item, typeof(Material), false);
+                });
+                GUILayout.EndVertical();
+                GUILayout.EndScrollView();
+            }
         }
 
 
