@@ -63,7 +63,7 @@ public class ShaderAnalysis {
         {
             shader = shader,
             materials = mats.Where(mat => mat.shader == shader)
-        });
+        }).OrderBy(sm=>sm.materials.Count());
         return q;
     }
 
