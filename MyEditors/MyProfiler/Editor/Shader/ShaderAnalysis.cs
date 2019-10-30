@@ -7,12 +7,14 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using System.Text;
+using System.IO;
 
 public class ShaderAnalysis {
     public class ShaderMaterials
     {
         public Shader shader;
-        public IEnumerable<Material> materials;
+        public List<Material> materials;
+        public bool isFold;
     }
 
     public const string SHADER_ANALYSIS = "Game/分析工具/Shader分析";
@@ -23,10 +25,18 @@ public class ShaderAnalysis {
         var sb = new StringBuilder();
 
         var q = GetShaderInfos();
-        q.Select(item => string.Format("{0,-100} => {1} \n", item.shader, item.materials.Count()))
+        q.Select(item => string.Format("{0,-100} => {1} \n", item.shader.name, item.materials.Count()))
             .ForEach(item => sb.Append(item));
 
+        //output to console
         Debug.Log(sb);
+
+        //output to file
+        var folder = EditorUtility.OpenFolderPanel("shader分析", "", "shader分析报告");
+        if (!string.IsNullOrEmpty(folder))
+        {
+            File.WriteAllText(folder+"/shander分析报告.txt", sb.ToString());
+        }
     }
 
     [MenuItem(SHADER_ANALYSIS+"/选择未使用的shader")]
@@ -62,7 +72,7 @@ public class ShaderAnalysis {
         var q = shaders.Select(shader => new ShaderMaterials
         {
             shader = shader,
-            materials = mats.Where(mat => mat.shader == shader)
+            materials = mats.Where(mat => mat.shader == shader).ToList()
         }).OrderBy(sm=>sm.materials.Count());
         return q;
     }
