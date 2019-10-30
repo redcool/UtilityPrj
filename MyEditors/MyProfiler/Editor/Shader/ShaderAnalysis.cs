@@ -15,9 +15,9 @@ public class ShaderAnalysis {
         public IEnumerable<Material> materials;
     }
 
-    public const string SHADER_ANALYSIS = "MyEditors/ShaderAnalysis";
+    public const string SHADER_ANALYSIS = "Game/分析工具/Shader分析";
 
-    [MenuItem(SHADER_ANALYSIS+"/Anslysis All Shaders")]
+    [MenuItem(SHADER_ANALYSIS+"/分析所有shader")]
     static void AnslysisAllShaders()
     {
         var sb = new StringBuilder();
@@ -29,7 +29,7 @@ public class ShaderAnalysis {
         Debug.Log(sb);
     }
 
-    [MenuItem(SHADER_ANALYSIS+"/Select Unused Shaders")]
+    [MenuItem(SHADER_ANALYSIS+"/选择未使用的shader")]
     static void SelectUnusedShaders()
     {
         var q = GetShaderInfos();
@@ -39,7 +39,7 @@ public class ShaderAnalysis {
         Selection.objects = unusedQueue.ToArray();
     }
 
-    [MenuItem(SHADER_ANALYSIS + "/Remove Unused Shaders")]
+    [MenuItem(SHADER_ANALYSIS + "/移除未使用的shader")]
     static void RemoveUnusedShaders()
     {
         var q = GetShaderInfos();

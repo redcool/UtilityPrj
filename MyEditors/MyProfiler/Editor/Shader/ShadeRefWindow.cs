@@ -16,7 +16,7 @@ namespace MyTools
 
         Vector2 scrollPosition;
 
-        [MenuItem(ShaderAnalysis.SHADER_ANALYSIS+"/Show Ref Window",priority =1)]
+        [MenuItem(ShaderAnalysis.SHADER_ANALYSIS+"/显示Shader引用",priority =1)]
         static void Init()
         {
             var win = GetWindow<ShaderRefWindow>();
