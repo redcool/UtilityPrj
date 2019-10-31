@@ -55,6 +55,27 @@ namespace MyTools
                 return objs[0];
             return default(T);
         }
+
+        /// <summary>
+        /// 获取 选中物体目录的路径
+        /// </summary>
+        /// <returns></returns>
+        public static string[] GetSelectedObjectAssetFolder()
+        {
+            var gos = Selection.objects;
+
+            var q = gos.Select(go => {
+                var path = AssetDatabase.GetAssetPath(go);
+                // selected a folder
+                if (Directory.Exists(path))
+                    return path;
+
+                return PathTools.GetAssetPath(Path.GetDirectoryName(path));
+            });
+
+            return q.ToArray();
+        }
+
         #endregion
         #region ScriptableObject
         public static T LoadOrCreate<T>(string path) where T : ScriptableObject
@@ -129,6 +150,7 @@ namespace MyTools
             return q.ToArray();
         }
 
+
         /// <summary>
         /// 找寻assetPaths下面的T Object
         /// </summary>
@@ -137,16 +159,29 @@ namespace MyTools
         /// <param name="searchInFolders"></param>
         /// <returns></returns>
         public static T[] FindAssetsInProject<T>(string filter, params string[] searchInFolders)
-            where T :Object
+            where T : Object
         {
-            var paths = AssetDatabase.FindAssets(filter,searchInFolders);
+            var paths = AssetDatabase.FindAssets(filter, searchInFolders);
             var q = paths.Select(pathStr => AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(pathStr)));
             return q.ToArray();
         }
 
-        public static T[] FindAssetsInProject<T>() where T : UnityEngine.Object
+        public enum SearchFilter
         {
-            var paths = AssetDatabase.FindAssets("t:" + typeof(T).Name);
+            GameObject, Texture, Material, Shader
+        }
+
+        public static T[] FindAssetsInProject<T>(SearchFilter filterEnum, params string[] searchInFolders)
+            where T : Object
+        {
+            var filter = "t:" + Enum.GetName(typeof(SearchFilter), filterEnum);
+            return FindAssetsInProject<T>(filter, searchInFolders);
+        }
+
+        public static T[] FindAssetsInProjectByType<T>(params string[] folders) where T : UnityEngine.Object
+        {
+            var filter = "t:" + typeof(T).Name;
+            var paths = AssetDatabase.FindAssets(filter, folders);
             var q = paths.Select(pathStr => AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(pathStr)));
             return q.ToArray();
         }
