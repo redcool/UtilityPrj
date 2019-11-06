@@ -16,8 +16,11 @@ Properties {
 	_Control ("Control (RGBA)", 2D) = "white" {}
 	_MainTex ("Never Used", 2D) = "white" {}
 	_SpecDir("Specular Direction",Vector)=(1,1,0,0)
+ 
+  [Space(20)]
+	[KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
 	
-	[Header(Snow)]
+	[Header(Snow)] 
 	[noscaleoffset]_SnowNoiseMap("SnowNoiseMap",2d) = "bump"{}
 	_NoiseDistortNormalIntensity("NoiseDistortNormalIntensity",range(0,1)) = 0
 
@@ -26,6 +29,35 @@ Properties {
 	_SnowAngleIntensity("SnowAngleIntensity",range(0.1,1)) = 1
 	_SnowTile("tile",vector) = (1,1,1,1)
  	_BorderWidth("BorderWidth",range(-0.2,0.4)) = 0.01
+
+  [Space(20)]
+	[Header(SurfaceWave)]
+        _WaveColor("Color",color)=(1,1,1,1)
+        _Tile("Tile",vector) = (5,5,10,10)
+        _Direction("Direction",vector) = (0,1,0,-1)
+
+        [noscaleoffset]_WaveNoiseMap("WaveNoiseMap",2d) = "bump"{}
+        // [Header(Reflection)]
+        // _ReflectionTex("ReflectionTex",Cube) = ""{}
+        // _FakeReflectionTex("FakeReflectionTex",2d) = "black"{}
+
+        [Header(Fresnal)] 
+        _FresnalWidth("FresnalWidth",float) = 1    
+
+        // [Header(VertexWave)]
+        // [Toggle]_VertexWave("Vertex Wave ?",float) = 0
+        // _VertexWaveNoiseTex("VertexWaveNoiseTex",2d) = ""{}
+        // _VertexWaveIntensity("VertexWaveIntensity",float) = 0.1
+        // _VertexWaveSpeed("VertexWaveSpeed",float) = 1
+
+        [Header(Specular)]
+        _SpecPower("SpecPower",range(0.001,1)) = 10    
+        _Glossness("Glossness",range(0,1)) = 1 
+        _SpecWidth("SpecWidth",range(0,1)) = 0.2
+
+		_WaveBorderWidth("WaveBorderWidth",range(0,1)) = 0.2
+		_DirAngle("DirAngle",range(0,1)) = 0.8
+		_WaveIntensity("WaveIntensity",range(0,1)) = 0.8
 }
  
 SubShader {
@@ -45,11 +77,14 @@ SubShader {
 		 
 CGPROGRAM
 // compile directives
+#pragma target 3.0
 #pragma vertex vert_surf
 #pragma fragment frag_surf
 #pragma exclude_renderers xbox360 ps3
 #pragma multi_compile_fog
 #pragma multi_compile_fwdbase
+#pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
+
 #include "HLSLSupport.cginc"
 #include "UnityShaderVariables.cginc"
 
@@ -79,7 +114,6 @@ CGPROGRAM
 #include "Lighting.cginc"
 #include "AutoLight.cginc"
 
-#define SNOW
 #include "../../NatureLib.cginc"
 
 #define INTERNAL_DATA
@@ -125,12 +159,28 @@ struct Input {
 	float2 uv_Splat1 : TEXCOORD2;
 	float2 uv_Splat2 : TEXCOORD3;
 	float2 uv_Splat3 : TEXCOORD4;
+
 	float3 worldPos:TEXCOORD5;
 	float3 wn:TEXCOORD6;
+  
+	#ifdef _FEATURE_SURFACE_WAVE
+	float4 normalUV;
+	#endif
+
 };
+
+fixed4 SampleSplats(float4 splat_control,float2 uv0,float2 uv1,float2 uv2,float2 uv3){
+	fixed4 lay1 = tex2D (_Splat0, uv0);
+	fixed4 lay2 = tex2D (_Splat1, uv1);
+	fixed4 lay3 = tex2D (_Splat2, uv2);
+	fixed4 lay4 = tex2D (_Splat3, uv3);
+
+	fixed4 c = (lay1 * splat_control.r + lay2 * splat_control.g + lay3 * splat_control.b + lay4 * splat_control.a);
+  return c;
+}
  
 void surf (Input IN, inout SurfaceOutput o) {
-	fixed4 splat_control = tex2D (_Control, IN.uv_Control).rgba;
+  fixed4 splat_control = tex2D (_Control, IN.uv_Control).rgba;
 		
 	fixed4 lay1 = tex2D (_Splat0, IN.uv_Splat0);  
 	fixed4 lay2 = tex2D (_Splat1, IN.uv_Splat1);
@@ -138,15 +188,32 @@ void surf (Input IN, inout SurfaceOutput o) {
 	fixed4 lay4 = tex2D (_Splat3, IN.uv_Control*_Tiling3.xy);
 
 	fixed4 c = (lay1 * splat_control.r + lay2 * splat_control.g + lay3 * splat_control.b + lay4 * splat_control.a);
+
+  #ifdef _FEATURE_SNOW
 	fixed4 snowColor = SnowColor(IN.uv_Control,c, IN.wn, IN.worldPos,0);
-	
+  c.rgb = snowColor.rgb;
+  #endif
+       
+  #ifdef _FEATURE_SURFACE_WAVE
+  // distort uv,normal.
+  float3 noiseNormal;
+  float2 noiseUV;
+  float edge;
+  NoiseUVNormal(c,IN.normalUV,IN.wn,noiseUV,noiseNormal,edge);
+  // sample splats
+  float4 noiseCol = SampleSplats(splat_control,IN.uv_Splat0 + noiseUV,IN.uv_Splat1+ noiseUV,IN.uv_Splat2+ noiseUV,IN.uv_Control*_Tiling3.xy+ noiseUV);
+  // get surface wave
+	v2f_surface v2fSurface = {IN.uv_Control,IN.worldPos,IN.wn};
+	c.rgb = SurfaceWaveFrag(v2fSurface,noiseCol,noiseNormal,edge);
+	#endif
+	 
 	o.Alpha = 0.0;
-	o.Albedo.rgb = snowColor.rgb;
+	o.Albedo.rgb = c.rgb;
 	o.Gloss = (lay1.a * splat_control.r + lay2.a * splat_control.g + lay3.a * splat_control.b + lay4.a * splat_control.a);
 	o.Specular = (_ShininessL0 * splat_control.r + _ShininessL1 * splat_control.g + _ShininessL2 * splat_control.b + _ShininessL3 * splat_control.a);
 }
  
-  
+
 // vertex-to-fragment interpolation data
 // no lightmaps:
 #ifdef LIGHTMAP_OFF
@@ -161,6 +228,10 @@ struct v2f_surf {
   UNITY_FOG_COORDS(6)
   #if SHADER_TARGET >= 30
   float4 lmap : TEXCOORD7;
+  #endif
+
+  #ifdef _FEATURE_SURFACE_WAVE
+  float4 normalUV:COLOR2;
   #endif
 };
 #endif
@@ -179,6 +250,10 @@ struct v2f_surf {
   fixed3 tSpace0 : TEXCOORD7;
   fixed3 tSpace1 : TEXCOORD8;
   fixed3 tSpace2 : TEXCOORD9;
+  #endif
+
+  #ifdef _FEATURE_SURFACE_WAVE
+  float4 normalUV:COLOR2;
   #endif
 };
 #endif
@@ -235,6 +310,10 @@ v2f_surf vert_surf (appdata_full v) {
 
   TRANSFER_SHADOW(o); // pass shadow coordinates to pixel shader
   UNITY_TRANSFER_FOG(o,o.pos); // pass fog coordinates to pixel shader
+
+  #ifdef _FEATURE_SURFACE_WAVE
+  o.normalUV = v.texcoord.xyxy * _Tile + _Time.xxxx* _Direction;
+  #endif
   return o;
 }
 
@@ -275,6 +354,10 @@ fixed4 frag_surf (v2f_surf IN) : SV_Target {
 
   surfIN.worldPos = IN.worldPos;
   surfIN.wn = IN.worldNormal;
+
+  #ifdef _FEATURE_SURFACE_WAVE
+  surfIN.normalUV = IN.normalUV;
+	#endif
   // call surface function
   surf (surfIN, o);
 

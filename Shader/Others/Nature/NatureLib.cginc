@@ -1,4 +1,6 @@
 
+// Upgrade NOTE: excluded shader from DX11; has structs without semantics (struct v2f_surface members uv,worldPos,normalUV,normal)
+#pragma exclude_renderers d3d11
 #ifndef SNOW_CGINC
 #define SNOW_CGINC
 
@@ -21,7 +23,20 @@ inline float4 ClampWave(appdata_full v, float4 wave, float yRadius, float xzRadi
 // end PLANTS
 #endif
 
-#ifdef SNOW
+float Gray(float3 c) {
+	return dot(float3(0.2, 0.7, 0.07), c);
+}
+
+float Edge(float3 c,float width){
+	float g = Gray(c);
+	return smoothstep(g,g-0.25,width);
+}
+
+float DirEdge(float3 dir1,float3 dir2,float delta){
+	return saturate(dot(dir1,dir2)) - delta;
+}
+
+#ifdef _FEATURE_SNOW
 #define SNOW_V2F(idx) float4 noiseUV:TEXCOORD##idx
 #define SNOW_VERTEX(v2f) v2f.noiseUV = v2f.uv.xyxy * _SnowTile;
 
@@ -38,16 +53,14 @@ float4 _GlobalSnowDirection;
 float _GlobalSnowAngleIntensity;
 
 float4 _SnowRimColor;
-float _BorderWidth,_BorderWidthScale;
+float _BorderWidth;
 //-------
 #ifdef SNOW_DISTANCE
-float _Distance;//(高度)
+float _Distance;//(锟竭讹拷)
 float _DistanceAttenWidth;
 #endif
 
-float Gray(float3 c) {
-	return dot(float3(0.2, 0.7, 0.07), c);
-}
+
 
 //vertex : compute final position
 void SnowDir(float3 vertex, float3 normal, out float3 pos, out float3 worldNormal) {
@@ -79,23 +92,19 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 	// dot
 	float3 snowDir = normalize(_SnowDirection.xyz);
 	float snowDot = saturate(dot(n, snowDir));
-	//return snowDot;
-	//float snowHardRate = step(_SnowAngleIntensity, snowDot); // 硬边界效果
-	float snowRate = smoothstep(snowDot, 0.1, _SnowAngleIntensity) * 2 * snowDot;
+	float snowRate = smoothstep(snowDot, 0.1, 1 - _SnowAngleIntensity) * snowDot * 2;
+
 	// mask
-	float border = Gray(mainColor.rgb);
-	float borderWidth = lerp(_BorderWidthScale,1,step(_BorderWidthScale,0)) * _BorderWidth;
-	float edge = smoothstep(border, border - 0.3, borderWidth); // 混合出缝隙
+	float edge = 1 - Edge(mainColor.rgb,_BorderWidth);
 
 	// final color
-	//float noiseGray = Gray(noise.rgb);
-	float4 snowColor = lerp(_SnowColor, mainColor, edge);
+	float4 snowColor = lerp(mainColor,_SnowColor, edge * _SnowIntensity);
 	snowColor = lerp(mainColor, snowColor, snowRate);
+
 #ifdef SNOW_DISTANCE
 	float yDist = (vertexY - abs(_Distance)) * _DistanceAttenWidth + _DistanceAttenWidth;
 	float yRate = lerp(0, 1, saturate(yDist));
-	//return yRate ;//lerp(0, 1, yRate);
-	//yRate = smoothstep(yRate,0,_DistanceAttenWidth);
+
 	snowColor = lerp(mainColor, snowColor, yRate);
 #endif
 	return snowColor;
@@ -103,5 +112,105 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 // end SNOW
 #endif
 
+
+#if defined(_FEATURE_SURFACE_WAVE)
+	float4  _WaveColor;
+	float4  _Tile;
+	float4  _Direction;
+	float  _FresnalWidth;
+	float  _VertexWaveIntensity;
+	float  _VertexWaveSpeed;
+	float  _SpecPower;
+	float  _Glossness;
+	float  _SpecWidth;
+
+	sampler2D _WaveNoiseMap;
+	samplerCUBE _ReflectionTex;
+	sampler2D _FakeReflectionTex;
+	sampler2D _VertexWaveNoiseTex;
+
+	float _WaveBorderWidth;
+
+	float _DirAngle;
+	float _WaveIntensity;
+	float _WaveIntensityScale;
+
+struct v2f_surface{
+	float2 uv;
+	float3 worldPos;
+	float3 normal;
+};
+
+void SurfaceWaveVertex(float2 uv ,out float4 normalUV){
+	normalUV = uv.xyxy * _Tile + _Time.xxxx* _Direction;
+}
+
+void NoiseUVNormal(float4 mainColor,float4 normalUV,float3 worldNormal,
+		out float2 noiseUV,out float3 noiseNormal,out float edge){
+			
+	noiseNormal = UnpackNormal(tex2D(_WaveNoiseMap,normalUV.xy));
+	noiseNormal += UnpackNormal(tex2D(_WaveNoiseMap,normalUV.zw));
+
+	edge = 1 - Edge(mainColor.rgb,_WaveBorderWidth);
+	fixed dirEdge = DirEdge(worldNormal,float3(0,1,0),1 - _DirAngle);
+	edge *= dirEdge * _WaveIntensity * _WaveIntensityScale;
+
+	noiseUV = noiseNormal.xy * 0.02 * edge;
+}
+
+// float4 Sample(sampler2D tex,float2 uv,float4 normalUV){
+// 	float3 n;
+// 	float2 noiseUV;
+// 	NoiseUVNormal(mainColor,normalUV,noiseUV,n);
+// 	// sample the texture
+// 	return tex2D(tex, uv + noiseUV);
+// }
+
+float4 SurfaceWaveFrag(v2f_surface i,float4 col,float3 noiseNormal,float edge){
+	float4 waterColor = _WaveColor;
+	float fresnalWidth =  _FresnalWidth;
+	float specPower = _SpecPower;
+	float glossness = _Glossness;
+	float specWidth = _SpecWidth;
+
+	float2 uv = normalize(i.worldPos.xz);
+	float3 worldNormal = UnityObjectToWorldNormal(i.normal);
+	float3 l = normalize(UnityWorldSpaceLightDir(i.worldPos));
+	float3 v = normalize(UnityWorldSpaceViewDir(i.worldPos));
+	float3 h = normalize(l+v);
+
+	col = lerp(col,col * waterColor,edge);
+	//col /= (1+col);
+return col;
+	//-------------- diffuse
+	float nl = saturate(dot(worldNormal, l));
+	fixed3 diffCol = nl * col.rgb;
+
+	//--------------- fresnal
+	float nv = dot(worldNormal,v);
+	float invertNV = 1-nv;
+	fixed3 fresnal = pow(invertNV ,fresnalWidth);//smoothstep(invertNV,invertNV*0.9,_FresnalWidth);
+
+	//--------------specular
+	float nh = saturate(dot(worldNormal,h));
+	float spec = pow(nh,specPower * 128) * glossness;
+	spec += smoothstep(spec,spec*0.9,specWidth);
+	float3 specCol = spec * _LightColor0.rgb;
+
+	//--------------- reflection
+	float3 r = reflect(-v,worldNormal);
+	float3 reflCol = texCUBE(_ReflectionTex,r + noiseNormal );
+	reflCol += tex2D(_FakeReflectionTex,i.uv + noiseNormal.xy * 2);
+
+//return float4(col + specCol,1);
+	col.rgb += diffCol+specCol+ fresnal;
+//				return col;
+	col.rgb *= reflCol * col.a;
+
+	return col;
+}
+
+// end SURFACE_WAVE
+#endif
 // end outer
 #endif
