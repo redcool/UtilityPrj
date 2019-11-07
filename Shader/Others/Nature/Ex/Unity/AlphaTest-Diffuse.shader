@@ -20,7 +20,7 @@ Properties {
 	 
 	_BorderWidth("BorderWidth",range(-0.2,0.4)) = 0.01
 	
-	_Distance("Distance",range(0,15)) = 2
+	_Distance("Distance",range(0,100)) = 2
 	_DistanceAttenWidth("DistanceAttenWidth",range(0.2,1)) = 0
 }
 	
@@ -49,7 +49,7 @@ struct Input {
 	float4 wn;
 	#endif
 };
-
+ 
 void vert(inout appdata_full v, out Input o) {
 	UNITY_INITIALIZE_OUTPUT(Input, o);
 
@@ -58,17 +58,17 @@ void vert(inout appdata_full v, out Input o) {
 	float3 pos;
 	SnowDir(v.vertex, v.normal, pos, worldNormal);
 	v.vertex.xyz = pos;
-	o.wn = float4(worldNormal,v.vertex.z);
+	o.wn = float4(worldNormal,0);
 	#endif
 }
-
+    
 void surf (Input IN, inout SurfaceOutput o) {
 	fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
 	#ifdef _FEATURE_SNOW 
-	fixed4 snowColor = SnowColor(IN.uv_MainTex, c, IN.wn.xyz, IN.worldPos,IN.wn.w);
+	fixed4 snowColor = SnowColor(IN.uv_MainTex, c, IN.wn.xyz, IN.worldPos,IN.worldPos.y);
 	c.rgb = snowColor.rgb;
 	#endif
-
+  
 	o.Albedo = c.rgb;
 	o.Alpha = c.a;
 }
