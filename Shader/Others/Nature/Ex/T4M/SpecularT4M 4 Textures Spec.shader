@@ -16,9 +16,9 @@ Properties {
 	_Control ("Control (RGBA)", 2D) = "white" {}
 	_MainTex ("Never Used", 2D) = "white" {}
 	_SpecDir("Specular Direction",Vector)=(1,1,0,0)
- 
+  
   [Space(20)]
-	[KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
+	//[KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
 	
 	[Header(Snow)] 
 	[noscaleoffset]_SnowNoiseMap("SnowNoiseMap",2d) = "bump"{}

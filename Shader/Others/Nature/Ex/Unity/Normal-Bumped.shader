@@ -6,9 +6,10 @@ Properties {
 	_MainTex ("Base (RGB)", 2D) = "white" {}
 	_BumpMap ("Normalmap", 2D) = "bump" {}
 
-	[KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
+	//[KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
  
 	[Header(Snow)]
+	[Toggle(SNOW_NOISE_MAP_ON)]_SnowNoiseMapOn("SnowNoiseMapOn",float) = 0
 	[noscaleoffset]_SnowNoiseMap("SnowNoiseMap",2d) = "bump"{}
 	_NoiseDistortNormalIntensity("NoiseDistortNormalIntensity",range(0,1)) = 0
 	 
@@ -17,7 +18,7 @@ Properties {
 	_SnowAngleIntensity("SnowAngleIntensity",range(0.1,1)) = 1
 	_SnowTile("tile",vector) = (1,1,1,1)
 	_BorderWidth("BorderWidth",range(-0.2,0.4)) = 0.01
-
+     
 	[Space(20)]
 	[Header(SurfaceWave)]
         _WaveColor("Color",color)=(1,1,1,1)
@@ -31,13 +32,13 @@ Properties {
 
         [Header(Fresnal)] 
         _FresnalWidth("FresnalWidth",float) = 1    
-
+       
         // [Header(VertexWave)]
         // [Toggle]_VertexWave("Vertex Wave ?",float) = 0
         // _VertexWaveNoiseTex("VertexWaveNoiseTex",2d) = ""{}
         // _VertexWaveIntensity("VertexWaveIntensity",float) = 0.1
         // _VertexWaveSpeed("VertexWaveSpeed",float) = 1
-
+  
         [Header(Specular)]
         _SpecPower("SpecPower",range(0.001,1)) = 10    
         _Glossness("Glossness",range(0,1)) = 1 
@@ -57,6 +58,7 @@ CGPROGRAM
 #pragma target 3.0
 #pragma surface surf Lambert vertex:vert novertexlights noforwardadd nodynlightmap nodirlightmap 
 #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
+#pragma shader_feature _ SNOW_NOISE_MAP_ON
 //#define SNOW
 #include "../../NatureLib.cginc"
 
@@ -118,7 +120,7 @@ void surf (Input IN, inout SurfaceOutput o) {
 
 	c.rgb = surfaceColor.rgb;
 	#endif   
-    
+ 
 	o.Albedo = c.rgb;
 	o.Alpha = c.a;  
 	o.Normal = UnpackNormal(tex2D(_BumpMap, IN.uv_BumpMap));

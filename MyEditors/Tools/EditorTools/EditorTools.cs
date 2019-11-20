@@ -57,22 +57,14 @@ namespace MyTools
         }
 
         /// <summary>
-        /// 获取 选中物体目录的路径
+        /// 获取 选中物体的目录的路径
         /// </summary>
         /// <returns></returns>
         public static string[] GetSelectedObjectAssetFolder()
         {
             var gos = Selection.objects;
 
-            var q = gos.Select(go => {
-                var path = AssetDatabase.GetAssetPath(go);
-                // selected a folder
-                if (Directory.Exists(path))
-                    return path;
-
-                return PathTools.GetAssetPath(Path.GetDirectoryName(path));
-            });
-
+            var q = gos.Select(go => AssetDatabase.GetAssetPath(go));
             return q.ToArray();
         }
 

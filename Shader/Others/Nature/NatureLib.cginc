@@ -55,7 +55,7 @@ float _GlobalSnowAngleIntensity;
 float4 _SnowRimColor;
 float _BorderWidth;
 //-------
-#ifdef SNOW_DISTANCE
+#ifdef _HEIGHT_SNOW
 float _Distance;
 float _DistanceAttenWidth;
 #endif
@@ -79,15 +79,17 @@ void SnowDir(float3 vertex, float3 normal, out float3 pos, out float3 worldNorma
 
 //fragment : final color
 float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPos, float height) {
-	//return mainColor;
-	// uv
 	float2 noiseUV = worldPos.xz * _SnowTile;
 
 	// normal 
-	float4 noise = tex2D(_SnowNoiseMap, noiseUV);
-	float3 n = UnpackNormal(noise);
-	n = worldNormal + n * _NoiseDistortNormalIntensity;
+	float3 n = worldNormal;
+	fixed snowScale = 2;
+#ifdef SNOW_NOISE_MAP_ON
+	float3 noise = UnpackNormal(tex2D(_SnowNoiseMap, noiseUV));
+	n = worldNormal + noise * _NoiseDistortNormalIntensity;
 	n = normalize(n);
+	snowScale = 3;
+#endif
 
 	// dot
 	float3 snowDir = normalize(_SnowDirection.xyz);
@@ -101,11 +103,11 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 	float4 snowColor = lerp(mainColor,_SnowColor, edge * _SnowIntensity);
 	snowColor = lerp(mainColor, snowColor, snowRate);
 
-#ifdef SNOW_DISTANCE
+#ifdef _HEIGHT_SNOW
 	float yDist = (height - _Distance) * _DistanceAttenWidth + _DistanceAttenWidth;
 	float yRate = lerp(0, 1, saturate(yDist));
-	float4 heightSnowCol = lerp(0, _SnowColor, yRate);
-	snowColor += heightSnowCol * _SnowIntensity;
+	float4 heightSnowCol = lerp(0, _SnowColor, yRate)  * _SnowIntensity * edge;
+	snowColor = max(snowColor,heightSnowCol);
 #endif
 	return snowColor;
 }
