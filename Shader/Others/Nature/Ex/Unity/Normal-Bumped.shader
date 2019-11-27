@@ -6,6 +6,10 @@ Properties {
 	_MainTex ("Base (RGB)", 2D) = "white" {}
 	_BumpMap ("Normalmap", 2D) = "bump" {}
 
+	[Header(Custom Light)]
+	_LightDir("Light Dir",vector) = (0,0,0,0)
+	_LightColor("Light Color",color) = (0,0,0,1)
+
 	//[KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
  
 	[Header(Snow)]
@@ -18,7 +22,8 @@ Properties {
 	_SnowAngleIntensity("SnowAngleIntensity",range(0.1,1)) = 1
 	_SnowTile("tile",vector) = (1,1,1,1)
 	_BorderWidth("BorderWidth",range(-0.2,0.4)) = 0.01
-     
+	_ToneMapping("ToneMapping",range(0,1)) = 0
+	     
 	[Space(20)]
 	[Header(SurfaceWave)]
         _WaveColor("Color",color)=(1,1,1,1)
@@ -56,12 +61,12 @@ SubShader {
 		 
 CGPROGRAM
 #pragma target 3.0
-#pragma surface surf Lambert vertex:vert novertexlights noforwardadd nodynlightmap nodirlightmap 
+#pragma surface surf SimpleLambert vertex:vert novertexlights noforwardadd nodynlightmap nodirlightmap 
 #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
 #pragma shader_feature _ SNOW_NOISE_MAP_ON
 //#define SNOW
 #include "../../NatureLib.cginc"
-
+#include "../../CustomLight.cginc"
 
 sampler2D _MainTex;
 float4 _MainTex_TexelSize;
@@ -82,10 +87,10 @@ struct Input {
 	float4 normalUV;
 	#endif
 };
- 
+
 void vert(inout appdata_full v, out Input o) {
 	UNITY_INITIALIZE_OUTPUT(Input, o);
-
+ 
 	#ifdef _FEATURE_SNOW 
 	float3 worldNormal;
 	float3 pos;
@@ -93,10 +98,10 @@ void vert(inout appdata_full v, out Input o) {
 	v.vertex.xyz = pos;
 	o.wn = worldNormal;
 	#endif
-
+   
 	#ifdef _FEATURE_SURFACE_WAVE
 	o.normalUV = v.texcoord.xyxy * _Tile + _Time.xxxx* _Direction;
-	o.wn = v.normal;
+	o.wn = UnityObjectToWorldNormal(v.normal);
 	#endif
 }
 

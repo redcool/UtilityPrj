@@ -4,6 +4,34 @@
 #ifndef SNOW_CGINC
 #define SNOW_CGINC
 
+
+float Gray(float3 c) {
+	return dot(float3(0.2, 0.7, 0.07), c);
+}
+
+float Edge(float3 c, float width) {
+	float g = Gray(c);
+	return smoothstep(g, g - 0.3, width);
+}
+
+float DirEdge(float3 dir1, float3 dir2, float delta) {
+	return saturate(dot(dir1, dir2)) - delta;
+}
+
+float3 Saturate(float3 c,float value){
+	float3 g = Gray(c);
+	return lerp(g,c,value);
+}
+
+float3 Bright(float3 c,float value){
+	return lerp(0,c,value);
+}
+
+half Remap(half a,half b,half x){
+	half d = b-a;
+	return x * (1.0/d) - a/d;
+}
+
 #ifdef PLANTS
 
 #include "UnityBuiltin3xTreeLibrary.cginc"
@@ -23,19 +51,6 @@ inline float4 ClampWave(appdata_full v, float4 wave, float yRadius, float xzRadi
 // end PLANTS
 #endif
 
-float Gray(float3 c) {
-	return dot(float3(0.2, 0.7, 0.07), c);
-}
-
-float Edge(float3 c,float width){
-	float g = Gray(c);
-	return smoothstep(g,g-0.25,width);
-}
-
-float DirEdge(float3 dir1,float3 dir2,float delta){
-	return saturate(dot(dir1,dir2)) - delta;
-}
-
 #ifdef _FEATURE_SNOW
 #define SNOW_V2F(idx) float4 noiseUV:TEXCOORD##idx
 #define SNOW_VERTEX(v2f) v2f.noiseUV = v2f.uv.xyxy * _SnowTile;
@@ -54,6 +69,7 @@ float _GlobalSnowAngleIntensity;
 
 float4 _SnowRimColor;
 float _BorderWidth;
+float _ToneMapping; //reinhard mapping factor
 //-------
 #ifdef _HEIGHT_SNOW
 float _Distance;
@@ -83,12 +99,10 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 
 	// normal 
 	float3 n = worldNormal;
-	fixed snowScale = 2;
 #ifdef SNOW_NOISE_MAP_ON
 	float3 noise = UnpackNormal(tex2D(_SnowNoiseMap, noiseUV));
 	n = worldNormal + noise * _NoiseDistortNormalIntensity;
 	n = normalize(n);
-	snowScale = 3;
 #endif
 
 	// dot
@@ -97,11 +111,11 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 	float snowRate = smoothstep(snowDot, 0.1, 1 - _SnowAngleIntensity) * snowDot * 2;
 
 	// mask
-	float edge = 1 - Edge(mainColor.rgb,_BorderWidth);
+	float borderRate = lerp(-0.2,_BorderWidth,_SnowIntensity);
+	float edge = 1 - Edge(mainColor.rgb,borderRate);
 
 	// final color
-	float4 snowColor = lerp(mainColor,_SnowColor, edge * _SnowIntensity);
-	snowColor = lerp(mainColor, snowColor, snowRate);
+	float4 snowColor = lerp(mainColor,_SnowColor,snowRate * edge);
 
 #ifdef _HEIGHT_SNOW
 	float yDist = (height - _Distance) * _DistanceAttenWidth + _DistanceAttenWidth;
@@ -109,7 +123,8 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 	float4 heightSnowCol = lerp(0, _SnowColor, yRate)  * _SnowIntensity * edge;
 	snowColor = max(snowColor,heightSnowCol);
 #endif
-	return snowColor;
+	fixed mapping = lerp(0,snowColor,_ToneMapping) + 1;
+	return snowColor/mapping;
 }
 
 // end SNOW
@@ -184,7 +199,7 @@ float4 SurfaceWaveFrag(v2f_surface i,float4 col,float3 noiseNormal,float edge){
 
 	col = lerp(col,col * waterColor,edge);
 	//col /= (1+col);
-return col;
+return col*0.75;
 	//-------------- diffuse
 	float nl = saturate(dot(worldNormal, l));
 	fixed3 diffCol = nl * col.rgb;
