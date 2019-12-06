@@ -8,6 +8,11 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
         _Color("Color",color)=(1,1,1,1)
         _NormalMap("NormalMap",2d) = ""{}
 
+        [Header(Color Adjust)]
+        [Toggle(_COLOR_ADJUST_ON)]_ColorAdjustOn("调色?",float) = 0
+        _Saturate("饱和度",float) = 1
+        _Brightness("亮度",float) = 1
+
         [Header(Clip)]
         [Toggle(_CLIP_ON)]_Clip("开启alpha剔除?",float) = 0
         _Culloff("alpha值",range(0,1)) = 0.5
@@ -79,20 +84,36 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 UNITY_DEFINE_INSTANCED_PROP(float, _SpecPower)
                 UNITY_DEFINE_INSTANCED_PROP(float, _Glossness)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SpecWidth)
+                #if defined(_CLIP_ON)
+                    UNITY_DEFINE_INSTANCED_PROP(float, _Culloff)
+                #endif
+
+                #if defined(_REFLECTION_ON)
+                    UNITY_DEFINE_INSTANCED_PROP(float, _ReflectionIntensity)
+                #endif
+                #if defined(_COLOR_ADJUST_ON)
+                    UNITY_DEFINE_INSTANCED_PROP(float, _Saturate)
+                    UNITY_DEFINE_INSTANCED_PROP(float, _Brightness)
+                #endif
+
             UNITY_INSTANCING_BUFFER_END(Props)
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
 
             sampler2D _NormalMap;
+            sampler2D _WaveMask;
+
+        #if defined(_REFLECTION_ON)
             samplerCUBE _ReflectionTex;
             sampler2D _FakeReflectionTex;
-            sampler2D _VertexWaveNoiseTex;
-            sampler2D _WaveMask;
-            float _Culloff;
-
             sampler2D _ReflectionMask;
-            float _ReflectionIntensity;
+        #endif
+
+        #if defined(_VERTEX_WAVE_ON)
+            sampler2D _VertexWaveNoiseTex;
+        #endif
+
 
             v2f vert (appdata v)
             {
@@ -148,6 +169,7 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
             #pragma shader_feature _CLIP_ON
             #pragma shader_feature _SPEC_ON
             #pragma shader_feature _REFLECTION_ON
+            #pragma shader_feature _COLOR_ADJUST_ON
             #pragma multi_compile_instancing
 
             
@@ -175,7 +197,7 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 n += UnpackNormal(tex2D(_NormalMap,i.normalUV.zw));
                 
                 // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv + (n.xy * 0.02) * waveMask) * color;
+                fixed4 col = tex2D(_MainTex, i.uv + (n.xy * 0.02) * waveMask);
 
             #if defined(_CLIP_ON)
                 clip(col.a - _Culloff);
@@ -204,15 +226,22 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 float3 r = reflect(-v,worldNormal);
                 float3 reflCol = texCUBE(_ReflectionTex,r + n * waveMask );
                 reflCol += tex2D(_FakeReflectionTex,i.uv + n.xy * 2 * waveMask);
-                reflCol *= _ReflectionIntensity ;
 
                 float reflectionMask = tex2D(_ReflectionMask,i.uv).g;
-                col.rgb = lerp(col.rgb,col.rgb * reflCol,reflectionMask);
-                return col;
+                reflCol *= reflectionMask;
+
+                col.rgb = lerp(col.rgb,col.rgb * reflCol,_ReflectionIntensity );
             #endif
                 
 //return float4(col + specCol,1);
 				col.rgb += (diffCol + fresnal) * waveMask;
+                col *= _Color;
+
+                //---------------- color
+            #if defined(_COLOR_ADJUST_ON)
+                col.rgb = lerp(dot(float3(0.2,0.7,0.07),col.rgb),col.rgb,_Saturate);
+                col.rgb = lerp(dot(float3(0,0,0),col.rgb),col.rgb,_Brightness);
+            #endif
 //				return col;
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, col);
