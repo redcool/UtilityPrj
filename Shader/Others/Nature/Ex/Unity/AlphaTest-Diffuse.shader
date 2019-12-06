@@ -6,7 +6,14 @@ Properties {
 	_Color ("Main Color", Color) = (1,1,1,1)
 	_MainTex ("Base (RGB) Trans (A)", 2D) = "white" {}
 	_Cutoff ("Alpha cutoff", Range(0,1)) = 0.5
- 
+
+	[Header(Wind)]
+	_Wave("Wave(树枝,边抖动,主,次)",vector) = (5,0,0,0.25)
+	_Wind("Wind(xyz,w:whole scale)",vector) = (1,1,1,1)
+ 	_AttenField("AttenField (x: 水平距离,y:竖直距离)",vector) = (1,1,1,1)
+	_SquashPlaneNormal("_SquashPlaneNormal",vector) = (1,1,1,1)
+    _SquashAmount("_SquashAmount",float) = 1
+
 	[Header(Snow)]  
 	//[Toggle(SNOW)]_SnowEnable("Snow Enabled",float) = 1
 	[Toggle(SNOW_NOISE_MAP_ON)]_SnowNoiseMapOn("SnowNoiseMapOn",float) = 0
@@ -37,11 +44,16 @@ CGPROGRAM
 #pragma surface surf Lambert alphatest:_Cutoff vertex:vert noforwardadd
 //#define SNOW
 //#define SNOW_DISTANCE
+
+#define PLANTS
 #include "../../NatureLib.cginc"
 
 
 sampler2D _MainTex;
 fixed4 _Color;
+
+float4 _Wave;
+float4 _AttenField;
 
 struct Input {
 	float2 uv_MainTex;
@@ -52,7 +64,9 @@ struct Input {
  
 void vert(inout appdata_full v, out Input o) {
 	UNITY_INITIALIZE_OUTPUT(Input, o);
-    
+	v.vertex = ClampWave(v, _Wave, _AttenField.y,_AttenField.x);
+	v.vertex = Squash(v.vertex);
+
 	#ifdef _FEATURE_SNOW
 	float3 worldNormal;
 	float3 pos;

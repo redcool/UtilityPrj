@@ -37,18 +37,29 @@ half _WeatherIntensity;
 
 #ifdef PLANTS
 
-#include "UnityBuiltin3xTreeLibrary.cginc"
+#include "TerrainEngine.cginc"
 
-inline float4 ClampWave(appdata_full v, float4 wave, float yRadius, float xzRadius) {
+inline float4 ClampWave(appdata_full v, float4 wave, float yDist, float xzDist) {
+	//yDist = max(0,yDist);
+	//xzDist = max(0,xzDist);
+
 	float4 worldPos = mul(unity_ObjectToWorld, v.vertex);
 
-	float xzAtten = saturate(length(v.vertex.xz) - xzRadius);
-	float yAtten = saturate(v.vertex.y - yRadius);
-	float atten = xzAtten * yAtten;
+	_Wind.xyz = normalize(_Wind.xyz); 	//避免顶点拉伸
+	float4 wavePos = AnimateVertex(worldPos, v.normal, float4(v.color.xy, v.texcoord1.xy)  * wave);
 
-	float4 wavePos = AnimateVertex(worldPos, v.normal, float4(v.color.xy, v.texcoord.xy)  * wave);
+#if defined(Y_UP)
+	float xzAtten = saturate(length(v.vertex.xz) - xzDist);
+	float yAtten = saturate(v.vertex.y - yDist);
+#else
+	float xzAtten = saturate(length(v.vertex.xy) - xzDist);
+	float yAtten = saturate(v.vertex.z - yDist);
+#endif
 
-	float4 vertex = lerp(worldPos, wavePos, atten);
+	float atten = saturate(xzAtten + yAtten);
+
+	float4 vertex = lerp(worldPos,wavePos,atten);
+
 	return mul(unity_WorldToObject, vertex);
 }
 // end PLANTS

@@ -8,26 +8,36 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
         _Color("Color",color)=(1,1,1,1)
         _NormalMap("NormalMap",2d) = ""{}
 
-        _Tile("Tile",vector) = (5,5,10,10)
-        _Direction("Direction",vector) = (0,1,0,-1)
+        [Header(Clip)]
+        [Toggle(_CLIP_ON)]_Clip("开启alpha剔除?",float) = 0
+        _Culloff("alpha值",range(0,1)) = 0.5
+
+        [Header(Wave)]
+        _WaveMask("水流遮罩(r)",2d) = "white"{}
+        _Tile("平铺(xy:1,zw:2)",vector) = (5,5,10,10)
+        _Direction("水流方向(xy:1,zw:2)",vector) = (0,1,0,-1)
         
         [Header(Reflection)]
-        _ReflectionTex("ReflectionTex",Cube) = ""{}
-        _FakeReflectionTex("FakeReflectionTex",2d) = "black"{}
+        [Toggle(_REFLECTION_ON)]_RefelctionOn("_RefelctionOn",float) = 0
+        _ReflectionTex("环境图",Cube) = ""{}
+        _FakeReflectionTex("平面反射图",2d) = "black"{}
+        _ReflectionIntensity("反射强度",range(0.01,1)) = 0.2
+        _ReflectionMask("反射遮罩(g)",2d) = "white"{}
 
         [Header(Fresnal)]
-        _FresnalWidth("FresnalWidth",float) = 1
+        _FresnalWidth("轮廓光宽度",float) = 1
 
         [Header(VertexWave)]
-        [Toggle]_VertexWave("Vertex Wave ?",float) = 0
-        _VertexWaveNoiseTex("VertexWaveNoiseTex",2d) = ""{}
-        _VertexWaveIntensity("VertexWaveIntensity",float) = 0.1
-        _VertexWaveSpeed("VertexWaveSpeed",float) = 1
+        [Toggle(_VERTEX_WAVE_ON)]_VertexWave("顶点动画 ?",float) = 0
+        _VertexWaveNoiseTex("动画杂点图",2d) = ""{}
+        _VertexWaveIntensity("动画强度",float) = 0.1
+        _VertexWaveSpeed("动画速度",float) = 1
 
         [Header(Specular)]
-        _SpecPower("SpecPower",range(0.001,1)) = 10
-        _Glossness("Glossness",range(0,1)) = 1
-        _SpecWidth("SpecWidth",range(0,1)) = 0.2
+        [Toggle(_SPEC_ON)]_SpecOn("开启高光?",float) = 0
+        _SpecPower("高光强度",range(0.001,1)) = 10
+        _Glossness("平滑度",range(0,1)) = 1
+        _SpecWidth("高光边缘宽度",range(0,1)) = 0.2
     }
 
     CGINCLUDE
@@ -78,6 +88,11 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
             samplerCUBE _ReflectionTex;
             sampler2D _FakeReflectionTex;
             sampler2D _VertexWaveNoiseTex;
+            sampler2D _WaveMask;
+            float _Culloff;
+
+            sampler2D _ReflectionMask;
+            float _ReflectionIntensity;
 
             v2f vert (appdata v)
             {
@@ -92,7 +107,7 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 float vertexWaveSpeed = ACCESS_INSTANCED_PROP(Props,_VertexWaveSpeed);
 
 				// random vertex motion.
-#if _VERTEXWAVE_ON
+#if _VERTEX_WAVE_ON
 				float3 n = tex2Dlod(_VertexWaveNoiseTex, float4(o.uv + _Time.xx * vertexWaveSpeed, 0, 1));
 				float3 fv = v.color * v.normal * (n) * 0.1 * vertexWaveIntensity;
 				o.vertex = UnityObjectToClipPos(v.vertex + fv);
@@ -121,13 +136,21 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
         Pass
         {
             Tags{ "LightMode"="ForwardBase"}
+
+
+
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
             // make fog work
             #pragma multi_compile_fog
-            #pragma shader_feature _VERTEXWAVE_ON
+            #pragma shader_feature _VERTEX_WAVE_ON
+            #pragma shader_feature _CLIP_ON
+            #pragma shader_feature _SPEC_ON
+            #pragma shader_feature _REFLECTION_ON
             #pragma multi_compile_instancing
+
+            
 
             fixed4 frag (v2f i) : SV_Target
             {
@@ -139,6 +162,9 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 float glossness = ACCESS_INSTANCED_PROP(Props,_Glossness);
                 float specWidth = ACCESS_INSTANCED_PROP(Props,_SpecWidth);
 
+                //--------------- waveMask
+                float waveMask = tex2D(_WaveMask,i.uv).r;
+
                 //float2 uv = i.worldPos.xz;
                 float3 worldNormal = UnityObjectToWorldNormal(i.normal);
                 float3 l = normalize(UnityWorldSpaceLightDir(i.worldPos));
@@ -149,7 +175,12 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 n += UnpackNormal(tex2D(_NormalMap,i.normalUV.zw));
                 
                 // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv +n.xy * 0.02) * color;
+                fixed4 col = tex2D(_MainTex, i.uv + (n.xy * 0.02) * waveMask) * color;
+
+            #if defined(_CLIP_ON)
+                clip(col.a - _Culloff);
+            #endif
+
                 //-------------- diffuse
 				float nl = saturate(dot(worldNormal, l));
                 fixed3 diffCol = nl * col.rgb;
@@ -160,20 +191,29 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 fixed3 fresnal = pow(invertNV ,fresnalWidth);//smoothstep(invertNV,invertNV*0.9,_FresnalWidth);
 
                 //--------------specular
+            #if defined(_SPEC_ON)
                 float nh = saturate(dot(worldNormal,h));
                 float spec = pow(nh,specPower * 128) * glossness;
                 spec += smoothstep(spec,spec*0.9,specWidth);
 				float3 specCol = spec * _LightColor0.rgb;
+                col.rgb += specCol * waveMask;
+            #endif
 
                 //--------------- reflection
+            #if defined(_REFLECTION_ON)
                 float3 r = reflect(-v,worldNormal);
-                float3 reflCol = texCUBE(_ReflectionTex,r + n );
-                reflCol += tex2D(_FakeReflectionTex,i.uv + n.xy * 2);
+                float3 reflCol = texCUBE(_ReflectionTex,r + n * waveMask );
+                reflCol += tex2D(_FakeReflectionTex,i.uv + n.xy * 2 * waveMask);
+                reflCol *= _ReflectionIntensity ;
 
+                float reflectionMask = tex2D(_ReflectionMask,i.uv).g;
+                col.rgb = lerp(col.rgb,col.rgb * reflCol,reflectionMask);
+                return col;
+            #endif
+                
 //return float4(col + specCol,1);
-				col.rgb += diffCol+specCol+ fresnal;
+				col.rgb += (diffCol + fresnal) * waveMask;
 //				return col;
-                col.rgb *= reflCol * col.a;
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
