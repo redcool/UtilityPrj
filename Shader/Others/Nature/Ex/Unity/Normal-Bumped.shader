@@ -13,6 +13,10 @@ Properties {
 	//[KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
  
 	[Header(Snow)]
+	// 积雪是否有方向?
+	[Toggle(DISABLE_SNOW_DIR)] _DisableSnowDir("Disable Snow Dir ?",float) = 0
+	_DefaultSnowRate("Default Snow Rate",float) = 1.5
+	//是否使用杂点扰动?
 	[Toggle(SNOW_NOISE_MAP_ON)]_SnowNoiseMapOn("SnowNoiseMapOn",float) = 0
 	[noscaleoffset]_SnowNoiseMap("SnowNoiseMap",2d) = "bump"{}
 	_NoiseDistortNormalIntensity("NoiseDistortNormalIntensity",range(0,1)) = 0
@@ -63,7 +67,7 @@ CGPROGRAM
 #pragma target 3.0
 #pragma surface surf SimpleLambert vertex:vert novertexlights noforwardadd nodynlightmap nodirlightmap 
 #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
-#pragma shader_feature _ SNOW_NOISE_MAP_ON
+#pragma shader_feature _ SNOW_NOISE_MAP_ON DISABLE_SNOW_DIR
 //#define SNOW
 #include "../../NatureLib.cginc"
 #include "../../CustomLight.cginc"

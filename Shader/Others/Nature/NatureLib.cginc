@@ -32,6 +32,9 @@ half Remap(half a,half b,half x){
 	return x * (1.0/d) - a/d;
 }
 
+// --- global vars
+half _WeatherIntensity;
+
 #ifdef PLANTS
 
 #include "UnityBuiltin3xTreeLibrary.cginc"
@@ -60,7 +63,6 @@ float _NoiseDistortNormalIntensity;
 
 float4 _SnowColor;
 float4 _SnowTile;
-float _SnowIntensity;
 
 float4 _SnowDirection;
 float _SnowAngleIntensity;
@@ -70,6 +72,7 @@ float _GlobalSnowAngleIntensity;
 float4 _SnowRimColor;
 float _BorderWidth;
 float _ToneMapping; //reinhard mapping factor
+float _DefaultSnowRate = 1.5;
 //-------
 #ifdef _HEIGHT_SNOW
 float _Distance;
@@ -105,13 +108,17 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 	n = normalize(n);
 #endif
 
+#if !defined(DISABLE_SNOW_DIR)
 	// dot
 	float3 snowDir = normalize(_SnowDirection.xyz);
 	float snowDot = saturate(dot(n, snowDir));
 	float snowRate = smoothstep(snowDot, 0.1, 1 - _SnowAngleIntensity) * snowDot * 2;
+#else
+	float snowRate = _DefaultSnowRate;
+#endif
 
 	// mask
-	float borderRate = lerp(-0.2,_BorderWidth,_SnowIntensity);
+	float borderRate = lerp(-0.2,_BorderWidth,_WeatherIntensity);
 	float edge = 1 - Edge(mainColor.rgb,borderRate);
 
 	// final color
@@ -120,10 +127,10 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 #ifdef _HEIGHT_SNOW
 	float yDist = (height - _Distance) * _DistanceAttenWidth + _DistanceAttenWidth;
 	float yRate = lerp(0, 1, saturate(yDist));
-	float4 heightSnowCol = lerp(0, _SnowColor, yRate)  * _SnowIntensity * edge;
+	float4 heightSnowCol = lerp(0, _SnowColor, yRate)  * _WeatherIntensity * edge;
 	snowColor = max(snowColor,heightSnowCol);
 #endif
-	fixed mapping = lerp(0,snowColor,_ToneMapping) + 1;
+	fixed mapping = _ToneMapping * snowColor + 1;//lerp(0,snowColor,_ToneMapping) + 1;
 	return snowColor/mapping;
 }
 
@@ -151,7 +158,6 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 
 	float _DirAngle;
 	float _WaveIntensity;
-	float _WaveIntensityScale;
 
 struct v2f_surface{
 	float2 uv;
@@ -171,7 +177,7 @@ void NoiseUVNormal(float4 mainColor,float4 normalUV,float3 worldNormal,
 
 	edge = 1 - Edge(mainColor.rgb,_WaveBorderWidth);
 	fixed dirEdge = DirEdge(worldNormal,float3(0,1,0),1 - _DirAngle);
-	edge *= dirEdge * _WaveIntensity * _WaveIntensityScale;
+	edge *= dirEdge * _WaveIntensity * _WeatherIntensity;
 
 	noiseUV = noiseNormal.xy * 0.02 * edge;
 }
@@ -185,46 +191,45 @@ void NoiseUVNormal(float4 mainColor,float4 normalUV,float3 worldNormal,
 // }
 
 float4 SurfaceWaveFrag(v2f_surface i,float4 col,float3 noiseNormal,float edge){
-	float4 waterColor = _WaveColor;
-	float fresnalWidth =  _FresnalWidth;
-	float specPower = _SpecPower;
-	float glossness = _Glossness;
-	float specWidth = _SpecWidth;
 
-	float2 uv = normalize(i.worldPos.xz);
-	float3 worldNormal = UnityObjectToWorldNormal(i.normal);
-	float3 l = normalize(UnityWorldSpaceLightDir(i.worldPos));
-	float3 v = normalize(UnityWorldSpaceViewDir(i.worldPos));
-	float3 h = normalize(l+v);
-
-	col = lerp(col,col * waterColor,edge);
+	col = lerp(col,col * _WaveColor,edge);
 	//col /= (1+col);
-return col*0.75;
+return col;
+
+	float3 l = half3(0,.8,0);//normalize(UnityWorldSpaceLightDir(i.worldPos));
+	float3 worldNormal = normalize(i.normal);
 	//-------------- diffuse
 	float nl = saturate(dot(worldNormal, l));
 	fixed3 diffCol = nl * col.rgb;
+	col.rgb += diffCol * 0.2;
 
+//return float4(diffCol,1);
 	//--------------- fresnal
+	float3 v = normalize(UnityWorldSpaceViewDir(i.worldPos));
 	float nv = dot(worldNormal,v);
 	float invertNV = 1-nv;
-	fixed3 fresnal = pow(invertNV ,fresnalWidth);//smoothstep(invertNV,invertNV*0.9,_FresnalWidth);
+	fixed3 fresnal = pow(invertNV ,_FresnalWidth);//smoothstep(invertNV,invertNV*0.9,_FresnalWidth);
+	col.rgb += fresnal * 0.2;
 
 	//--------------specular
-	float nh = saturate(dot(worldNormal,h));
-	float spec = pow(nh,specPower * 128) * glossness;
-	spec += smoothstep(spec,spec*0.9,specWidth);
-	float3 specCol = spec * _LightColor0.rgb;
+	float3 h = normalize(l+v);
+	float nh = saturate(dot(noiseNormal*nl,h));
+	//float spec = smoothstep(nh-0.9,nh,_SpecWidth)*nl;
+	float spec = pow(nh,_SpecPower * 32) * _Glossness;
+	spec *= smoothstep(spec,spec-0.3,_SpecWidth);
+	float3 specCol = spec ;
+	col.rgb += specCol * 0.2;
 
+//return col + fixed4(diffCol + specCol,1);
 	//--------------- reflection
+	float2 uv = normalize(i.worldPos.xz);	
 	float3 r = reflect(-v,worldNormal);
 	float3 reflCol = texCUBE(_ReflectionTex,r + noiseNormal );
 	reflCol += tex2D(_FakeReflectionTex,i.uv + noiseNormal.xy * 2);
+	//reflCol *= 0.4;
+	col.rgb += reflCol * 0.08;
 
-//return float4(col + specCol,1);
-	col.rgb += diffCol+specCol+ fresnal;
-//				return col;
-	col.rgb *= reflCol * col.a;
-
+	//col.rgb += (diffCol+specCol+fresnal+reflCol)*0.2;
 	return col;
 }
 
