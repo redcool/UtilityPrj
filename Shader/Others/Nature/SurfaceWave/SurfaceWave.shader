@@ -152,13 +152,16 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
     {
         Tags { "RenderType"="Transparent" "Queue"="Transparent"}
         LOD 100
-        blend one oneMinusSrcAlpha
+
+        // Pass{
+        //     zwrite on
+        //     colorMask 0
+        // }
 
         Pass
         {
             Tags{ "LightMode"="ForwardBase"}
-
-
+            // blend srcAlpha oneMinusSrcAlpha
 
             CGPROGRAM
             #pragma vertex vert
@@ -178,7 +181,7 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
             {
                 //for instancing props
                 UNITY_SETUP_INSTANCE_ID(i); 
-                float4 color = ACCESS_INSTANCED_PROP(Props,_Color);
+                float4 color = ACCESS_INSTANCED_PROP(Props,_Color);     
                 float fresnalWidth =  ACCESS_INSTANCED_PROP(Props,_FresnalWidth);
                 float specPower = ACCESS_INSTANCED_PROP(Props,_SpecPower);
                 float glossness = ACCESS_INSTANCED_PROP(Props,_Glossness);
@@ -197,10 +200,10 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 n += UnpackNormal(tex2D(_NormalMap,i.normalUV.zw));
                 
                 // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv + (n.xy * 0.02) * waveMask);
-
+                fixed4 col = tex2D(_MainTex, i.uv + (n.xy * 0.02 * waveMask));  
             #if defined(_CLIP_ON)
-                clip(col.a - _Culloff);
+                float culloff = ACCESS_INSTANCED_PROP(Props,_Culloff);
+                clip(col.a - culloff);
             #endif
 
                 //-------------- diffuse
@@ -230,12 +233,12 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 float reflectionMask = tex2D(_ReflectionMask,i.uv).g;
                 reflCol *= reflectionMask;
 
-                col.rgb = lerp(col.rgb,col.rgb * reflCol,_ReflectionIntensity );
+                float reflIntensity = ACCESS_INSTANCED_PROP(Props,_ReflectionIntensity);
+                col.rgb = lerp(col.rgb,col.rgb * reflCol, reflIntensity);
             #endif
                 
-//return float4(col + specCol,1);
 				col.rgb += (diffCol + fresnal) * waveMask;
-                col *= _Color;
+                col *= color;
 
                 //---------------- color
             #if defined(_COLOR_ADJUST_ON)
