@@ -39,9 +39,10 @@ half _WeatherIntensity;
 
 #include "TerrainEngine.cginc"
 
-inline float4 ClampWave(appdata_full v, float4 wave, float yDist, float xzDist) {
-	//yDist = max(0,yDist);
-	//xzDist = max(0,xzDist);
+inline float4 ClampVertexWave(appdata_full v, float4 wave, float yDist, float xzDist) {
+#if defined(EXPAND_BILLBOARD)
+    ExpandBillboard (UNITY_MATRIX_IT_MV, v.vertex, v.normal, v.tangent);
+#endif
 
 	float4 worldPos = mul(unity_ObjectToWorld, v.vertex);
 
