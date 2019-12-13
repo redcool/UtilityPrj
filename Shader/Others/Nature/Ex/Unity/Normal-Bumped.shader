@@ -67,7 +67,8 @@ CGPROGRAM
 #pragma target 3.0
 #pragma surface surf SimpleLambert vertex:vert novertexlights noforwardadd nodynlightmap nodirlightmap 
 #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
-#pragma shader_feature _ SNOW_NOISE_MAP_ON DISABLE_SNOW_DIR
+#pragma shader_feature SNOW_NOISE_MAP_ON
+#pragma shader_feature  DISABLE_SNOW_DIR
 //#define SNOW
 #include "../../NatureLib.cginc"
 #include "../../CustomLight.cginc"

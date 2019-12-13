@@ -6,11 +6,11 @@ Properties {
 	_Color ("Main Color", Color) = (1,1,1,1)
 	_MainTex ("Base (RGB) Trans (A)", 2D) = "white" {}
 	_Cutoff ("Alpha cutoff", Range(0,1)) = 0.5
-
+	_NormalMap("Normal Map",2d) = ""{}
 
 	[Header(Wind)]
 	[Toggle(EXPAND_BILLBOARD)]_ExpandBillboard("叶片膨胀?",float) = 0
-	_Wave("抖动(树枝,边抖动,风向偏移,方向回弹)",vector) = (5,0,0,0.25)
+	_Wave("抖动(树枝,边抖动,风向偏移,风向回弹)",vector) = (5,0.2,0.2,0.25)
 	_Wind("风力(xyz:方向,w:风强)",vector) = (1,1,1,1)
  	_AttenField("无抖动范围 (x: 水平距离,y:竖直距离)",vector) = (1,1,1,1)
 
@@ -39,11 +39,10 @@ SubShader {
 	Cull[_CullMode]    
 CGPROGRAM
 #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
-//#if defined(_FEATURE_SNOW)
 #pragma shader_feature  SNOW_NOISE_MAP_ON
 #pragma shader_feature _HEIGHT_SNOW 
-//#endif
-#pragma shader_feature EXPAND_BILLBOARD
+
+//#pragma shader_feature EXPAND_BILLBOARD
 #pragma surface surf Lambert alphatest:_Cutoff vertex:vert noforwardadd
 //#define SNOW
 //#define SNOW_DISTANCE
@@ -53,6 +52,7 @@ CGPROGRAM
 
 
 sampler2D _MainTex;
+sampler2D _NormalMap;
 fixed4 _Color;
 
 float4 _Wave;
@@ -88,6 +88,7 @@ void surf (Input IN, inout SurfaceOutput o) {
 
 	o.Albedo = c.rgb;   
 	o.Alpha = c.a;
+	o.Normal= UnpackNormal(tex2D(_NormalMap,IN.uv_MainTex));
 } 
 ENDCG
 }

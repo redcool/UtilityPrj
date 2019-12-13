@@ -49,10 +49,10 @@ inline float4 ClampVertexWave(appdata_full v, float4 wave, float yDist, float xz
 	_Wind.xyz = normalize(_Wind.xyz); 	//避免顶点拉伸
 	float4 wavePos = AnimateVertex(worldPos, v.normal, float4(v.color.xy, v.texcoord1.xy)  * wave);
 
-#if defined(Y_UP)
+#if defined(UP_Y) // y向上
 	float xzAtten = saturate(length(v.vertex.xz) - xzDist);
 	float yAtten = saturate(v.vertex.y - yDist);
-#else
+#else //z向上
 	float xzAtten = saturate(length(v.vertex.xy) - xzDist);
 	float yAtten = saturate(v.vertex.z - yDist);
 #endif
