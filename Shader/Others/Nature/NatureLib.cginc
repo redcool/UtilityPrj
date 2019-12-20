@@ -37,6 +37,9 @@ half _WeatherIntensity;
 
 #ifdef PLANTS
 
+float4 _Wave;
+float4 _AttenField;
+
 #include "TerrainEngine.cginc"
 
 inline float4 ClampVertexWave(appdata_full v, float4 wave, float yDist, float xzDist) {

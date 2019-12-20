@@ -10,7 +10,7 @@ Properties {
 
 	[Header(Wind)]
 	[Toggle(EXPAND_BILLBOARD)]_ExpandBillboard("叶片膨胀?",float) = 0
-	_Wave("抖动(树枝,边抖动,风向偏移,风向回弹)",vector) = (5,0.2,0.2,0.25)
+	_Wave("抖动(树枝,边抖动,风向偏移,风向回弹)",vector) = (0,0.2,0.2,0.1)
 	_Wind("风力(xyz:方向,w:风强)",vector) = (1,1,1,1)
  	_AttenField("无抖动范围 (x: 水平距离,y:竖直距离)",vector) = (1,1,1,1)
 
@@ -55,8 +55,7 @@ sampler2D _MainTex;
 sampler2D _NormalMap;
 fixed4 _Color;
 
-float4 _Wave;
-float4 _AttenField;
+
 
 struct Input {
 	float2 uv_MainTex;
@@ -67,8 +66,10 @@ struct Input {
  
 void vert(inout appdata_full v, out Input o) {
 	UNITY_INITIALIZE_OUTPUT(Input, o);
+	#if defined(PLANTS)
 	v.vertex = ClampVertexWave(v, _Wave, _AttenField.y,_AttenField.x);
 	//v.vertex = Squash(v.vertex);
+	#endif
 
 	#ifdef _FEATURE_SNOW
 	float3 worldNormal;

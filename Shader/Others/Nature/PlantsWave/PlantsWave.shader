@@ -13,6 +13,12 @@
 		[KeywordEnum(Y,Z)]UP_("向上的轴向",float) = 0
 	}
 	CGINCLUDE
+	// for unity 5
+#define UNITY_INSTANCING_BUFFER_START(Props) UNITY_INSTANCING_CBUFFER_START(Props)
+#define UNITY_INSTANCING_BUFFER_END(Props) UNITY_INSTANCING_CBUFFER_END
+#define ACCESS_INSTANCED_PROP(arr,var) UNITY_ACCESS_INSTANCED_PROP(var)
+
+        #pragma multi_compile_instancing
 		#include "UnityCG.cginc"
 		#define PLANTS
 		#pragma multi_compile UP_Y,UP_Z
@@ -26,14 +32,20 @@
 
 		sampler2D _MainTex;
 		float4 _MainTex_ST;
-		float4 _Wave;
-		float4 _AttenField;
+
+		UNITY_INSTANCING_BUFFER_START(Props)
+            UNITY_DEFINE_INSTANCED_PROP(float4, _Wave)			
+			UNITY_DEFINE_INSTANCED_PROP(float4, _AttenField)
+        UNITY_INSTANCING_BUFFER_END(Props)
 
 		v2f vert(appdata_full v)
 		{
+			UNITY_SETUP_INSTANCE_ID(v);
 			v2f o;
-
-			v.vertex = ClampVertexWave(v, _Wave, _AttenField.y,_AttenField.x);
+			//UNITY_TRANSFER_INSTANCE_ID(v, o);
+			float4 wave = ACCESS_INSTANCED_PROP(Props,_Wave);
+			float4 attenField = ACCESS_INSTANCED_PROP(Props,_AttenField);
+			v.vertex = ClampVertexWave(v, wave, attenField.y,attenField.x);
 			//v.vertex = Squash(v.vertex);	
 
 			o.vertex = UnityObjectToClipPos(v.vertex);
