@@ -10,6 +10,8 @@ Shader "Unlit/Hair"
         _NormalMap("NormalMap",2d) = ""{}
         _SpecMaskMap("SpecMaskMap(r:shift)",2d) = ""{}
 
+        _TangentRate("TangentRate",range(0,1)) = 0
+
         _SpecIntensity("SpecIntensity",range(0,1)) = 1
 
         _SpecColor("SpecColor",color) = (1,1,1,1)
@@ -73,6 +75,7 @@ Shader "Unlit/Hair"
             float _Shift2;
 
             float _Saturate;
+            float _TangentRate;
 
             float3 ShiftTangent(float3 t,float3 n,float shift){
                 return normalize(t + n * shift);
@@ -109,8 +112,10 @@ Shader "Unlit/Hair"
                 float3 v = UnityWorldSpaceViewDir(worldPos);
 
                 float4 specMask = tex2D(_SpecMaskMap,i.uv);
-                float3 t1 = ShiftTangent(b,n,specMask.r + _Shift);
-                float3 t2 = ShiftTangent(b,n,specMask.r + _Shift2);
+
+                float tan = lerp(t,b,_TangentRate);
+                float3 t1 = ShiftTangent(tan,n,specMask.r + _Shift);
+                float3 t2 = ShiftTangent(tan,n,specMask.r + _Shift2);
 
                 float3 spec1 = StrandSpecular(t1,v,l,_SpecPower) * _SpecColor;
                 float3 spec2 = StrandSpecular(t2,v,l,_SpecPower2) * _SpecColor2;
