@@ -1,4 +1,6 @@
-﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+﻿// Upgrade NOTE: upgraded instancing buffer 'Props' to new syntax.
+
+// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 
 Shader "Unlit/Transparent/Wave/SurfaceWave"
 {
@@ -8,19 +10,20 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
         _Color("Color",color)=(1,1,1,1)
         _NormalMap("NormalMap",2d) = ""{}
 
-        [Header(Color Adjust)]
-        [Toggle(_COLOR_ADJUST_ON)]_ColorAdjustOn("调色?",float) = 0
-        _Saturate("饱和度",float) = 1
-        _Brightness("亮度",float) = 1
+        // [Header(Color Adjust)]
 
         [Header(Clip)]
         [Toggle(_CLIP_ON)]_Clip("开启alpha剔除?",float) = 0
         _Culloff("alpha值",range(0,1)) = 0.5
 
         [Header(Wave)]
-        _WaveMask("水流遮罩(r)",2d) = "white"{}
+        _WaveMask("流动遮罩(r)",2d) = "white"{}
         _Tile("平铺(xy:1,zw:2)",vector) = (5,5,10,10)
-        _Direction("水流方向(xy:1,zw:2)",vector) = (0,1,0,-1)
+        _Direction("流动方向(xy:1,zw:2)",vector) = (0,1,0,-1)
+
+        [Toggle(_COLOR_ADJUST_ON)]_ColorAdjustOn("流动区域调色?",float) = 0
+        _Saturate("饱和度",float) = 1
+        _Brightness("亮度",float) = 1
         
         [Header(Reflection)]
         [Toggle(_REFLECTION_ON)]_RefelctionOn("_RefelctionOn",float) = 0
@@ -79,15 +82,17 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 UNITY_DEFINE_INSTANCED_PROP(float4, _Tile)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _Direction)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FresnalWidth)
-                UNITY_DEFINE_INSTANCED_PROP(float, _VertexWaveIntensity)
-                UNITY_DEFINE_INSTANCED_PROP(float, _VertexWaveSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SpecPower)
                 UNITY_DEFINE_INSTANCED_PROP(float, _Glossness)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SpecWidth)
+
+                #if defined(_VERTEX_WAVE_ON)
+                    UNITY_DEFINE_INSTANCED_PROP(float, _VertexWaveIntensity)
+                    UNITY_DEFINE_INSTANCED_PROP(float, _VertexWaveSpeed)
+                #endif
                 #if defined(_CLIP_ON)
                     UNITY_DEFINE_INSTANCED_PROP(float, _Culloff)
                 #endif
-
                 #if defined(_REFLECTION_ON)
                     UNITY_DEFINE_INSTANCED_PROP(float, _ReflectionIntensity)
                 #endif
@@ -124,17 +129,6 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 // get instancing props.
                 float4 tile = ACCESS_INSTANCED_PROP(Props,_Tile);
                 float4 direction = ACCESS_INSTANCED_PROP(Props,_Direction);
-                float vertexWaveIntensity = ACCESS_INSTANCED_PROP(Props,_VertexWaveIntensity);
-                float vertexWaveSpeed = ACCESS_INSTANCED_PROP(Props,_VertexWaveSpeed);
-
-				// random vertex motion.
-#if _VERTEX_WAVE_ON
-				float3 n = tex2Dlod(_VertexWaveNoiseTex, float4(o.uv + _Time.xx * vertexWaveSpeed, 0, 1));
-				float3 fv = v.color * v.normal * (n) * 0.1 * vertexWaveIntensity;
-				o.vertex = UnityObjectToClipPos(v.vertex + fv);
-#else
-				o.vertex = UnityObjectToClipPos(v.vertex);
-#endif
 
                 o.worldPos = mul(unity_ObjectToWorld,v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
@@ -142,7 +136,16 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 o.normal = v.normal;
                 o.screenPos = ComputeScreenPos(o.vertex);
 
-
+				// random vertex motion.
+#if _VERTEX_WAVE_ON
+                float vertexWaveIntensity = ACCESS_INSTANCED_PROP(Props,_VertexWaveIntensity);
+                float vertexWaveSpeed = ACCESS_INSTANCED_PROP(Props,_VertexWaveSpeed);
+				float3 n = tex2Dlod(_VertexWaveNoiseTex, float4(o.uv + _Time.xx * vertexWaveSpeed, 0, 1));
+				float3 fv = v.color * v.normal * (n) * 0.1 * vertexWaveIntensity;
+				o.vertex = UnityObjectToClipPos(v.vertex + fv);
+#else
+				o.vertex = UnityObjectToClipPos(v.vertex);
+#endif
                 UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
@@ -167,13 +170,13 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
             #pragma vertex vert
             #pragma fragment frag
             // make fog work
+            #pragma multi_compile_instancing
             #pragma multi_compile_fog
             #pragma shader_feature _VERTEX_WAVE_ON
             #pragma shader_feature _CLIP_ON
             #pragma shader_feature _SPEC_ON
             #pragma shader_feature _REFLECTION_ON
             #pragma shader_feature _COLOR_ADJUST_ON
-            #pragma multi_compile_instancing
 
             
 
@@ -224,6 +227,8 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 col.rgb += specCol * waveMask;
             #endif
 
+            col.rgb += (diffCol + fresnal) * waveMask;
+            col *= color;
                 //--------------- reflection
             #if defined(_REFLECTION_ON)
                 float3 r = reflect(-v,worldNormal);
@@ -236,14 +241,15 @@ Shader "Unlit/Transparent/Wave/SurfaceWave"
                 float reflIntensity = ACCESS_INSTANCED_PROP(Props,_ReflectionIntensity);
                 col.rgb = lerp(col.rgb,col.rgb * reflCol, reflIntensity);
             #endif
-                
-				col.rgb += (diffCol + fresnal) * waveMask;
-                col *= color;
 
-                //---------------- color
+            //---------------- color
             #if defined(_COLOR_ADJUST_ON)
-                col.rgb = lerp(dot(float3(0.2,0.7,0.07),col.rgb),col.rgb,_Saturate);
-                col.rgb = lerp(dot(float3(0,0,0),col.rgb),col.rgb,_Brightness);
+                float saturate = ACCESS_INSTANCED_PROP(Props,_Saturate);
+                float brightness = ACCESS_INSTANCED_PROP(Props,_Brightness);
+
+                float3 colAdjust = lerp(dot(float3(0.2,0.7,0.07),col.rgb),col.rgb,saturate) * waveMask;
+                colAdjust = lerp(dot(float3(0,0,0),colAdjust),colAdjust,brightness) * waveMask;
+                col.rgb += colAdjust * 0.5;
             #endif
 //				return col;
                 // apply fog
