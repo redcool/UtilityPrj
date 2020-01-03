@@ -3,6 +3,21 @@
 #ifndef NODE_LIB_CGINC
 #define NODE_LIB_CGINC
 
+#define PI 3.14159
+
+float3 ComputeRipple(sampler2D rippleTex,float2 uv, float t)
+{
+	float4 ripple = tex2D(rippleTex, uv);
+	ripple.yz = ripple.yz * 2.0 - 1.0;
+
+	float drop = frac(ripple.a + t);
+	float move = ripple.x + drop -1;
+	float dropFactor = 1 - saturate(drop);
+
+	float final = dropFactor * sin(clamp(move*9,0,4)*PI);
+	return float3(ripple.yz * final,1);
+}
+
 
 float3 BlendNormal(float3 a, float3 b) {
 	return normalize(float3(a.rb + b.rg, a.b*b.b));
