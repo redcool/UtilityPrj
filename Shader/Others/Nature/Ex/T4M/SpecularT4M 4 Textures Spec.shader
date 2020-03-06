@@ -3,7 +3,9 @@
 
 Shader "T4MShaders/Specular/T4M 4 Textures Spec" {
 Properties {
+	_SpecDir("Specular Direction",Vector)=(1,1,0,0)
 	_SpecColor ("Specular Color(RGB); diff(A)", Color) = (1, 1, 1, 1)
+
 	_ShininessL0 ("Layer1Shininess", Range (0.03, 1)) = 0.078125
 	_Splat0 ("Layer 1", 2D) = "white" {}
 	_ShininessL1 ("Layer2Shininess", Range (0.03, 1)) = 0.078125
@@ -15,12 +17,14 @@ Properties {
 	_Tiling3("_Tiling4 x/y", Vector)=(1,1,0,0)
 	_Control ("Control (RGBA)", 2D) = "white" {}
 	_MainTex ("Never Used", 2D) = "white" {}
-	_SpecDir("Specular Direction",Vector)=(1,1,0,0)
   
-  [Space(20)]
-	//[KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
 	
 	[Header(Snow)] 
+  	// 积雪是否有方向?
+	[Toggle(DISABLE_SNOW_DIR)] _DisableSnowDir("Disable Snow Dir ?",float) = 0
+	_DefaultSnowRate("Default Snow Rate",float) = 1.5
+	//是否使用杂点扰动?
+	[Toggle(SNOW_NOISE_MAP_ON)]_SnowNoiseMapOn("SnowNoiseMapOn",float) = 0
 	[noscaleoffset]_SnowNoiseMap("SnowNoiseMap",2d) = "bump"{}
 	_NoiseDistortNormalIntensity("NoiseDistortNormalIntensity",range(0,1)) = 0
 
@@ -29,35 +33,58 @@ Properties {
 	_SnowAngleIntensity("SnowAngleIntensity",range(0.1,1)) = 1
 	_SnowTile("tile",vector) = (1,1,1,1)
  	_BorderWidth("BorderWidth",range(-0.2,0.4)) = 0.01
+  _ToneMapping("ToneMapping",range(0,1)) = 0
+  _SplatSnowIntensity("SplatSnowIntensity",vector) = (1,1,1,1)
+
+[Space(10)]
+  [Header(Rain Specular)]
+	_RainSpecDir("Rain Specular Direction",Vector)=(1,1,0,0)
+	_RainSpecColor ("Rain Specular Color(RGB); diff(A)", Color) = (1, 1, 1, 1)
+  _RainTerrainShininess("RainTerrainShininess",vector)=(1,1,1,1)
+
 
   [Space(20)]
-	[Header(SurfaceWave)]
-        _WaveColor("Color",color)=(1,1,1,1)
-        _Tile("Tile",vector) = (5,5,10,10)
-        _Direction("Direction",vector) = (0,1,0,-1)
+  [Header(SurfaceWave)]
+  _LayerMask("Terrain Splat Layer Mask",vector) = (1,1,1,1)
+  _WaveColor("Color",color)=(1,1,1,1)
+  _Tile("Tile",vector) = (5,5,10,10)
+  _Direction("Direction",vector) = (0,1,0,-1)
 
-        [noscaleoffset]_WaveNoiseMap("WaveNoiseMap",2d) = "bump"{}
-        // [Header(Reflection)]
-        // _ReflectionTex("ReflectionTex",Cube) = ""{}
-        // _FakeReflectionTex("FakeReflectionTex",2d) = "black"{}
+  [noscaleoffset]_WaveNoiseMap("WaveNoiseMap",2d) = "bump"{}
+  [Header(Env Reflection)]
+  _EnvTex("Env Tex",Cube) = ""{}
+  _EnvColor("Env Color",color) = (1,1,1,1)
+  _EnvNoiseMap("Env Noise Map",2d) = ""{}
+  _EnvIntensity("Env Intensity",float) = 1
+  _EnvTileOffset("Env Tile(xy),Offset(zw)",vector) = (1,1,0.1,0.1)
+  // _FakeReflectionTex("FakeReflectionTex",2d) = "black"{}
 
-        [Header(Fresnal)] 
-        _FresnalWidth("FresnalWidth",float) = 1    
+  // [Header(Fresnal)] 
+  // _FresnalWidth("FresnalWidth",float) = 1    
 
-        // [Header(VertexWave)]
-        // [Toggle]_VertexWave("Vertex Wave ?",float) = 0
-        // _VertexWaveNoiseTex("VertexWaveNoiseTex",2d) = ""{}
-        // _VertexWaveIntensity("VertexWaveIntensity",float) = 0.1
-        // _VertexWaveSpeed("VertexWaveSpeed",float) = 1
+  // [Header(VertexWave)]
+  // [Toggle]_VertexWave("Vertex Wave ?",float) = 0
+  // _VertexWaveNoiseTex("VertexWaveNoiseTex",2d) = ""{}
+  // _VertexWaveIntensity("VertexWaveIntensity",float) = 0.1
+  // _VertexWaveSpeed("VertexWaveSpeed",float) = 1
 
-        [Header(Specular)]
-        _SpecPower("SpecPower",range(0.001,1)) = 10    
-        _Glossness("Glossness",range(0,1)) = 1 
-        _SpecWidth("SpecWidth",range(0,1)) = 0.2
+  // [Header(Specular)]
+  // _SpecPower("SpecPower",range(0.001,1)) = 10    
+  // _Glossness("Glossness",range(0,1)) = 1 
+  // _SpecWidth("SpecWidth",range(0,1)) = 0.2
 
-		_WaveBorderWidth("WaveBorderWidth",range(0,1)) = 0.2
-		_DirAngle("DirAngle",range(0,1)) = 0.8
-		_WaveIntensity("WaveIntensity",range(0,1)) = 0.8
+  [Header(WaterEdge)]
+  _WaveBorderWidth("WaveBorderWidth",range(0,1)) = 0.2
+  _DirAngle("DirAngle",range(0,1)) = 0.8
+  _WaveIntensity("WaveIntensity",range(0,1)) = 0.8
+
+  [Header(Ripple)]
+  [Toggle(RIPPLE_ON)]_RippleOn("RippleOn?",int) = 0
+  _RippleTex("RippleTex",2d)=""{}
+  _RippleScale("RippleScale",range(1,100)) = 1
+  _RippleIntensity("RippleIntensity",range(0,1)) = 1
+  _RippleColorTint("RippleColorTint",color) = (0.8,0.8,0.8,1)
+  _RippleSpeed("RippleSpeed",range(0,2.4)) = 1
 }
  
 SubShader {
@@ -82,8 +109,13 @@ CGPROGRAM
 #pragma fragment frag_surf
 #pragma exclude_renderers xbox360 ps3
 #pragma multi_compile_fog
-#pragma multi_compile_fwdbase
+//#pragma multi_compile_fwdbase
+#pragma multi_compile LIGHTMAP_ON LIGHTMAP_OFF
 #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
+#pragma shader_feature SNOW_NOISE_MAP_ON
+#pragma shader_feature DISABLE_SNOW_DIR
+#pragma shader_feature RIPPLE_ON
+#pragma shader_feature LEVEL_LOW LEVEL_MIDDLE LEVEL_HIGH LEVEL_SUPER
 
 #include "HLSLSupport.cginc"
 #include "UnityShaderVariables.cginc"
@@ -109,12 +141,14 @@ CGPROGRAM
 //   float2 _Splat0
 //   float2 _Splat1
 //   float2 _Splat2
-#define UNITY_PASS_FORWARDBASE
+//#define UNITY_PASS_FORWARDBASE
 #include "UnityCG.cginc"
 #include "Lighting.cginc"
 #include "AutoLight.cginc"
 
-#include "../../NatureLib.cginc"
+#define TERRAIN_WEATHER
+
+#include "../../NatureLibMacro.cginc"
 
 #define INTERNAL_DATA
 #define WorldReflectionVector(data,normal) data.worldRefl
@@ -138,17 +172,33 @@ float4 _Tiling3;
 fixed4 _SpecDir;
 
 fixed4 _SnowNoiseTile;
+float4 _SplatSnowIntensity;
+
+half4 _RainSpecColor;
+half4 _RainSpecDir;
+half4 _RainTerrainShininess;
+
+half4 _LayerMask;
 
 inline fixed4 LightingT4MBlinnPhong (SurfaceOutput s, fixed3 lightDir, fixed3 halfDir, fixed atten)
 {
-	fixed diff = max (0, dot (s.Normal, _SpecDir));
+  half3 specDir = _SpecDir;
+  half4 specColor = _SpecColor;
+
+  #if defined(_FEATURE_SURFACE_WAVE)
+  specDir = _RainSpecDir;
+  specColor = _RainSpecColor;
+  #endif
+  specColor.a *= 0.03;
+
+	fixed diff = max (0, dot (s.Normal, specDir));
 	//fixed nh = max (0, dot (s.Normal, halfDir));
-	fixed nh = max (0, dot (normalize(s.Normal), normalize(halfDir+_SpecDir.xyz)));
+	fixed nh = max (0, dot (normalize(s.Normal), normalize(halfDir+specDir.xyz)));
 	fixed spec = pow (nh, s.Specular*128) * s.Gloss;
 	
 	fixed4 c;
 	//c.rgb = (s.Albedo * _LightColor0.rgb * diff + _SpecColor.rgb * spec) * (atten*2);
-	c.rgb = (s.Albedo*_SpecColor.a+_SpecColor.rgb*spec)*(atten*2);
+	c.rgb = (s.Albedo*specColor.a + specColor.rgb*spec)*(atten*2);
 	c.a = 0.0;
 	return c;
 }
@@ -164,20 +214,10 @@ struct Input {
 	float3 wn:TEXCOORD6;
   
 	#ifdef _FEATURE_SURFACE_WAVE
-	float4 normalUV;
+	float4 normalUV:TEXCOORD7;
 	#endif
 
 };
-
-fixed4 SampleSplats(float4 splat_control,float2 uv0,float2 uv1,float2 uv2,float2 uv3){
-	fixed4 lay1 = tex2D (_Splat0, uv0);
-	fixed4 lay2 = tex2D (_Splat1, uv1);
-	fixed4 lay3 = tex2D (_Splat2, uv2);
-	fixed4 lay4 = tex2D (_Splat3, uv3);
-
-	fixed4 c = (lay1 * splat_control.r + lay2 * splat_control.g + lay3 * splat_control.b + lay4 * splat_control.a);
-  return c;
-}
  
 void surf (Input IN, inout SurfaceOutput o) {
   fixed4 splat_control = tex2D (_Control, IN.uv_Control).rgba;
@@ -187,30 +227,27 @@ void surf (Input IN, inout SurfaceOutput o) {
 	fixed4 lay3 = tex2D (_Splat2, IN.uv_Splat2);
 	fixed4 lay4 = tex2D (_Splat3, IN.uv_Control*_Tiling3.xy);
 
-	fixed4 c = (lay1 * splat_control.r + lay2 * splat_control.g + lay3 * splat_control.b + lay4 * splat_control.a);
-
+  half4 shininess = half4(_ShininessL0,_ShininessL1,_ShininessL2,_ShininessL3);
+	
   #ifdef _FEATURE_SNOW
-	fixed4 snowColor = SnowColor(IN.uv_Control,c, IN.wn, IN.worldPos,0);
-  c.rgb = snowColor.rgb;
+  fixed4 c = (lay1 * splat_control.r * _SplatSnowIntensity.x + lay2 * splat_control.g * _SplatSnowIntensity.y + lay3 * splat_control.b * _SplatSnowIntensity.z + lay4 * splat_control.a * _SplatSnowIntensity.w);
+      SNOW_FRAG_FUNCTION(IN.uv_Control,c,IN.wn,IN.worldPos);
+  #else
+  fixed4 c = (lay1 * splat_control.r + lay2 * splat_control.g + lay3 * splat_control.b + lay4 * splat_control.a);
   #endif
        
   #ifdef _FEATURE_SURFACE_WAVE
-  // distort uv,normal.
-  float3 noiseNormal;
-  float2 noiseUV;
-  float edge;
-  NoiseUVNormal(c,IN.normalUV,IN.wn,noiseUV,noiseNormal,edge);
-  // sample splats
-  float4 noiseCol = SampleSplats(splat_control,IN.uv_Splat0 + noiseUV,IN.uv_Splat1+ noiseUV,IN.uv_Splat2+ noiseUV,IN.uv_Control*_Tiling3.xy+ noiseUV);
-  // get surface wave
-	v2f_surface v2fSurface = {IN.uv_Control,IN.worldPos,IN.wn};
-	c.rgb = SurfaceWaveFrag(v2fSurface,noiseCol,noiseNormal,edge);
+      half4 originalCol = c;
+      WATER_FRAG_TERRAIN(c,IN.normalUV,IN.worldPos,IN.wn,IN.uv_Control,splat_control,IN.uv_Splat0,IN.uv_Splat1,IN.uv_Splat2,IN.uv_Control*_Tiling3.xy,_Splat0,_Splat1,_Splat2,_Splat3);
+
+      c.rgb = lerp(originalCol.rgb,c.rgb,Gray(splat_control * _LayerMask)) * _RippleColorTint;
+      shininess = _RainTerrainShininess;
 	#endif
 	 
 	o.Alpha = 0.0;
-	o.Albedo.rgb = c.rgb;
+	o.Albedo.rgb = ApplyThunder(c.rgb);
 	o.Gloss = (lay1.a * splat_control.r + lay2.a * splat_control.g + lay3.a * splat_control.b + lay4.a * splat_control.a);
-	o.Specular = (_ShininessL0 * splat_control.r + _ShininessL1 * splat_control.g + _ShininessL2 * splat_control.b + _ShininessL3 * splat_control.a);
+	o.Specular = (shininess.x * splat_control.r + shininess.y * splat_control.g + shininess.z * splat_control.b + shininess.w * splat_control.a);
 }
  
 
@@ -312,7 +349,7 @@ v2f_surf vert_surf (appdata_full v) {
   UNITY_TRANSFER_FOG(o,o.pos); // pass fog coordinates to pixel shader
 
   #ifdef _FEATURE_SURFACE_WAVE
-  o.normalUV = v.texcoord.xyxy * _Tile + _Time.xxxx* _Direction;
+    WATER_VERT_FUNCTION(v.texcoord,o.normalUV);
   #endif
   return o;
 }
@@ -352,6 +389,7 @@ fixed4 frag_surf (v2f_surf IN) : SV_Target {
   o.Normal = IN.worldNormal;
   normalWorldVertex = IN.worldNormal;
 
+// weather code
   surfIN.worldPos = IN.worldPos;
   surfIN.wn = IN.worldNormal;
 
@@ -388,8 +426,8 @@ fixed4 frag_surf (v2f_surf IN) : SV_Target {
 
 
   // realtime lighting: call lighting function
-  #ifndef LIGHTMAP_OFF
   c += LightingT4MBlinnPhong (o, lightDir, worldViewDir, atten);
+  #ifndef LIGHTMAP_OFF
   #else
     c.a = o.Alpha;
   #endif

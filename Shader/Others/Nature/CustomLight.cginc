@@ -16,9 +16,14 @@ inline fixed4 LambertLight (SurfaceOutput s, UnityLight light)
 
 inline fixed4 LightingSimpleLambert (SurfaceOutput s, UnityGI gi)
 {
+    #if defined(LIGHTMAP_ON)
+        _LightDir = length(_LightDir)==0?half4(0,1,0,0):_LightDir;
+        
+        gi.light.dir += normalize(_LightDir.xyz);
+        gi.light.color += _LightColor;
+    #endif
+
     fixed4 c;
-	gi.light.dir = normalize(_LightDir.xyz);
-	gi.light.color = _LightColor;
     c = LambertLight (s, gi.light);
 
     #ifdef UNITY_LIGHT_FUNCTION_APPLY_INDIRECT
