@@ -5,6 +5,11 @@
 
 #define PI 3.14159
 
+float BandStep(float nl,float step){
+	float seg = step / 10;
+	return floor(nl * 10 / step) * seg;
+}
+
 float3 ComputeRipple(sampler2D rippleTex,float2 uv, float t)
 {
 	float4 ripple = tex2D(rippleTex, uv);
