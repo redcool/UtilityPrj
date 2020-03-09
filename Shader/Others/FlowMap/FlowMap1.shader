@@ -1,11 +1,12 @@
-﻿Shader "Unlit/FlowTest"
+﻿Shader "Unlit/FlowMap1"
 {
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
         _FlowMap("FlowMap",2d) = ""{}
         _Speed("Speed",float) = 1
-        _Tiling("Tiling",float) = 1
+        _FlowMask("FlowMask",2d) = ""{}
+        _FlowThreshold("FlowThreshold",float) = 0
     }
     SubShader
     {
@@ -14,6 +15,7 @@
 
         Pass
         {
+            blend srcAlpha one
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -21,7 +23,6 @@
             #pragma multi_compile_fog
 
             #include "UnityCG.cginc"
-            #include "FlowMap.cginc"
 
             struct appdata
             {
@@ -39,7 +40,9 @@
             sampler2D _MainTex;
             float4 _MainTex_ST;
             sampler2D _FlowMap;
-            float _Speed,_Tiling;
+            float _Speed;
+            sampler2D _FlowMask;
+            float _FlowThreshold;
 
             v2f vert (appdata v)
             {
@@ -50,15 +53,29 @@
                 return o;
             }
 
-
+            float3 Flow1(float2 mainUV,float2 flowVec,float time,bool flowB,float speed){
+                float phase = flowB?0.5:0;
+                float p = frac(time + phase);
+                float2 result = mainUV - flowVec * p * speed;
+                return float3(result, abs((0.5-p)/0.5));
+            }
+            
             fixed4 frag (v2f i) : SV_Target
             {
+                float4 flowMask = tex2D(_FlowMask,i.uv);
+                //clip(flowMask.r - _FlowThreshold);
+
+
                 float4 flowMap = tex2D(_FlowMap,i.uv);
                 float2 flowVec = flowMap.xy * 2 -1;
 
+                float3 flow = Flow1(i.uv,flowVec,_Time.y,true,_Speed);
+                float3 flow2 = Flow1(i.uv,flowVec,_Time.y,false,_Speed);
 
-                float4 col = ApplyFlowColor(_MainTex,i.uv,flowVec);
-                //float4 col = FlowColor(_MainTex,i.uv,flowVec,_Tiling);
+                float4 c = tex2D(_MainTex,flow.xy);
+                float4 c2 = tex2D(_MainTex,flow2.xy);
+                float4 col = lerp(c,c2,flow.z);
+                col.a = flowMask.r;
 
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, col);
