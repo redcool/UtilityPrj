@@ -1,6 +1,7 @@
 ﻿#if UNITY_EDITOR
 namespace MyTools
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using UnityEditor;
@@ -19,6 +20,16 @@ namespace MyTools
             GUILayout.Box("", GUILayout.Height(h), GUILayout.Width(w));
         }
 
+        public static void DrawFixedWidthLabel(float width, Action drawAction)
+        {
+            if (drawAction == null)
+                return;
+
+            var lastLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = width;
+            drawAction();
+            EditorGUIUtility.labelWidth = lastLabelWidth;
+        }
     }
 }
 #endif
