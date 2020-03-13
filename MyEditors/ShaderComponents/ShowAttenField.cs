@@ -97,12 +97,11 @@ public class ShowAttenFieldEditor : Editor {
         Vector2 attenField = item.mat.GetVector(ATTEN_FIELD);
         Vector3 size = attenField;
         size.z = attenField.x;
-        size = Vector3.Scale(size,r.transform.localScale);
+        size = Vector3.Scale(size,r.transform.lossyScale);
 
-        var halfSize = (size / 2);
         var startPos = r.transform.position;
-        var centerPos = startPos + new Vector3(0, halfSize.y,0);
-        Handles.DrawWireCube(centerPos, size);
+        var centerPos = startPos + new Vector3(0, size.y,0);
+        Handles.DrawWireCube(centerPos, size*2);
     }
 }
 #endif
