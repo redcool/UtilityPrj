@@ -9,6 +9,13 @@ namespace MyTools
 
     public static class TextureTools
     {
+        static List<TextureImporterFormat> uncompressionFormats = new List<TextureImporterFormat>(new []{
+            TextureImporterFormat.ARGB32,
+            TextureImporterFormat.RGB24,
+            TextureImporterFormat.RGBA32,
+            TextureImporterFormat.RGBAHalf,
+        });
+
         public static TextureImporter GetTextureImporter(this Texture tex)
         {
             var path = AssetDatabase.GetAssetPath(tex);
@@ -20,6 +27,13 @@ namespace MyTools
                 return;
 
             onSetup.Invoke(tex.GetTextureImporter());
+        }
+
+        public static bool IsCompressionFormat(this Texture tex,string platform)
+        {
+            var imp = tex.GetTextureImporter();
+            var settings = imp.GetPlatformTextureSettings(platform);
+            return !uncompressionFormats.Contains(settings.format);
         }
     }
 }
