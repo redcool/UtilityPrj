@@ -6,6 +6,8 @@
         _Bright("bright",float) = 1
         _Base("base",float) = 1
         _Step("step",int) = 1
+
+        [Toggle(_Mode)]_Mode("BandedLight Mode 2?",int) = 0
     }
     SubShader
     {
@@ -42,6 +44,7 @@
             float4 _MainTex_ST;
             float _Bright,_Base;
             int _Step;
+            int _Mode;
 
             v2f vert (appdata v)
             {
@@ -56,11 +59,12 @@
 
             fixed4 frag (v2f i) : SV_Target
             {
-                //float bandedLight = StepBandedLight(i.n,_WorldSpaceLightPos0.xyz,_Base,_Step);
                 float bandedLight = SmoothBandedLight(i.n,_WorldSpaceLightPos0.xyz,_Base,_Bright);
+                float bandedLight2 = StepBandedLight(i.n,_WorldSpaceLightPos0.xyz,_Base,_Step);
+                float l = lerp(bandedLight,bandedLight2,_Mode);
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
-                col *= bandedLight;
+                col *= l;
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
