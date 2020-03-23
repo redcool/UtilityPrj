@@ -18,7 +18,7 @@
             var segment = new List<MeshFilter>();
             segments.Add(segment);
 
-            for (int i = 1; i < meshList.Count; i++)
+            for (int i = 0; i < meshList.Count; i++)
             {
                 var mf = meshList[i];
                 total += mf.sharedMesh.vertexCount;
@@ -37,20 +37,34 @@
 
         public static List<GameObject> CombineGroupMeshes(List<MeshFilter> groupMeshList, Material groupMat)
         {
-            var segments = GroupByVertexCount(groupMeshList,10000);
-            //segments.ForEach(s => {
-            //    var count = s.Aggregate(0, (c, mf) => c += mf.sharedMesh.vertexCount);
-            //    Debug.Log(s.Count + " , vertex:" + count);
-            //});
-            //return null;
+            var segments = GroupByVertexCount(groupMeshList);
             
             return segments.Select( (segment,id)=> {
-                var mesh = CombineMesh(segment);
+                var mesh = CombineMeshInstance(segment);
                 var go = new GameObject(string.Format("{0} - {1}",groupMat.name,id));
                 go.AddComponent<MeshRenderer>().sharedMaterial = groupMat;
                 go.AddComponent<MeshFilter>().sharedMesh = mesh;
                 return go;
             }).ToList();
+        }
+
+        public static Mesh CombineMeshInstance(List<MeshFilter> mfs)
+        {
+            var q = mfs.Select(mf =>
+            {
+                var mr = mf.GetComponent<MeshRenderer>();
+                var ci = new CombineInstance
+                {
+                    lightmapScaleOffset = mr.lightmapScaleOffset,
+                    mesh = mf.sharedMesh,
+                    realtimeLightmapScaleOffset = mr.realtimeLightmapScaleOffset,
+                    transform = mr.transform.localToWorldMatrix
+                };
+                return ci;
+            });
+            var m = new Mesh();
+            m.CombineMeshes(q.ToArray(), true, true, true);
+            return m;
         }
 
         public static Mesh CombineMesh(List<MeshFilter> mfs)
@@ -65,13 +79,17 @@
             foreach (var mf in mfs)
             {
                 var m = mf.sharedMesh;
-                verts.AddRange(m.vertices.Select(vertex => mf.transform.localToWorldMatrix.MultiplyPoint(vertex)));
+                verts.AddRange(m.vertices.Select(v => mf.transform.localToWorldMatrix.MultiplyPoint(v)).ToArray());
                 uv.AddRange(m.uv);
-                uv2.AddRange(m.uv2);
-                colors.AddRange(m.colors);
-                triangles.AddRange(m.triangles.Select(vertexId => vertexId + vertexCount));
+                uv2.AddRange(m.uv2.Length > 0 ? m.uv2 : m.vertices.Select(v => Vector2.zero));
+                colors.AddRange(m.colors.Length > 0 ? m.colors : m.vertices.Select(v => Color.white).ToArray());
+                triangles.AddRange(m.triangles.Select(vertexId => vertexId + vertexCount).ToArray());
 
                 vertexCount += m.vertexCount;
+                if(colors.Count != 0 && colors.Count != verts.Count)
+                {
+                    Debug.Log("oops");
+                }
             }
 
             var mesh = new Mesh();
