@@ -3,17 +3,19 @@
 
 Shader "T4MShaders/Specular/T4M 4 Textures Spec" {
 Properties {
+  [Header(Specular)]
 	_SpecDir("Specular Direction",Vector)=(1,1,0,0)
 	_SpecColor ("Specular Color(RGB); diff(A)", Color) = (1, 1, 1, 1)
 
-	_ShininessL0 ("Layer1Shininess", Range (0.03, 1)) = 0.078125
+  [Header(Splats)]
 	_Splat0 ("Layer 1", 2D) = "white" {}
-	_ShininessL1 ("Layer2Shininess", Range (0.03, 1)) = 0.078125
+	_ShininessL0 ("Layer1Shininess", Range (0.03, 1)) = 0.078125
 	_Splat1 ("Layer 2", 2D) = "white" {}
-	_ShininessL2 ("Layer3Shininess", Range (0.03, 1)) = 0.078125
+	_ShininessL1 ("Layer2Shininess", Range (0.03, 1)) = 0.078125
 	_Splat2 ("Layer 3", 2D) = "white" {}
-	_ShininessL3 ("Layer4Shininess", Range (0.03, 1)) = 0.078125
+	_ShininessL2 ("Layer3Shininess", Range (0.03, 1)) = 0.078125
 	_Splat3 ("Layer 4", 2D) = "white" {}
+	_ShininessL3 ("Layer4Shininess", Range (0.03, 1)) = 0.078125
 	_Tiling3("_Tiling4 x/y", Vector)=(1,1,0,0)
 	_Control ("Control (RGBA)", 2D) = "white" {}
 	_MainTex ("Never Used", 2D) = "white" {}
@@ -34,7 +36,7 @@ Properties {
 	_SnowTile("tile",vector) = (1,1,1,1)
  	_BorderWidth("BorderWidth",range(-0.2,0.4)) = 0.01
   _ToneMapping("ToneMapping",range(0,1)) = 0
-  _SplatSnowIntensity("SplatSnowIntensity",vector) = (1,1,1,1)
+  _SplatSnowIntensity("积雪分层强度",vector) = (1,1,1,1)
 
 [Space(10)]
   [Header(Rain Specular)]
@@ -45,18 +47,24 @@ Properties {
 
   [Space(20)]
   [Header(SurfaceWave)]
-  _LayerMask("Terrain Splat Layer Mask",vector) = (1,1,1,1)
+  _WaveLayerIntensity("流水(涟漪)分层强度",vector) = (1,1,1,1)
   _WaveColor("Color",color)=(1,1,1,1)
   _Tile("Tile",vector) = (5,5,10,10)
   _Direction("Direction",vector) = (0,1,0,-1)
 
   [noscaleoffset]_WaveNoiseMap("WaveNoiseMap",2d) = "bump"{}
+  [Header(WaterEdge)]
+  _WaveBorderWidth("WaveBorderWidth",range(0,1)) = 0.2
+  _DirAngle("DirAngle",range(0,1)) = 0.8
+  _WaveIntensity("WaveIntensity",range(0,1)) = 0.8
+
   [Header(Env Reflection)]
   _EnvTex("Env Tex",Cube) = ""{}
   _EnvColor("Env Color",color) = (1,1,1,1)
   _EnvNoiseMap("Env Noise Map",2d) = ""{}
   _EnvIntensity("Env Intensity",float) = 1
   _EnvTileOffset("Env Tile(xy),Offset(zw)",vector) = (1,1,0.1,0.1)
+  _EnvLayerIntensity("环境反射分层强度",vector) = (1,1,1,1)
   // _FakeReflectionTex("FakeReflectionTex",2d) = "black"{}
 
   // [Header(Fresnal)] 
@@ -73,10 +81,7 @@ Properties {
   // _Glossness("Glossness",range(0,1)) = 1 
   // _SpecWidth("SpecWidth",range(0,1)) = 0.2
 
-  [Header(WaterEdge)]
-  _WaveBorderWidth("WaveBorderWidth",range(0,1)) = 0.2
-  _DirAngle("DirAngle",range(0,1)) = 0.8
-  _WaveIntensity("WaveIntensity",range(0,1)) = 0.8
+
 
   [Header(Ripple)]
   [Toggle(RIPPLE_ON)]_RippleOn("RippleOn?",int) = 0
@@ -109,13 +114,14 @@ CGPROGRAM
 #pragma fragment frag_surf
 #pragma exclude_renderers xbox360 ps3
 #pragma multi_compile_fog
-//#pragma multi_compile_fwdbase
-#pragma multi_compile LIGHTMAP_ON LIGHTMAP_OFF
+#pragma multi_compile_fwdbase
+
+
 #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
 #pragma shader_feature SNOW_NOISE_MAP_ON
 #pragma shader_feature DISABLE_SNOW_DIR
 #pragma shader_feature RIPPLE_ON
-#pragma shader_feature LEVEL_LOW LEVEL_MIDDLE LEVEL_HIGH LEVEL_SUPER
+#pragma multi_compile _ RAIN_REFLECTION
 
 #include "HLSLSupport.cginc"
 #include "UnityShaderVariables.cginc"
@@ -178,7 +184,8 @@ half4 _RainSpecColor;
 half4 _RainSpecDir;
 half4 _RainTerrainShininess;
 
-half4 _LayerMask;
+half4 _WaveLayerIntensity;
+half4 _EnvLayerIntensity;
 
 inline fixed4 LightingT4MBlinnPhong (SurfaceOutput s, fixed3 lightDir, fixed3 halfDir, fixed atten)
 {
@@ -187,7 +194,7 @@ inline fixed4 LightingT4MBlinnPhong (SurfaceOutput s, fixed3 lightDir, fixed3 ha
 
   #if defined(_FEATURE_SURFACE_WAVE)
   specDir = _RainSpecDir;
-  specColor = _RainSpecColor;
+  specColor *= ApplyWeather(_RainSpecColor);
   #endif
   specColor.a *= 0.03;
 
@@ -198,7 +205,7 @@ inline fixed4 LightingT4MBlinnPhong (SurfaceOutput s, fixed3 lightDir, fixed3 ha
 	
 	fixed4 c;
 	//c.rgb = (s.Albedo * _LightColor0.rgb * diff + _SpecColor.rgb * spec) * (atten*2);
-	c.rgb = (s.Albedo*specColor.a + specColor.rgb*spec)*(atten*2);
+	c.rgb = s.Albedo*0.02 + s.Albedo * _LightColor0.rgb * diff + (s.Albedo * specColor.a + specColor.rgb*spec)*(atten*2);
 	c.a = 0.0;
 	return c;
 }
@@ -220,7 +227,7 @@ struct Input {
 };
  
 void surf (Input IN, inout SurfaceOutput o) {
-  fixed4 splat_control = tex2D (_Control, IN.uv_Control).rgba;
+  fixed4 splat_control = tex2D (_Control, IN.uv_Control);
 		
 	fixed4 lay1 = tex2D (_Splat0, IN.uv_Splat0);  
 	fixed4 lay2 = tex2D (_Splat1, IN.uv_Splat1);
@@ -239,11 +246,11 @@ void surf (Input IN, inout SurfaceOutput o) {
   #ifdef _FEATURE_SURFACE_WAVE
       half4 originalCol = c;
       WATER_FRAG_TERRAIN(c,IN.normalUV,IN.worldPos,IN.wn,IN.uv_Control,splat_control,IN.uv_Splat0,IN.uv_Splat1,IN.uv_Splat2,IN.uv_Control*_Tiling3.xy,_Splat0,_Splat1,_Splat2,_Splat3);
+      c = TintTerrainColorByLayers(originalCol,c,envColor,splat_control,_WaveLayerIntensity,_EnvLayerIntensity,_RippleColorTint);
 
-      c.rgb = lerp(originalCol.rgb,c.rgb,Gray(splat_control * _LayerMask)) * _RippleColorTint;
       shininess = _RainTerrainShininess;
 	#endif
-	 
+
 	o.Alpha = 0.0;
 	o.Albedo.rgb = ApplyThunder(c.rgb);
 	o.Gloss = (lay1.a * splat_control.r + lay2.a * splat_control.g + lay3.a * splat_control.b + lay4.a * splat_control.a);

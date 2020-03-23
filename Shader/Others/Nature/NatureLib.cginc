@@ -1,9 +1,16 @@
 #ifndef NATURE_LIB_CGINC
 #define NATURE_LIB_CGINC
-#include "DeviceLevel.cginc"
-
+//#include "DeviceLevel.cginc"
+#include "GlobalControl.cginc"
+/**
+	常用的符号
+*/
 #define PI 3.1415
 #define UP_AXIS float3(0,1,0)
+
+/**
+	通用方法
+*/
 
 float Gray(float3 c) {
 	return dot(float3(0.2, 0.7, 0.02), c);
@@ -32,6 +39,9 @@ float Remap(float a,float b,float x){
 	return x * (1.0/d) - a/d;
 }
 
+/**
+	地形采样
+*/
 // --- terrain 4 splats;
 fixed4 SampleSplats(float4 splat_control,float2 uv0,float2 uv1,float2 uv2,float2 uv3,sampler2D _Splat0,sampler2D _Splat1,sampler2D _Splat2,sampler2D _Splat3){
 	fixed4 lay1 = tex2D (_Splat0, uv0);
@@ -43,6 +53,37 @@ fixed4 SampleSplats(float4 splat_control,float2 uv0,float2 uv1,float2 uv2,float2
   	return c;
 }
 
+/**
+	环绕对splat进行采样
+	例:
+	fixed4 lay1 = WrapSampleLayer (_Splat0, IN.uv_Splat0,_LayerWrap.x,_WrapLayerIntensity.x,_WrapOn);
+*/
+float4 WrapSampleLayer(sampler2D layer,float2 uv,float wrapIntensity,float intensity,float wrapMode){
+	float4 col = tex2D(layer,uv);
+	float4 wrapCol = col * tex2D(layer,uv*wrapIntensity) * intensity;
+	return lerp(col,wrapCol,wrapMode);
+}
+
+float SplatIntensity(float4 splatControl,float4 layerIntensity){
+	half4 control = splatControl * layerIntensity;
+	return control.r + control.g + control.b + control.a;
+}
+
+/**
+	地形,分层控制涟漪的强度. 
+*/
+float4 TintTerrainColorByLayers(float4 originalCol,float4 finalCol,float3 envColor,float4 splat_control,float4 waveLayerIntensity,float4 envSplatLayerIntensity,float4 tintColor){
+	float rippleIntensity = SplatIntensity(splat_control,waveLayerIntensity);
+	half4 rippleColor = (finalCol - originalCol);
+	float4 c = originalCol + (rippleColor * rippleIntensity);
+	c.rgb += envColor * SplatIntensity(splat_control,envSplatLayerIntensity);
+	c.rgb *= ApplyWeather(tintColor);
+	return c;
+}
+
+/**
+	涟漪公式
+*/
 float3 ComputeRipple(sampler2D rippleTex,float2 uv, float t)
 {
 	float4 ripple = tex2D(rippleTex, uv);
@@ -56,24 +97,15 @@ float3 ComputeRipple(sampler2D rippleTex,float2 uv, float t)
 	return float3(ripple.yz * final,1);
 }
 
-// --- global vars
-float _WeatherIntensity;
-float _ThunderIntensity; //雷电强度[0,1]
-
-float3 ApplyThunder(float3 mainColor){
-	return (mainColor += _ThunderIntensity);
-}
-float4 ApplyThunder(float4 mainColor){
-	return mainColor += _ThunderIntensity;
-}
-
+/**
+	植物风力
+*/
 #ifdef PLANTS
-float _GlobalWindIntensity; //全局的风力
-float3 _GlobalWindDir; //全局风向
-
 #include "TerrainEngine.cginc"
 float4 _Wave;
 float4 _AttenField;
+
+//#define PLANTS_IN_WORLD
 
 float4 ClampVertexWave(appdata_full v, float4 wave, float yDist, float xzDist) {
 #if defined(EXPAND_BILLBOARD)
@@ -84,25 +116,40 @@ float4 ClampVertexWave(appdata_full v, float4 wave, float yDist, float xzDist) {
 	_Wind.xyz += _GlobalWindDir;
 	//_Wind.xyz = normalize(_Wind.xyz); 	//避免顶点拉伸
 
+	float4 worldPos = v.vertex;
+	float3 attenField = float3(xzDist,yDist,xzDist);
 
-	float4 worldPos = mul(unity_ObjectToWorld, v.vertex);
+#if defined(PLANTS_IN_WORLD)
+	worldPos = mul(unity_ObjectToWorld, v.vertex) - mul(unity_ObjectToWorld,float3(0,0,0));
+	attenField = mul(unity_ObjectToWorld,attenField);
+#endif
+
 	float4 wavePos = AnimateVertex(worldPos, v.normal, float4(v.color.xy, v.texcoord1.xy)  * wave);
-
 #if defined(UP_Y) // y向上
-	float xzAtten = saturate(length(v.vertex.xz) - xzDist);
-	float yAtten = saturate(v.vertex.y - yDist);
+	float xzAtten = saturate(length(worldPos.xz) - attenField.x);
+	float yAtten = saturate(worldPos.y - attenField.y);
 #else //z向上
-	float xzAtten = saturate(length(v.vertex.xy) - xzDist);
-	float yAtten = saturate(v.vertex.z - yDist);
+	float xzAtten = saturate(length(worldPos.xy) - attenField.x);
+	float yAtten = saturate(worldPos.z - attenField.y);
 #endif
 
 	float atten = saturate(xzAtten + yAtten);
-
+	atten *= WeatherIntensity();
 	float4 vertex = lerp(worldPos,wavePos,atten);
 
+#if defined(PLANTS_IN_WORLD)
 	return mul(unity_WorldToObject, vertex);
+#else
+	return vertex;
+#endif
+
 }
 #endif // end PLANTS
+
+
+/**
+	积雪效果
+*/
 
 #ifdef _FEATURE_SNOW
 #define SNOW_V2F(idx) float4 noiseUV:TEXCOORD##idx
@@ -128,8 +175,6 @@ float _DefaultSnowRate = 1.5;
 float _Distance;
 float _DistanceAttenWidth;
 #endif
-
-
 
 //vertex : compute final position
 void SnowDir(float3 vertex, float3 normal, out float3 pos, out float3 worldNormal) {
@@ -168,7 +213,7 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 #endif
 
 	// mask
-	float borderRate = lerp(-0.2,_BorderWidth,_WeatherIntensity);
+	float borderRate = lerp(-0.2,_BorderWidth,WeatherIntensity());
 	float edge = 1 - Edge(mainColor.rgb,borderRate);
 
 	// final color
@@ -177,7 +222,7 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 #ifdef _HEIGHT_SNOW
 	float yDist = (height - _Distance) * _DistanceAttenWidth + _DistanceAttenWidth;
 	float yRate = lerp(0, 1, saturate(yDist));
-	float4 heightSnowCol = lerp(0, _SnowColor, yRate)  * _WeatherIntensity * edge;
+	float4 heightSnowCol = lerp(0, _SnowColor, yRate) * edge * WeatherIntensity();
 	snowColor = max(snowColor,heightSnowCol);
 #endif
 	fixed mapping = _ToneMapping * snowColor + 1;//lerp(0,snowColor,_ToneMapping) + 1;
@@ -187,7 +232,11 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 // end SNOW
 #endif
 
-
+/**
+	流水
+	1 平面流水
+	2 涟漪
+*/
 #if defined(_FEATURE_SURFACE_WAVE)
 	float4  _WaveColor;
 	float4  _Tile;
@@ -236,6 +285,13 @@ void SurfaceWaveVertex(float2 uv ,out float4 normalUV){
 	#endif
 }
 
+float4 SampleTexInRain(sampler2D tex,float2 uv,float4 defaultColor){
+	#if !defined(RIPPLE_ON)
+		return tex2D(tex,uv);
+	#endif
+	return defaultColor;
+}
+
 void NoiseUVNormal(float4 mainColor,float4 normalUV,float3 worldNormal,
 		out float2 noiseUV,out float3 noiseNormal,out float edge){
 	
@@ -249,90 +305,65 @@ void NoiseUVNormal(float4 mainColor,float4 normalUV,float3 worldNormal,
 
 		edge = 1 - Edge(mainColor.rgb,_WaveBorderWidth);
 		fixed dirEdge = DirEdge(worldNormal,float3(0,1,0),1 - _DirAngle);
-		edge *= dirEdge * _WaveIntensity * _WeatherIntensity;
+		edge *= dirEdge * _WaveIntensity * WeatherIntensity();
 
 		noiseUV = noiseNormal.xy * 0.02 * edge;
 	#endif
 }
 
+float3 CalcEnvReflection(float2 uv,float3 worldPos,float3 normal){
+	float3 envNoise = UnpackNormal(tex2D(_EnvNoiseMap,uv * _EnvTileOffset.xy + _Time.xx * _EnvTileOffset.zw));
 
-void ApplyEnvReflection(inout float4 col,v2f_surface i){
-#if defined(LEVEL_HIGH_PLUS)
-	float3 envNoise = UnpackNormal(tex2D(_EnvNoiseMap,i.uv * _EnvTileOffset.xy + _Time.xx * _EnvTileOffset.zw));
-
-	float3 v = normalize(UnityWorldSpaceViewDir(i.worldPos));
-	float3 r = reflect(-v,i.normal + envNoise*0.2);
+	float3 v = normalize(UnityWorldSpaceViewDir(worldPos));
+	float3 r = reflect(-v,normal + envNoise*0.2);
 	float4 envTex = texCUBE(_EnvTex,r);
-	float3 env = envTex.rgb *_EnvColor * _EnvIntensity * 0.2;
-	col.rgb += env.rgb*0.2;
-#endif
+	float3 envColor = envTex.rgb *_EnvColor * _EnvIntensity * 0.2 * WeatherIntensity();
+	return envColor * 0.2;
+}
+
+float4 RippleColor(float4 mainColor,float3 normal,float2 uv,
+	sampler2D rippleTex,float rippleScale,float rippleSpeed,float rippleIntensity,float3 rippleColorTint){
+		
+	float3 ripple = ComputeRipple(rippleTex,uv * rippleScale,_Time.y * rippleSpeed);
+	float3 normalDir = UP_AXIS * rippleIntensity * WeatherIntensity();
+
+	float4 rippleColor = mainColor;
+	
+	float3 colorTint = rippleColorTint;
+	#if defined(TERRAIN_WEATHER) //Terrain shader used
+		colorTint = 1;
+	#endif
+	colorTint = ApplyWeather(colorTint);
+	rippleColor.rgb *= colorTint + dot(ripple,normalDir);
+
+	//filter by vertex's normal
+	float nl = saturate(dot(UP_AXIS,normal));
+	rippleColor.rgb = lerp(mainColor,rippleColor.rgb,nl);
+	//rippleColor.rgb = ApplyWeather(rippleColor,rippleColorTint);
+	return rippleColor;
+}
+
+float4 SurfaceWaveFrag(v2f_surface i,float4 col,float3 noiseNormal,float edge,out float3 envColor){
+	envColor = (float3)0;
+
+	#if defined(RAIN_REFLECTION)
+		envColor = CalcEnvReflection(i.uv,i.worldPos,i.normal);
+	#endif
+	//--------- use rain ripple.
+	#if defined(RIPPLE_ON)
+		return RippleColor(col,i.normal,i.uv ,_RippleTex,_RippleScale,_RippleSpeed,_RippleIntensity,_RippleColorTint);
+	#endif
+	col.rgb *= ApplyWeather(_WaveColor.rgb);//雨天
+	return col;
 }
 
 float4 SurfaceWaveFrag(v2f_surface i,float4 col,float3 noiseNormal,float edge){
-	
-	//--------- use rain ripple.
-	#if defined(RIPPLE_ON)
-		float3 ripple = ComputeRipple(_RippleTex,i.uv*_RippleScale,_Time.y * _RippleSpeed);
-		float3 normalDir = UP_AXIS * _RippleIntensity * _WeatherIntensity;
-
-		float4 rippleCol = col;
-		
-		float4 colorTint = _RippleColorTint;
-		#if defined(TERRAIN_WEATHER) //Terrain shader used
-			colorTint = 1;
-		#endif
-
-		rippleCol.rgb *= colorTint + dot(ripple,normalDir);
-
-		//filter by vertex's normal
-		float nrate = saturate(dot(UP_AXIS,i.normal));
-		rippleCol.rgb = lerp(col,rippleCol.rgb,nrate);
-		ApplyEnvReflection(rippleCol,i);
-
-		return rippleCol;
-	#endif
-
-	col = lerp(col,col * _WaveColor,edge);
-	ApplyEnvReflection(col,i);
-	return col;
-
-	//-------------------------------------------------
-	float3 l = float3(0,.8,0);//normalize(UnityWorldSpaceLightDir(i.worldPos));
-	float3 worldNormal = normalize(i.normal);
-	//-------------- diffuse
-	float nl = saturate(dot(worldNormal, l));
-	fixed3 diffCol = nl * col.rgb;
-	col.rgb += diffCol * 0.2;
-	col.rgb = diffCol;
-//return float4(diffCol,1);
-	//--------------- fresnal
-	float3 v = normalize(UnityWorldSpaceViewDir(i.worldPos));
-	float nv = dot(worldNormal,v);
-	float invertNV = 1-nv;
-	fixed3 fresnal = pow(invertNV ,_FresnalWidth);//smoothstep(invertNV,invertNV*0.9,_FresnalWidth);
-	col.rgb += fresnal * 0.2;
-
-	//--------------specular
-	float3 h = normalize(l+v);
-	float nh = saturate(dot(noiseNormal*nl,h));
-	//float spec = smoothstep(nh-0.9,nh,_SpecWidth)*nl;
-	float spec = pow(nh,_SpecPower * 32) * _Glossness;
-	spec *= smoothstep(spec,spec-0.3,_SpecWidth);
-	float3 specCol = spec ;
-	col.rgb += specCol * 0.2;
-
-//return col + fixed4(diffCol + specCol,1);
-	//--------------- reflection
-	float2 uv = normalize(i.worldPos.xz);	
-	float3 r = reflect(-v,worldNormal);
-	float3 reflCol = texCUBE(_EnvTex,r + noiseNormal );
-	reflCol += tex2D(_FakeReflectionTex,i.uv + noiseNormal.xy * 2);
-	//reflCol *= 0.4;
-	col.rgb += reflCol * 0.08;
-
-	//col.rgb += (diffCol+specCol+fresnal+reflCol)*0.2;
-	return col;
+	float3 envColor = (float3)0;
+	float4 mainColor = SurfaceWaveFrag(i,col,noiseNormal,edge,envColor);
+	mainColor.rgb += envColor.rgb;
+	return mainColor;
 }
+
 
 #endif// end SURFACE_WAVE
 

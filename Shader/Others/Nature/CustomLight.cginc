@@ -6,7 +6,7 @@ fixed4 _LightColor;
 
 inline fixed4 LambertLight (SurfaceOutput s, UnityLight light)
 {
-    fixed diff = max (0, dot (s.Normal, light.dir));
+    fixed diff = max (0,dot (s.Normal, light.dir));
 
     fixed4 c;
     c.rgb = s.Albedo * light.color * diff;
@@ -17,13 +17,13 @@ inline fixed4 LambertLight (SurfaceOutput s, UnityLight light)
 inline fixed4 LightingSimpleLambert (SurfaceOutput s, UnityGI gi)
 {
     #if defined(LIGHTMAP_ON)
-        _LightDir = length(_LightDir)==0?half4(0,1,0,0):_LightDir;
+        _LightDir = max(half4(0.3,.7,0,0) , _LightDir);
         
         gi.light.dir += normalize(_LightDir.xyz);
         gi.light.color += _LightColor;
     #endif
 
-    fixed4 c;
+    fixed4 c=(float4)0;
     c = LambertLight (s, gi.light);
 
     #ifdef UNITY_LIGHT_FUNCTION_APPLY_INDIRECT
