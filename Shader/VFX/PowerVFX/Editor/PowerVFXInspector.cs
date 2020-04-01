@@ -22,12 +22,11 @@ namespace PowerVFX
         Dictionary<string, string> i18nDict = new Dictionary<string, string>();
 
         int selectedId;
-        Dictionary<string, MaterialProperty> propDict;
         bool showOriginalPage;
 
         public PowerVFXInspector()
         {
-            ConfigFileProcessor.Reset();
+            ConfigTool.Reset();
         }
 
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
@@ -36,77 +35,81 @@ namespace PowerVFX
             EditorGUILayout.HelpBox("PowerVFX", MessageType.Info);
 
             //show original
-            showOriginalPage = GUILayout.Toggle(showOriginalPage, ConfigFileProcessor.Text("ShowOriginalPage"));
+            showOriginalPage = GUILayout.Toggle(showOriginalPage, ConfigTool.Text("ShowOriginalPage"));
             if (showOriginalPage)
             {
                 base.OnGUI(materialEditor, properties);
                 return;
             }
             // setup infos
-            CacheProperties(properties);
+            var propDict = ConfigTool.CacheProperties(properties);
 
             var mat = materialEditor.target as Material;
-            ConfigFileProcessor.ReadConfig(mat.shader);
+            ConfigTool.ReadConfig(mat.shader);
 
             //draw properties
             EditorGUILayout.BeginVertical("Box");
 
             EditorGUILayout.BeginHorizontal("Box");
+
+            selectedId = ConfigTool.EditorSelectedId;
             selectedId = GUILayout.Toolbar(selectedId, tabNames);
+            ConfigTool.EditorSelectedId = selectedId;
+
             EditorGUILayout.EndHorizontal();
 
             var propNames = propNameList[selectedId];
             foreach (var propName in propNames)
             {
+                if (!propDict.ContainsKey(propName))
+                    continue;
+
                 var prop = propDict[propName];
-                materialEditor.ShaderProperty(prop, ConfigFileProcessor.Text(prop.name));
+                materialEditor.ShaderProperty(prop, ConfigTool.Text(prop.name));
             }
             EditorGUILayout.EndVertical();
         }
 
-
-        void CacheProperties(MaterialProperty[] properties)
-        {
-            if (propDict != null)
-                return;
-
-            propDict = new Dictionary<string, MaterialProperty>();
-
-            foreach (var prop in properties)
-            {
-                propDict[prop.name] = prop;
-            }
-        }
-
     }
 
-    public static class ConfigFileProcessor
+    public static class ConfigTool
     {
-        static Dictionary<string, string> dict = new Dictionary<string, string>();
-        static bool isInit;
+        static Dictionary<string, string> propNameValuedict = new Dictionary<string, string>();
 
-        static ConfigFileProcessor()
-        {
-            Debug.Log("ConfigFileProcessor");
-        }
+        static Dictionary<string, MaterialProperty> propDict = new Dictionary<string, MaterialProperty>();
 
         public static void Reset()
         {
-            isInit = false;
+            propNameValuedict.Clear();
+            propDict.Clear();
+        }
+
+        static string FindI18NPath(string configPath)
+        {
+            var pathDir = Path.GetDirectoryName(configPath);
+            var filePath = "";
+            var findCount = 0;
+            while (!pathDir.EndsWith("Assets"))
+            {
+                filePath = pathDir + "/i18n.txt";
+                pathDir = Path.GetDirectoryName(pathDir);
+                if (File.Exists(filePath) || ++findCount > 10)
+                    break;
+            }
+            return filePath;
         }
 
         public static void ReadConfig(string configPath)
         {
-            if (isInit)
+            if (propNameValuedict.Count > 0)
                 return;
 
             var splitRegex = new Regex(@"\s*=\s*");
+            var filePath = FindI18NPath(configPath);
 
-            var pathDir = Path.GetDirectoryName(configPath);
-            var fileParth = pathDir + "/i18n.txt";
-            if (File.Exists(fileParth))
+            if (!string.IsNullOrEmpty(filePath))
             {
-                var lines = File.ReadAllLines(fileParth);
+                var lines = File.ReadAllLines(filePath);
                 foreach (var lineStr in lines)
                 {
                     var line = lineStr.Trim();
@@ -114,9 +117,9 @@ namespace PowerVFX
                         continue;
 
                     var kv = splitRegex.Split(line);
-                    dict[kv[0]] = kv[1];
+                    if (kv.Length > 1)
+                        propNameValuedict[kv[0]] = kv[1];
                 }
-                isInit = dict.Count > 0;
             }
 
         }
@@ -127,13 +130,32 @@ namespace PowerVFX
             ReadConfig(path);
         }
 
+        public static Dictionary<string, MaterialProperty> CacheProperties(MaterialProperty[] properties)
+        {
+            if (propDict.Count > 0)
+                return propDict;
+
+            foreach (var prop in properties)
+            {
+                propDict[prop.name] = prop;
+            }
+
+            return propDict;
+        }
+
         public static string Text(string str)
         {
             string text = str;
-            if (dict.ContainsKey(str))
-                text = dict[str];
+            if (propNameValuedict.ContainsKey(str))
+                text = propNameValuedict[str];
 
             return text;
+        }
+
+        public static int EditorSelectedId
+        {
+            get { return EditorPrefs.GetInt("ConfigTool_SelectedId"); }
+            set { EditorPrefs.SetInt("ConfigTool_SelectedId",value); }
         }
     }
 }
