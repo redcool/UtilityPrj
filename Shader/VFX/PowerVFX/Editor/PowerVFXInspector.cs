@@ -19,11 +19,16 @@ namespace PowerVFX
             new []{ "_DissolveOn", "_DissolveTex", "_DissolveTexUseR", "_DissolveByVertexColor", "_Cutoff", "_DissolveEdgeOn", "_EdgeColor", "_EdgeWidth",},
             new []{ "_OffsetOn", "_OffsetTex", "_OffsetMaskTex", "_OffsetTexColorTint", "_OffsetTile", "_OffsetDir", "_BlendIntensity", }
         };
-        Dictionary<string,string> i18nDict = new Dictionary<string, string>();
+        Dictionary<string, string> i18nDict = new Dictionary<string, string>();
 
         int selectedId;
         Dictionary<string, MaterialProperty> propDict;
         bool showOriginalPage;
+
+        public PowerVFXInspector()
+        {
+            ConfigFileProcessor.Reset();
+        }
 
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
         {
@@ -31,7 +36,7 @@ namespace PowerVFX
             EditorGUILayout.HelpBox("PowerVFX", MessageType.Info);
 
             //show original
-            showOriginalPage = GUILayout.Toggle(showOriginalPage, Text("ShowOriginalPage"));
+            showOriginalPage = GUILayout.Toggle(showOriginalPage, ConfigFileProcessor.Text("ShowOriginalPage"));
             if (showOriginalPage)
             {
                 base.OnGUI(materialEditor, properties);
@@ -41,7 +46,7 @@ namespace PowerVFX
             CacheProperties(properties);
 
             var mat = materialEditor.target as Material;
-            SetupI18N(i18nDict,mat.shader);
+            ConfigFileProcessor.ReadConfig(mat.shader);
 
             //draw properties
             EditorGUILayout.BeginVertical("Box");
@@ -54,7 +59,7 @@ namespace PowerVFX
             foreach (var propName in propNames)
             {
                 var prop = propDict[propName];
-                materialEditor.ShaderProperty(prop,Text(prop.name));
+                materialEditor.ShaderProperty(prop, ConfigFileProcessor.Text(prop.name));
             }
             EditorGUILayout.EndVertical();
         }
@@ -73,15 +78,31 @@ namespace PowerVFX
             }
         }
 
-        static void SetupI18N(Dictionary<string,string> dict,Shader shader)
+    }
+
+    public static class ConfigFileProcessor
+    {
+        static Dictionary<string, string> dict = new Dictionary<string, string>();
+        static bool isInit;
+
+        static ConfigFileProcessor()
         {
-            if (dict.Count > 0)
+            Debug.Log("ConfigFileProcessor");
+        }
+
+        public static void Reset()
+        {
+            isInit = false;
+        }
+
+        public static void ReadConfig(string configPath)
+        {
+            if (isInit)
                 return;
 
             var splitRegex = new Regex(@"\s*=\s*");
-            
-            var path = AssetDatabase.GetAssetPath(shader);
-            var pathDir = Path.GetDirectoryName(path);
+
+            var pathDir = Path.GetDirectoryName(configPath);
             var fileParth = pathDir + "/i18n.txt";
             if (File.Exists(fileParth))
             {
@@ -95,14 +116,22 @@ namespace PowerVFX
                     var kv = splitRegex.Split(line);
                     dict[kv[0]] = kv[1];
                 }
+                isInit = dict.Count > 0;
             }
+
         }
 
-        string Text(string str)
+        public static void ReadConfig(Shader shader)
+        {
+            var path = AssetDatabase.GetAssetPath(shader);
+            ReadConfig(path);
+        }
+
+        public static string Text(string str)
         {
             string text = str;
-            if (i18nDict.ContainsKey(str))
-                text = i18nDict[str];
+            if (dict.ContainsKey(str))
+                text = dict[str];
 
             return text;
         }
