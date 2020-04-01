@@ -1,0 +1,35 @@
+ShowOriginalPage = 显示原始页面
+Main = 基础
+Distortion = 扭曲
+Dissovle = 溶解
+Offset = 流光
+
+_MainTex=主纹理
+_MainTexOffsetOn=主纹理uv自动滚动
+_Color=主纹理颜色
+_DoubleEffectOn=开启双层效果
+_CullMode=剔除模式
+
+_DistortionOn=开启扭曲
+_NoiseTex=杂点图
+_DistortionMaskTex=效果遮罩
+_DistortionIntensity=强度
+_DistortTile=平铺(xy:1层,zw:2层)
+_DistortDir=方向(xy:1层,zw:2层)
+
+_DissolveOn=开启溶解
+_DissolveTex=溶解图
+_DissolveTexUseR=使用通道R(不勾使用通道A)
+_DissolveByVertexColor=受使用顶点颜色(可用于粒子系统)
+_Cutoff=透明测试参考值
+_DissolveEdgeOn=开启溶解边
+_EdgeColor=边颜色
+_EdgeWidth=边宽度
+
+_OffsetOn=开启流光
+_OffsetTex=效果图片
+_OffsetMaskTex=效果遮罩
+_OffsetTexColorTint=颜色
+_OffsetTile=平铺(xy:1层,zw:2层)
+_OffsetDir=方向(xy:1层,zw:2层)
+_BlendIntensity=混合强度
