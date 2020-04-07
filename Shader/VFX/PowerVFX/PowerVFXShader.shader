@@ -1,5 +1,5 @@
 ﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-Shader "ZX/FX/PowerVFX_AlphaBlend"
+Shader "ZX/FX/PowerVFXShader"
 {
 	Properties
 	{
@@ -7,9 +7,9 @@ Shader "ZX/FX/PowerVFX_AlphaBlend"
 		[Toggle]_MainTexOffsetStop("禁用MainTex自动滚动?",int)=0
 		[HDR]_Color("Main Color",Color) = (1,1,1,1)
 
-		// [Header(BlendMode)]
-		// [Enum(UnityEngine.Rendering.BlendMode)]_SrcMode("Src Mode",int) = 5
-		// [Enum(UnityEngine.Rendering.BlendMode)]_DstMode("Dst Mode",int) = 1
+		[Header(BlendMode)]
+		[Enum(UnityEngine.Rendering.BlendMode)]_SrcMode("Src Mode",int) = 5
+		[Enum(UnityEngine.Rendering.BlendMode)]_DstMode("Dst Mode",int) = 10
 
 		[Header(DoubleEffect)]
 		[Toggle(DOUBLE_EFFECT)]_DoubleEffectOn("双重效果?",int)=0
@@ -55,8 +55,7 @@ Shader "ZX/FX/PowerVFX_AlphaBlend"
 		{
 			Tags{ "LightMode" = "ForwardBase" }
 			Cull Off Lighting Off ZWrite Off
-			//Blend [_SrcMode][_DstMode]
-			Blend SrcAlpha OneMinusSrcAlpha
+			Blend [_SrcMode][_DstMode]
 			Cull[_CullMode]
 			CGPROGRAM
 			

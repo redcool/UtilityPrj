@@ -3,7 +3,7 @@
 	Properties
 	{
 		_MainTex("Main Texture", 2D) = "white" {}
-		[Toggle]_MainTexOffsetOn("Main Tex自动滚动?",int)=0
+		[Toggle]_MainTexOffsetStop("禁用MainTex自动滚动?",int)=0
 		[HDR]_Color("Main Color",Color) = (1,1,1,1)
 
 		// [Header(BlendMode)]

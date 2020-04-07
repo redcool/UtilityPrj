@@ -4,7 +4,7 @@
 fixed4 _Color;
 sampler2D _MainTex;
 half4 _MainTex_ST;
-int _MainTexOffsetOn;
+int _MainTexOffsetStop;
 
 #if defined(DISTORTION_ON)
 sampler2D _NoiseTex;
@@ -64,7 +64,7 @@ v2f vert(appdata v)
     v2f o = (v2f)0;
     o.color = v.color;
     o.vertex = UnityObjectToClipPos(v.vertex);
-    float2 offsetScale = lerp(1,_Time.xx,_MainTexOffsetOn);
+    float2 offsetScale = lerp(_Time.xx,1,_MainTexOffsetStop);
     o.uv.xy = v.uv.xy * _MainTex_ST.xy + frac(_MainTex_ST.zw * offsetScale);//TRANSFORM_TEX(v.uv, _MainTex);
     //o.uv.xy += v.uv.zw; //default zw=0
     o.uv.zw = v.uv.xy;

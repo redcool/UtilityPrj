@@ -3,9 +3,10 @@ Main = 基础
 Distortion = 扭曲
 Dissovle = 溶解
 Offset = 流光
+PresetBlendMode=预制混合模式
 
 _MainTex=主纹理
-_MainTexOffsetOn=主纹理uv自动滚动
+_MainTexOffsetStop=禁用主纹理自动滚动
 _Color=主纹理颜色
 _DoubleEffectOn=开启双层效果
 _CullMode=剔除模式
