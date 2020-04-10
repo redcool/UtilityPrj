@@ -8,6 +8,7 @@ PresetBlendMode=预制混合模式
 _MainTex=主纹理
 _MainTexOffsetStop=禁用主纹理自动滚动
 _Color=主纹理颜色
+_ColorScale=主纹理颜色倍数
 _DoubleEffectOn=开启双层效果
 _CullMode=剔除模式
 
@@ -21,7 +22,8 @@ _DistortDir=方向(xy:1层,zw:2层)
 _DissolveOn=开启溶解
 _DissolveTex=溶解图
 _DissolveTexUseR=使用通道R(不勾使用通道A)
-_DissolveByVertexColor=受使用顶点颜色(可用于粒子系统)
+_DissolveByVertexColor=溶解使用顶点颜色
+_DissolveByCustomData=溶解使用CustomData1(x)
 _Cutoff=透明测试参考值
 _DissolveEdgeOn=开启溶解边
 _EdgeColor=边颜色
@@ -34,3 +36,8 @@ _OffsetTexColorTint=颜色
 _OffsetTile=平铺(xy:1层,zw:2层)
 _OffsetDir=方向(xy:1层,zw:2层)
 _BlendIntensity=混合强度
+
+_FresnalOn=开启轮廓光
+_FresnalColor=轮廓光颜色
+_FresnalPower=轮廓宽度
+_FresnalTransparentOn=轮廓中心透明

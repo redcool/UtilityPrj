@@ -2,26 +2,31 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
+using System.Linq;
 
 namespace PowerVFX
 {
     //UnityEngine.Rendering.BlendMode
     public enum PresetBlendMode
     {
-        AlphaBlend,//src=5,dst=10
-        SoftAdd, // src=5,dst=1
+        AlphaBlend,
+        SoftAdd, 
+        Add,
+        PremultiTransparent,
+        MultiColor,
+        MultiColor_2X
     }
     public class PowerVFXInspector : ShaderGUI
     {
-
-        static string[] tabNames = new[] { "Main", "Distortion", "Dissovle", "Offset", };
+        static string[] tabNames = new[] { "Main", "Distortion", "Dissovle", "Offset", "Fresnal",};
         static List<string[]> propNameList = new List<string[]> {
-            new []{ "_MainTex", "_MainTexOffsetStop", "_Color", "_DoubleEffectOn", "_CullMode", },
+            new []{ "_MainTex", "_MainTexOffsetStop", "_Color","_ColorScale", "_DoubleEffectOn", "_CullMode", },
             new []{ "_DistortionOn", "_NoiseTex", "_DistortionMaskTex", "_DistortionIntensity", "_DistortTile", "_DistortDir",},
-            new []{ "_DissolveOn", "_DissolveTex", "_DissolveTexUseR", "_DissolveByVertexColor", "_Cutoff", "_DissolveEdgeOn", "_EdgeColor", "_EdgeWidth",},
-            new []{ "_OffsetOn", "_OffsetTex", "_OffsetMaskTex", "_OffsetTexColorTint", "_OffsetTile", "_OffsetDir", "_BlendIntensity", }
+            new []{ "_DissolveOn", "_DissolveTex", "_DissolveTexUseR", "_DissolveByVertexColor", "_DissolveByCustomData", "_Cutoff", "_DissolveEdgeOn", "_EdgeColor", "_EdgeWidth",},
+            new []{ "_OffsetOn", "_OffsetTex", "_OffsetMaskTex", "_OffsetTexColorTint", "_OffsetTile", "_OffsetDir", "_BlendIntensity", },
+            new []{ "_FresnalOn", "_FresnalColor", "_FresnalPower", "_FresnalTransparentOn" },
         };
-        //Dictionary<string, string> i18nDict = new Dictionary<string, string>();
 
         int selectedId;
         bool showOriginalPage;
@@ -29,12 +34,26 @@ namespace PowerVFX
         const string POWERVFX_SELETECTED_ID = "PowerVFX_SeletectedId";
 
         PresetBlendMode presetBlendMode;
+        Dictionary<PresetBlendMode, BlendMode[]> blendModeDict;
+
+        bool isFirstRunOnGUI = true;
 
         public PowerVFXInspector()
         {
             ConfigTool.Reset();
+
+            blendModeDict = new Dictionary<PresetBlendMode, BlendMode[]> {
+                {PresetBlendMode.AlphaBlend,new []{ BlendMode.SrcAlpha,BlendMode.OneMinusSrcAlpha} },
+                {PresetBlendMode.SoftAdd,new []{ BlendMode.SrcAlpha, BlendMode.One} }, //OneMinusDstColor
+                {PresetBlendMode.Add,new []{ BlendMode.One,BlendMode.One} },
+                {PresetBlendMode.PremultiTransparent,new []{BlendMode.One,BlendMode.OneMinusSrcAlpha } },
+                {PresetBlendMode.MultiColor,new []{ BlendMode.DstColor,BlendMode.Zero} },
+                {PresetBlendMode.MultiColor_2X,new []{ BlendMode.DstColor,BlendMode.SrcColor} },
+            };
         }
 
+
+        
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
         {
             // title
@@ -76,22 +95,41 @@ namespace PowerVFX
             if (selectedId == 0 && mat.shader.name.EndsWith("PowerVFXShader"))
                 DrawBlendMode(mat);
             EditorGUILayout.EndVertical();
+
+            isFirstRunOnGUI = false;
         }
 
         void DrawBlendMode(Material mat)
         {
+            const string SRC_MODE = "_SrcMode", DST_MODE = "_DstMode";
+
+            if (isFirstRunOnGUI)
+            {
+                SetupPresetBlendMode(mat, SRC_MODE, DST_MODE);
+            }
+
             EditorGUI.BeginChangeCheck();
             presetBlendMode = (PresetBlendMode)EditorGUILayout.EnumPopup(ConfigTool.Text("PresetBlendMode"), presetBlendMode);
             if (EditorGUI.EndChangeCheck())
             {
-                var src = 5;
-                var dst = 10;
-                if (presetBlendMode == PresetBlendMode.SoftAdd)
-                    dst = 1;
+                var blendModes = blendModeDict[presetBlendMode];
 
-                mat.SetFloat("_SrcMode", src);
-                mat.SetFloat("_DstMode", dst);
+                mat.SetFloat(SRC_MODE, (int)blendModes[0]);
+                mat.SetFloat(DST_MODE, (int)blendModes[1]);
             }
+        }
+
+        PresetBlendMode GetPresetBlendMode(BlendMode srcMode, BlendMode dstMode)
+        {
+            return blendModeDict.Where(kv => kv.Value[0] == srcMode && kv.Value[1] == dstMode).FirstOrDefault().Key;
+        }
+
+        private void SetupPresetBlendMode(Material mat, string SRC_MODE, string DST_MODE)
+        {
+            var srcMode = mat.GetInt(SRC_MODE);
+            var dstMode = mat.GetInt(DST_MODE);
+            var lastPresetBlendMode = GetPresetBlendMode((BlendMode)srcMode, (BlendMode)dstMode);
+            presetBlendMode = lastPresetBlendMode;
         }
     }
 }

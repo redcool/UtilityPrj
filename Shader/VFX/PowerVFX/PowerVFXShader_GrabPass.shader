@@ -1,12 +1,12 @@
 ﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-Shader "ZX/FX/PowerVFXShader"
+Shader "ZX/FX/PowerVFXShader_GrabPass"
 {
 	Properties
 	{
 		_MainTex("Main Texture", 2D) = "white" {}
 		[Toggle]_MainTexOffsetStop("禁用MainTex自动滚动?",int)=0
 		[HDR]_Color("Main Color",Color) = (1,1,1,1)
-		_ColorScale("ColorScale",range(1,3)) = 1		
+		_ColorScale("ColorScale",range(1,3)) = 1
 
 		[Header(BlendMode)]
 		[Enum(UnityEngine.Rendering.BlendMode)]_SrcMode("Src Mode",int) = 5
@@ -31,10 +31,8 @@ Shader "ZX/FX/PowerVFXShader"
 		[Toggle(DISSOLVE_ON)]_DissolveOn("Dissolve On?",int)=0
 		_DissolveTex("Dissolve Tex",2d)=""{}
 		[Toggle]_DissolveTexUseR("_DisolveTexUse R(uncheck use A)?",int)=0
-		
-		[Header(DissolveType)]
-		[Toggle]_DissolveByVertexColor("Dissolve By Vertex Color ?",int)=0
-		[Toggle]_DissolveByCustomData("Dissolve By Custom Data ?",int)=0
+		[Toggle]_DissolveByVertexColor("Dissolve By Vertex Color ?",int)=0 
+		[Toggle]_DissolveByCustomData("Dissolve By Custom Data ?",int)=0		
 		_Cutoff ("AlphaTest cutoff", Range(0,1)) = 0.5
 
 		[Header(DissolveEdge)]
@@ -60,12 +58,13 @@ Shader "ZX/FX/PowerVFXShader"
 	SubShader
 	{
 		Tags{ "Queue" = "Transparent" "RenderType" = "Transparent" }
+		GrabPass{"_ScreenTex"}
 
 		Pass
 		{
 			Tags{ "LightMode" = "ForwardBase" }
 			Cull Off Lighting Off ZWrite Off
-			Blend [_SrcMode][_DstMode],srcAlpha oneMinusSrcAlpha
+			Blend [_SrcMode][_DstMode]
 			Cull[_CullMode]
 			CGPROGRAM
 			
@@ -81,6 +80,7 @@ Shader "ZX/FX/PowerVFXShader"
 			#pragma fragment frag
 
 			#include "UnityCG.cginc"
+			#define _GRAB_PASS
 			#include "PowerVFX.cginc"
 
 			ENDCG
