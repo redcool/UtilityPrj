@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 using System.Linq;
+using System;
 
 namespace PowerVFX
 {
@@ -17,8 +18,11 @@ namespace PowerVFX
         MultiColor,
         MultiColor_2X
     }
+
     public class PowerVFXInspector : ShaderGUI
     {
+        const string SRC_MODE = "_SrcMode", DST_MODE = "_DstMode";
+
         static string[] tabNames = new[] { "Main", "Distortion", "Dissovle", "Offset", "Fresnal",};
         static List<string[]> propNameList = new List<string[]> {
             new []{ "_MainTex", "_MainTexOffsetStop", "_Color","_ColorScale", "_DoubleEffectOn", "_CullMode", },
@@ -35,13 +39,13 @@ namespace PowerVFX
 
         PresetBlendMode presetBlendMode;
         Dictionary<PresetBlendMode, BlendMode[]> blendModeDict;
+        Dictionary<string, MaterialProperty> propDict;
+        Dictionary<string, string> propNameTextDict;
 
         bool isFirstRunOnGUI = true;
 
         public PowerVFXInspector()
         {
-            ConfigTool.Reset();
-
             blendModeDict = new Dictionary<PresetBlendMode, BlendMode[]> {
                 {PresetBlendMode.AlphaBlend,new []{ BlendMode.SrcAlpha,BlendMode.OneMinusSrcAlpha} },
                 {PresetBlendMode.SoftAdd,new []{ BlendMode.SrcAlpha, BlendMode.One} }, //OneMinusDstColor
@@ -52,37 +56,38 @@ namespace PowerVFX
             };
         }
 
-
-        
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
         {
+            var mat = materialEditor.target as Material;
+
+            if (isFirstRunOnGUI)
+            {
+                isFirstRunOnGUI = false;
+                OnInit(mat, properties);
+            }
             // title
             EditorGUILayout.HelpBox("PowerVFX", MessageType.Info);
 
             //show original
-            showOriginalPage = GUILayout.Toggle(showOriginalPage, ConfigTool.Text("ShowOriginalPage"));
+            showOriginalPage = GUILayout.Toggle(showOriginalPage, ConfigTool.Text(propNameTextDict, "ShowOriginalPage"));
             if (showOriginalPage)
             {
                 base.OnGUI(materialEditor, properties);
                 return;
             }
-            // setup infos
-            var propDict = ConfigTool.CacheProperties(properties);
 
-            var mat = materialEditor.target as Material;
-            ConfigTool.ReadConfig(mat.shader);
-
-            //draw properties
+            
             EditorGUILayout.BeginVertical("Box");
+            DrawPageTabs();
+            DrawPageDetail(materialEditor, mat);
+            EditorGUILayout.EndVertical();
+        }
 
-            EditorGUILayout.BeginHorizontal("Box");
-            //cache selectedId
-            selectedId = EditorPrefs.GetInt(POWERVFX_SELETECTED_ID, selectedId);
-            selectedId = GUILayout.Toolbar(selectedId, tabNames);
-            EditorPrefs.SetInt(POWERVFX_SELETECTED_ID, selectedId);
-
-            EditorGUILayout.EndHorizontal();
-
+        /// <summary>
+        /// draw properties
+        /// </summary>
+        private void DrawPageDetail(MaterialEditor materialEditor, Material mat)
+        {
             var propNames = propNameList[selectedId];
             foreach (var propName in propNames)
             {
@@ -90,26 +95,34 @@ namespace PowerVFX
                     continue;
 
                 var prop = propDict[propName];
-                materialEditor.ShaderProperty(prop, ConfigTool.Text(prop.name));
+                materialEditor.ShaderProperty(prop, ConfigTool.Text(propNameTextDict, prop.name));
             }
             if (selectedId == 0 && mat.shader.name.EndsWith("PowerVFXShader"))
                 DrawBlendMode(mat);
-            EditorGUILayout.EndVertical();
+        }
 
-            isFirstRunOnGUI = false;
+
+        private void DrawPageTabs()
+        {
+            EditorGUILayout.BeginHorizontal("Box");
+            //cache selectedId
+            selectedId = EditorPrefs.GetInt(POWERVFX_SELETECTED_ID, selectedId);
+            selectedId = GUILayout.Toolbar(selectedId, tabNames);
+            EditorPrefs.SetInt(POWERVFX_SELETECTED_ID, selectedId);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void OnInit(Material mat,MaterialProperty[] properties)
+        {
+            presetBlendMode = GetPresetBlendMode(mat);
+            propNameTextDict = ConfigTool.ReadConfig(mat.shader);
+            propDict = ConfigTool.CacheProperties(properties);
         }
 
         void DrawBlendMode(Material mat)
         {
-            const string SRC_MODE = "_SrcMode", DST_MODE = "_DstMode";
-
-            if (isFirstRunOnGUI)
-            {
-                SetupPresetBlendMode(mat, SRC_MODE, DST_MODE);
-            }
-
             EditorGUI.BeginChangeCheck();
-            presetBlendMode = (PresetBlendMode)EditorGUILayout.EnumPopup(ConfigTool.Text("PresetBlendMode"), presetBlendMode);
+            presetBlendMode = (PresetBlendMode)EditorGUILayout.EnumPopup(ConfigTool.Text(propNameTextDict,"PresetBlendMode"), presetBlendMode);
             if (EditorGUI.EndChangeCheck())
             {
                 var blendModes = blendModeDict[presetBlendMode];
@@ -124,12 +137,11 @@ namespace PowerVFX
             return blendModeDict.Where(kv => kv.Value[0] == srcMode && kv.Value[1] == dstMode).FirstOrDefault().Key;
         }
 
-        private void SetupPresetBlendMode(Material mat, string SRC_MODE, string DST_MODE)
+        PresetBlendMode GetPresetBlendMode(Material mat)
         {
             var srcMode = mat.GetInt(SRC_MODE);
             var dstMode = mat.GetInt(DST_MODE);
-            var lastPresetBlendMode = GetPresetBlendMode((BlendMode)srcMode, (BlendMode)dstMode);
-            presetBlendMode = lastPresetBlendMode;
+            return GetPresetBlendMode((BlendMode)srcMode, (BlendMode)dstMode);
         }
     }
 }

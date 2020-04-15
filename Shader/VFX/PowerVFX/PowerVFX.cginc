@@ -8,6 +8,7 @@
     sampler2D _MainTex;
     half4 _MainTex_ST;
     int _MainTexOffsetStop;
+    int _DoubleEffectOn; //2层效果,
 
     #if defined(DISTORTION_ON)
         sampler2D _NoiseTex;
@@ -114,9 +115,7 @@
         #if defined(DISTORTION_ON)
             half3 noise = (tex2D(_NoiseTex, distortUV.xy));
 
-            #if defined(DOUBLE_EFFECT)
-                noise += (tex2D(_NoiseTex, distortUV.zw));
-            #endif
+            noise += _DoubleEffectOn > 0 ? tex2D(_NoiseTex, distortUV.zw).rgb : 0;
             // center noise uv.
             noise = (noise -0.5)*2;
 
@@ -161,10 +160,7 @@
         half4 offsetColor = (half4)1;
         #if defined(OFFSET_ON)
             offsetColor = tex2D(_OffsetTex,offsetUV.xy) * _OffsetTexColorTint;
-            
-            #if defined(DOUBLE_EFFECT)
-                offsetColor += tex2D(_OffsetTex,offsetUV.zw) * _OffsetTexColorTint * 0.4;
-            #endif
+            offsetColor += _DoubleEffectOn > 0 ? tex2D(_OffsetTex,offsetUV.zw) * _OffsetTexColorTint * 0.4 : 0;
 
             half4 offsetMask = tex2D(_OffsetMaskTex,mainUV);
 

@@ -13,7 +13,7 @@ Shader "ZX/FX/PowerVFXShader"
 		[Enum(UnityEngine.Rendering.BlendMode)]_DstMode("Dst Mode",int) = 10
 
 		[Header(DoubleEffect)]
-		[Toggle(DOUBLE_EFFECT)]_DoubleEffectOn("双重效果?",int)=0
+		[Toggle(_DoubleEffectOn)]_DoubleEffectOn("双重效果?",int)=0
 		
 		[Header(CullMode)]
 		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull Mode",float) = 2
@@ -69,13 +69,11 @@ Shader "ZX/FX/PowerVFXShader"
 			Cull[_CullMode]
 			CGPROGRAM
 			
-			#pragma multi_compile _ DISTORTION_ON
-			#pragma multi_compile _ DISSOLVE_ON
-			#pragma multi_compile _ DISSOLVE_EDGE_ON
-			#pragma multi_compile _ DISSOVLE_VERTEX_COLOR
-			#pragma multi_compile _ OFFSET_ON
-			#pragma multi_compile _ DOUBLE_EFFECT
-			#pragma multi_compile _ FRESNAL_ON
+			#pragma shader_feature _ DISTORTION_ON
+			#pragma shader_feature _ DISSOLVE_ON
+			#pragma shader_feature _ DISSOLVE_EDGE_ON
+			#pragma shader_feature _ OFFSET_ON
+			#pragma shader_feature _ FRESNAL_ON
 
 			#pragma vertex vert
 			#pragma fragment frag

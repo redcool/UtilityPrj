@@ -68,13 +68,11 @@ Shader "ZX/FX/PowerVFXShader_GrabPass"
 			Cull[_CullMode]
 			CGPROGRAM
 			
-			#pragma multi_compile _ DISTORTION_ON
-			#pragma multi_compile _ DISSOLVE_ON
-			#pragma multi_compile _ DISSOLVE_EDGE_ON
-			#pragma multi_compile _ DISSOVLE_VERTEX_COLOR
-			#pragma multi_compile _ OFFSET_ON
-			#pragma multi_compile _ DOUBLE_EFFECT
-			#pragma multi_compile _ FRESNAL_ON
+			#pragma shader_feature _ DISTORTION_ON
+			#pragma shader_feature _ DISSOLVE_ON
+			#pragma shader_feature _ DISSOLVE_EDGE_ON
+			#pragma shader_feature _ OFFSET_ON
+			#pragma shader_feature _ FRESNAL_ON
 
 			#pragma vertex vert
 			#pragma fragment frag

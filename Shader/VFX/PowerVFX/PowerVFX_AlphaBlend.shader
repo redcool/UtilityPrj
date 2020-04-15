@@ -6,6 +6,7 @@ Shader "ZX/FX/PowerVFX_AlphaBlend"
 		_MainTex("Main Texture", 2D) = "white" {}
 		[Toggle]_MainTexOffsetStop("禁用MainTex自动滚动?",int)=0
 		[HDR]_Color("Main Color",Color) = (1,1,1,1)
+		_ColorScale("ColorScale",range(1,3)) = 1
 
 		// [Header(BlendMode)]
 		// [Enum(UnityEngine.Rendering.BlendMode)]_SrcMode("Src Mode",int) = 5
@@ -18,7 +19,7 @@ Shader "ZX/FX/PowerVFX_AlphaBlend"
 		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull Mode",float) = 2
 
 		[Header(Distortion)]
-		[Toggle(DISTORTION_ON)]_DistortionOn("Distortion On?",int)=1
+		[Toggle(DISTORTION_ON)]_DistortionOn("Distortion On?",int)=0
 		[noscaleoffset]_NoiseTex("Noise Texture",2D) = "white" {}
 		[noscaleoffset]_DistortionMaskTex("Distortion Mask Tex(R)",2d) = "white"{}
 		_DistortionIntensity("Distortion Intensity",Range(0,1)) = 0.5
@@ -30,7 +31,8 @@ Shader "ZX/FX/PowerVFX_AlphaBlend"
 		[Toggle(DISSOLVE_ON)]_DissolveOn("Dissolve On?",int)=0
 		_DissolveTex("Dissolve Tex",2d)=""{}
 		[Toggle]_DissolveTexUseR("_DisolveTexUse R(uncheck use A)?",int)=0
-		[Toggle]_DissolveByVertexColor("Dissolve By Vertex Color ?",int)=0 
+		[Toggle]_DissolveByVertexColor("Dissolve By Vertex Color ?",int)=0
+		[Toggle]_DissolveByCustomData("Dissolve By Custom Data ?",int)=0		
 		_Cutoff ("AlphaTest cutoff", Range(0,1)) = 0.5
 
 		[Header(DissolveEdge)]
@@ -46,6 +48,12 @@ Shader "ZX/FX/PowerVFX_AlphaBlend"
 		_OffsetTile("Offset Tile",vector) = (1,1,1,1)
 		_OffsetDir("Offset Dir",vector) = (1,1,0,0)
 		_BlendIntensity("Blend Intensity",range(0,10)) = 0.5
+
+		[Header(Fresnal)]
+		[Toggle(FRESNAL_ON)]_FresnalOn("Fresnal On?",int)=0
+		_FresnalColor("Fresnal Color",color) = (1,1,1,1)
+		_FresnalPower("Fresnal Power",range(0,1)) = 0.5
+		[Toggle]_FresnalTransparentOn("Fresnal Transparent?",range(0,1)) = 0
 	}
 	SubShader
 	{
@@ -60,12 +68,11 @@ Shader "ZX/FX/PowerVFX_AlphaBlend"
 			Cull[_CullMode]
 			CGPROGRAM
 			
-			#pragma multi_compile _ DISTORTION_ON
-			#pragma multi_compile _ DISSOLVE_ON
-			#pragma multi_compile _ DISSOLVE_EDGE_ON
-			#pragma multi_compile _ DISSOVLE_VERTEX_COLOR
-			#pragma multi_compile _ OFFSET_ON
-			#pragma multi_compile _ DOUBLE_EFFECT
+			#pragma shader_feature _ DISTORTION_ON
+			#pragma shader_feature _ DISSOLVE_ON
+			#pragma shader_feature _ DISSOLVE_EDGE_ON
+			#pragma shader_feature _ OFFSET_ON
+			#pragma shader_feature _ FRESNAL_ON
 
 			#pragma vertex vert
 			#pragma fragment frag
