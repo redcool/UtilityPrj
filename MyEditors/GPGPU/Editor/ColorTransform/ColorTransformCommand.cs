@@ -37,6 +37,15 @@ namespace MyEditors
             }
         }
 
+        /// <summary>
+        /// 1 create renderTexture
+        /// 2 blit target Tex to renderTex,use mat
+        /// 3 create a Texture2D
+        /// 4 read pixel from renderTexture.active
+        /// </summary>
+        /// <param name="tex"></param>
+        /// <param name="mat"></param>
+        /// <returns></returns>
         static Texture2D Run(Texture tex, Material mat)
         {
             var rt = RenderTexture.GetTemporary(tex.width, tex.height);
