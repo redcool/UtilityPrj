@@ -35,7 +35,7 @@
 	// w : cosine exponent
 	float4 DirectionalInscatteringColor;
 
-	// xyz : directional light's direction. ��������䷽��ķ�����
+	// xyz : directional light's direction. 方向光照射方向的反方向
 	// w : direactional inscattering start distance
 	float4 InscatteringLightDirection;
 
@@ -66,10 +66,10 @@ half4 GetExponentialHeightFog(float3 WorldPositionRelativeToCamera) // camera to
 {
 	const half MinFogOpacity = ExponentialFogColorParameter.w;
 
-	// Receiver ָ��ɫ��
+	// Receiver 指着色点
 	float3 CameraToReceiver = WorldPositionRelativeToCamera;
 	float CameraToReceiverLengthSqr = dot(CameraToReceiver, CameraToReceiver);
-	float CameraToReceiverLengthInv = rsqrt(CameraToReceiverLengthSqr); // ƽ�����ĵ���
+	float CameraToReceiverLengthInv = rsqrt(CameraToReceiverLengthSqr); // 平方根的倒数
 	float CameraToReceiverLength = CameraToReceiverLengthSqr * CameraToReceiverLengthInv;
 	half3 CameraToReceiverNormalized = CameraToReceiver * CameraToReceiverLengthInv;
 
@@ -80,27 +80,27 @@ half4 GetExponentialHeightFog(float3 WorldPositionRelativeToCamera) // camera to
 	float RayDirectionY = CameraToReceiver.y;
 
 	// Factor in StartDistance
-	// ExponentialFogParameters.w �� StartDistance
+	// ExponentialFogParameters.w 是 StartDistance
 	float ExcludeDistance = ExponentialFogParameters.w;
 
 	if (ExcludeDistance > 0)
 	{
-		// ���ཻ����ռʱ��
+		// 到相交点所占时间
 		float ExcludeIntersectionTime = ExcludeDistance * CameraToReceiverLengthInv;
-		// ������ཻ��� y ƫ��
+		// 相机到相交点的 y 偏移
 		float CameraToExclusionIntersectionY = ExcludeIntersectionTime * CameraToReceiver.y;
-		// �ཻ��� y ����
+		// 相交点的 y 坐标
 		float ExclusionIntersectionY = _WorldSpaceCameraPos.y + CameraToExclusionIntersectionY;
-		// �ཻ�㵽��ɫ��� y ƫ��
+		// 相交点到着色点的 y 偏移
 		float ExclusionIntersectionToReceiverY = CameraToReceiver.y - CameraToExclusionIntersectionY;
 
 		// Calculate fog off of the ray starting from the exclusion distance, instead of starting from the camera
-		// �ཻ�㵽��ɫ��ľ���
+		// 相交点到着色点的距离
 		RayLength = (1.0f - ExcludeIntersectionTime) * CameraToReceiverLength;
-		// �ཻ�㵽��ɫ��� y ƫ��
+		// 相交点到着色点的 y 偏移
 		RayDirectionY = ExclusionIntersectionToReceiverY;
 		// ExponentialFogParameters.y : height falloff
-		// ExponentialFogParameters3.y �� fog height
+		// ExponentialFogParameters3.y ： fog height
 		// height falloff * height
 		float Exponent = max(-127.0f, ExponentialFogParameters.y * (ExclusionIntersectionY - ExponentialFogParameters3.y));
 		// ExponentialFogParameters3.x : fog density
@@ -116,10 +116,10 @@ half4 GetExponentialHeightFog(float3 WorldPositionRelativeToCamera) // camera to
 	// ExponentialFogParameters.y : fog height falloff
 	float ExponentialHeightLineIntegralShared = CalculateLineIntegralShared(ExponentialFogParameters.y, RayDirectionY, RayOriginTerms)
 		+ CalculateLineIntegralShared(ExponentialFogParameters2.y, RayDirectionY, RayOriginTermsSecond);
-	// fog amount�����յĻ���ֵ
+	// fog amount，最终的积分值
 	float ExponentialHeightLineIntegral = ExponentialHeightLineIntegralShared * RayLength;
 
-	// ��ɫ
+	// 雾色
 	half3 InscatteringColor = ExponentialFogColorParameter.xyz;
 	half3 DirectionalInscattering = 0;
 
@@ -139,7 +139,7 @@ half4 GetExponentialHeightFog(float3 WorldPositionRelativeToCamera) // camera to
 	}
 
 	// Calculate the amount of light that made it through the fog using the transmission equation
-	// ���յ�ϵ��
+	// 最终的系数
 	half ExpFogFactor = max(saturate(exp2(-ExponentialHeightLineIntegral)), MinFogOpacity);
 
 	// ExponentialFogParameters3.w : FogCutoffDistance
