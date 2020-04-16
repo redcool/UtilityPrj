@@ -6,10 +6,13 @@
 		[Toggle]_MainTexOffsetStop("禁用MainTex自动滚动?",int)=0
 		[HDR]_Color("Main Color",Color) = (1,1,1,1)
 		_ColorScale("ColorScale",range(1,3)) = 1
+		[Header(MainTexMask)]
+		_MainTexMask("Main Texture Mask(R)", 2D) = "white" {}
+		[Toggle]_MainTexMask_R_A("_MainTexMask_R_A",int) = 0		
 		// [Header(BlendMode)]
 		// [Enum(UnityEngine.Rendering.BlendMode)]_SrcMode("Src Mode",int) = 5
 		// [Enum(UnityEngine.Rendering.BlendMode)]_DstMode("Dst Mode",int) = 1
-		
+
 		[Header(DoubleEffect)]
 		[Toggle(DOUBLE_EFFECT)]_DoubleEffectOn("双重效果?",int)=0
 

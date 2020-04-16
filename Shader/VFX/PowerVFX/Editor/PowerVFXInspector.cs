@@ -23,9 +23,10 @@ namespace PowerVFX
     {
         const string SRC_MODE = "_SrcMode", DST_MODE = "_DstMode";
 
-        static string[] tabNames = new[] { "Main", "Distortion", "Dissovle", "Offset", "Fresnal",};
+        static string[] tabNames = new[] {"Settings", "Main", "Distortion", "Dissovle", "Offset", "Fresnal",};
         static List<string[]> propNameList = new List<string[]> {
-            new []{ "_MainTex", "_MainTexOffsetStop", "_Color","_ColorScale", "_DoubleEffectOn", "_CullMode", },
+            new []{ "_DoubleEffectOn", "_CullMode", },
+            new []{ "_MainTex", "_MainTexOffsetStop", "_Color","_ColorScale", "_MainTexMask","_MainTexMask_R_A" },
             new []{ "_DistortionOn", "_NoiseTex", "_DistortionMaskTex", "_DistortionIntensity", "_DistortTile", "_DistortDir",},
             new []{ "_DissolveOn", "_DissolveTex", "_DissolveTexUseR", "_DissolveByVertexColor", "_DissolveByCustomData", "_Cutoff", "_DissolveEdgeOn", "_EdgeColor", "_EdgeWidth",},
             new []{ "_OffsetOn", "_OffsetTex", "_OffsetMaskTex", "_OffsetTexColorTint", "_OffsetTile", "_OffsetDir", "_BlendIntensity", },

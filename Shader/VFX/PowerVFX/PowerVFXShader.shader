@@ -6,7 +6,10 @@ Shader "ZX/FX/PowerVFXShader"
 		_MainTex("Main Texture", 2D) = "white" {}
 		[Toggle]_MainTexOffsetStop("禁用MainTex自动滚动?",int)=0
 		[HDR]_Color("Main Color",Color) = (1,1,1,1)
-		_ColorScale("ColorScale",range(1,3)) = 1		
+		_ColorScale("ColorScale",range(1,3)) = 1
+		[Header(MainTexMask)]
+		_MainTexMask("Main Texture Mask(R)", 2D) = "white" {}
+		[Toggle]_MainTexMask_R_A("_MainTexMask_R_A",int) = 0
 
 		[Header(BlendMode)]
 		[Enum(UnityEngine.Rendering.BlendMode)]_SrcMode("Src Mode",int) = 5
@@ -65,7 +68,7 @@ Shader "ZX/FX/PowerVFXShader"
 		{
 			Tags{ "LightMode" = "ForwardBase" }
 			Cull Off Lighting Off ZWrite Off
-			Blend [_SrcMode][_DstMode],srcAlpha oneMinusSrcAlpha
+			Blend [_SrcMode][_DstMode] //,srcAlpha oneMinusSrcAlpha
 			Cull[_CullMode]
 			CGPROGRAM
 			

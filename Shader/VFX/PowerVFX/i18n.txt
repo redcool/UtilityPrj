@@ -11,6 +11,9 @@ _Color=主纹理颜色
 _ColorScale=主纹理颜色倍数
 _DoubleEffectOn=开启双层效果
 _CullMode=剔除模式
+_MainTexMask=主纹理遮罩
+_MainTexMask_R_A=主纹理遮罩生效通道(R或A)
+
 
 _DistortionOn=开启扭曲
 _NoiseTex=杂点图

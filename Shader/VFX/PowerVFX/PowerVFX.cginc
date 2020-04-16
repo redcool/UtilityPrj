@@ -9,6 +9,8 @@
     half4 _MainTex_ST;
     int _MainTexOffsetStop;
     int _DoubleEffectOn; //2层效果,
+    sampler2D _MainTexMask;
+    int _MainTexMask_R_A;
 
     #if defined(DISTORTION_ON)
         sampler2D _NoiseTex;
@@ -108,7 +110,10 @@
         #else
             float4 mainTex = tex2D(_MainTex,uv);
         #endif
-        return mainTex * _Color * vertexColor * _ColorScale;
+        float4 maskTex = tex2D(_MainTexMask,uv);
+        float mask = _MainTexMask_R_A>0 ? maskTex.a : maskTex.r;
+
+        return mainTex * _Color * vertexColor * _ColorScale * mask;
     }
 
     void ApplyDistortion(inout float4 mainColor,float2 mainUV,float4 distortUV,float4 color){
@@ -194,7 +199,7 @@
         #else
             mainColor = SampleMainTex(mainUV ,i.color);
         #endif
-        
+
         #if defined(OFFSET_ON)
             ApplyOffset(mainColor,i.offsetUV,i.uv.zw);
         #endif
