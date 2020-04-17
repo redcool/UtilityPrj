@@ -10,7 +10,8 @@
     int _MainTexOffsetStop;
     int _DoubleEffectOn; //2层效果,
     sampler2D _MainTexMask;
-    int _MainTexMask_R_A;
+    float4 _MainTexMask_ST;
+    int _MainTexMaskUseR;
 
     #if defined(DISTORTION_ON)
         sampler2D _NoiseTex;
@@ -29,12 +30,14 @@
         float _Cutoff;
         float _EdgeWidth;
         float4 _EdgeColor;
+        float _EdgeColorIntensity;
     #endif
 
     #if defined(OFFSET_ON)
         sampler2D _OffsetTex;
         sampler2D _OffsetMaskTex;
-        float4 _OffsetTexColorTint;
+        int _OffsetMaskTexUseR;
+        float4 _OffsetTexColorTint,_OffsetTexColorTint2;
         float4 _OffsetTile,_OffsetDir;
         float _BlendIntensity;
     #endif
@@ -74,9 +77,9 @@
         v2f o = (v2f)0;
         o.color = v.color;
         o.vertex = UnityObjectToClipPos(v.vertex);
+
         float2 offsetScale = lerp(_Time.xx,1,_MainTexOffsetStop);
         o.uv.xy = v.uv.xy * _MainTex_ST.xy + frac(_MainTex_ST.zw * offsetScale);//TRANSFORM_TEX(v.uv, _MainTex);
-        //o.uv.xy += v.uv.zw; //default zw=0
         o.uv.zw = v.uv.xy;
 
         #if defined(DISTORTION_ON)
@@ -94,12 +97,14 @@
         #if defined(_GRAB_PASS)
             o.grabPos = ComputeGrabScreenPos(o.vertex);
         #endif
+
         #if defined(FRESNAL_ON)
-        float3 worldPos = mul(unity_ObjectToWorld,v.vertex);
-        float3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
-        float3 worldNormal = normalize(UnityObjectToWorldNormal(v.normal));
-        o.fresnal.x = 1 - dot(worldNormal,viewDir) ;
+            float3 worldPos = mul(unity_ObjectToWorld,v.vertex);
+            float3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
+            float3 worldNormal = normalize(UnityObjectToWorldNormal(v.normal));
+            o.fresnal.x = 1 - dot(worldNormal,viewDir) ;
         #endif
+
         o.fresnal.y = v.uv.z;// particle custom data
         return o;
     }
@@ -110,10 +115,13 @@
         #else
             float4 mainTex = tex2D(_MainTex,uv);
         #endif
-        float4 maskTex = tex2D(_MainTexMask,uv);
-        float mask = _MainTexMask_R_A>0 ? maskTex.a : maskTex.r;
+        return mainTex * _Color * vertexColor * _ColorScale;
+    }
 
-        return mainTex * _Color * vertexColor * _ColorScale * mask;
+    void ApplyMainTexMask(inout float4 mainColor,float2 uv){
+        float4 maskTex = tex2D(_MainTexMask,uv*_MainTexMask_ST.xy + _MainTexMask_ST.zw);// fp opearate mask uv.
+        float mask = _MainTexMaskUseR > 0 ? maskTex.r : maskTex.a;
+        mainColor.a *= mask;
     }
 
     void ApplyDistortion(inout float4 mainColor,float2 mainUV,float4 distortUV,float4 color){
@@ -125,20 +133,21 @@
             noise = (noise -0.5)*2;
 
             half3 ramp = tex2D(_DistortionMaskTex,mainUV);
-            half2 uv = mainUV + noise * 0.2 *_DistortionIntensity * ramp.r;
+            half2 uv = mainUV + noise * 0.2  * _DistortionIntensity * ramp.r;
             mainColor = SampleMainTex(uv,color);
         #endif
     }
 
     void ApplyDissolve(inout float4 mainColor,float2 dissolveUV,float4 color,float customData){
-        half4 edgeColor = (half4)0;
         #if defined(DISSOLVE_ON)
+            half4 edgeColor = (half4)0;
+
             half4 dissolveTex = tex2D(_DissolveTex,dissolveUV.xy);
             half dissolve = lerp(dissolveTex.a,dissolveTex.r,_DissolveTexUseR);
             half gray = 1 - dissolve;
 
             // select cutoff
-            half cutoff = _DissolveByVertexColor>0?1 - color.a : _Cutoff; // slider or vertex color
+            half cutoff = _DissolveByVertexColor > 0 ? 1 - color.a : _Cutoff; // slider or vertex color
             cutoff = _DissolveByCustomData >0 ? 1- customData :cutoff; // slider or particle's custom data
             cutoff = lerp(-0.1,1.01,cutoff);
 
@@ -149,30 +158,29 @@
             #if defined(DISSOLVE_EDGE_ON)
                 half edgeRate = cutoff + _EdgeWidth;
                 edge = step(gray,edgeRate);
-                edgeColor = edge * _EdgeColor;
+                edgeColor = edge * _EdgeColor * _EdgeColorIntensity;
 
                 // edge color fadeout.
-                edgeColor.a = exp(-_Cutoff);
+                edgeColor.a *= cutoff < 0.6 ? 1 : exp(-cutoff);
                 // apply mainTex alpha
                 edgeColor.a *= mainColor.a;
+                mainColor = lerp(mainColor,edgeColor,edge);
             #endif
-            mainColor = lerp(mainColor,edgeColor,edge);
         #endif
 
     }
 
     void ApplyOffset(inout float4 color,float4 offsetUV,float2 mainUV){
-        half4 offsetColor = (half4)1;
         #if defined(OFFSET_ON)
-            offsetColor = tex2D(_OffsetTex,offsetUV.xy) * _OffsetTexColorTint;
-            offsetColor += _DoubleEffectOn > 0 ? tex2D(_OffsetTex,offsetUV.zw) * _OffsetTexColorTint * 0.4 : 0;
+            half4 offsetColor = tex2D(_OffsetTex,offsetUV.xy) * _OffsetTexColorTint;
+            offsetColor += _DoubleEffectOn > 0 ? tex2D(_OffsetTex,offsetUV.zw) * _OffsetTexColorTint2 : 0;
 
             half4 offsetMask = tex2D(_OffsetMaskTex,mainUV);
+            float mask = _OffsetMaskTexUseR > 0? offsetMask.r : offsetMask.a;
 
-            offsetColor *= _BlendIntensity;
-            offsetColor *= offsetMask.r;
+            offsetColor = offsetColor * _BlendIntensity * mask;
+            color.rgb *= lerp(1,offsetColor,mask);
         #endif
-        color.rgb *= offsetColor.rgb;
     }
 
     void ApplyFresnal(inout float4 mainColor,float fresnal){
@@ -189,16 +197,19 @@
     {
         half4 mainColor = (half4)0;
         // setup mainUV
-        float2 mainUV = i.uv.xy;
+        float4 mainUV = i.uv;
         #if defined(_GRAB_PASS)
-            mainUV = i.grabPos.xy/i.grabPos.w;
+            mainUV.xy = i.grabPos.xy/i.grabPos.w;
         #endif
         
         #if defined(DISTORTION_ON)
-            ApplyDistortion(mainColor,mainUV,i.distortUV,i.color);
+            ApplyDistortion(mainColor,mainUV.xy,i.distortUV,i.color);
         #else
-            mainColor = SampleMainTex(mainUV ,i.color);
+            mainColor = SampleMainTex(mainUV.xy,i.color);
         #endif
+
+        ApplyMainTexMask(mainColor,mainUV.zw);
+        //float mainAlpha = mainColor.a;
 
         #if defined(OFFSET_ON)
             ApplyOffset(mainColor,i.offsetUV,i.uv.zw);

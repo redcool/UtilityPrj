@@ -7,9 +7,9 @@ Shader "ZX/FX/PowerVFXShader"
 		[Toggle]_MainTexOffsetStop("禁用MainTex自动滚动?",int)=0
 		[HDR]_Color("Main Color",Color) = (1,1,1,1)
 		_ColorScale("ColorScale",range(1,3)) = 1
-		[Header(MainTexMask)]
+		[Header(MaskTexMask)]
 		_MainTexMask("Main Texture Mask(R)", 2D) = "white" {}
-		[Toggle]_MainTexMask_R_A("_MainTexMask_R_A",int) = 0
+		[Toggle]_MainTexMaskUseR("_MainTexMaskUseR",int) = 1
 
 		[Header(BlendMode)]
 		[Enum(UnityEngine.Rendering.BlendMode)]_SrcMode("Src Mode",int) = 5
@@ -26,6 +26,7 @@ Shader "ZX/FX/PowerVFXShader"
 		[noscaleoffset]_NoiseTex("Noise Texture",2D) = "white" {}
 		[noscaleoffset]_DistortionMaskTex("Distortion Mask Tex(R)",2d) = "white"{}
 		_DistortionIntensity("Distortion Intensity",Range(0,1)) = 0.5
+
 		_DistortTile("Distort Tile",vector) = (1,1,1,1)
 		_DistortDir("Distort Dir",vector) = (0,1,0,-1)
 
@@ -44,12 +45,15 @@ Shader "ZX/FX/PowerVFXShader"
 		[Toggle(DISSOLVE_EDGE_ON)]_DissolveEdgeOn("Dissolve Edge On?",int)=0
 		[HDR]_EdgeColor("EdgeColor",color) = (1,0,0,1)
 		_EdgeWidth("EdgeWidth",range(0,0.3)) = 0.1
+		_EdgeColorIntensity("EdgeColorIntensity",range(1,10)) = 1
 
 		[Header(Offset)]
 		[Toggle(OFFSET_ON)] _OffsetOn("Offset On?",int) = 0
 		[NoScaleOffset]_OffsetTex("Offset Tex",2d) = ""{}
 		[NoScaleOffset]_OffsetMaskTex("Offset Mask (R)",2d) = "white"{}
+		[Toggle]_OffsetMaskTexUseR("_OffsetMaskTexUseR",int) = 1
 		[HDR]_OffsetTexColorTint("OffsetTex Color",color) = (1,1,1,1)
+		[HDR]_OffsetTexColorTint2("OffsetTex Color 2",color) = (1,1,1,1)
 		_OffsetTile("Offset Tile",vector) = (1,1,1,1)
 		_OffsetDir("Offset Dir",vector) = (1,1,0,0)
 		_BlendIntensity("Blend Intensity",range(0,10)) = 0.5

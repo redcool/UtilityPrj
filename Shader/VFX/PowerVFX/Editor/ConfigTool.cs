@@ -15,30 +15,28 @@ namespace PowerVFX
     /// </summary>
     public static class ConfigTool
     {
-        static string FindI18NPath(string configPath)
+        static string FindI18NPath(string configPath,string configFileName="i18n.txt",int maxFindCount=10)
         {
             var pathDir = Path.GetDirectoryName(configPath);
             var filePath = "";
             var findCount = 0;
             while (!pathDir.EndsWith("Assets"))
             {
-                filePath = pathDir + "/i18n.txt";
+                filePath = pathDir + "/"+ configFileName;
                 pathDir = Path.GetDirectoryName(pathDir);
-                if (File.Exists(filePath) || ++findCount > 10)
+                if (File.Exists(filePath) || ++findCount > maxFindCount)
                     break;
             }
             return filePath;
         }
 
-        public static Dictionary<string,string> ReadConfig(string configPath)
+        public static Dictionary<string,string> ReadConfig(string configFilePath)
         {
             var splitRegex = new Regex(@"\s*=\s*");
-            var filePath = FindI18NPath(configPath);
             var dict = new Dictionary<string, string>();
-
-            if (!string.IsNullOrEmpty(filePath))
+            if (!string.IsNullOrEmpty(configFilePath))
             {
-                var lines = File.ReadAllLines(filePath);
+                var lines = File.ReadAllLines(configFilePath);
                 foreach (var lineStr in lines)
                 {
                     var line = lineStr.Trim();
@@ -55,8 +53,9 @@ namespace PowerVFX
 
         public static Dictionary<string, string> ReadConfig(Shader shader)
         {
-            var path = AssetDatabase.GetAssetPath(shader);
-            return ReadConfig(path);
+            var shaderFilePath = AssetDatabase.GetAssetPath(shader);
+            var i18nFilePath = FindI18NPath(shaderFilePath);
+            return ReadConfig(i18nFilePath);
         }
 
         public static Dictionary<string, MaterialProperty> CacheProperties(MaterialProperty[] properties)

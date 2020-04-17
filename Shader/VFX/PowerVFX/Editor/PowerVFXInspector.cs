@@ -26,10 +26,10 @@ namespace PowerVFX
         static string[] tabNames = new[] {"Settings", "Main", "Distortion", "Dissovle", "Offset", "Fresnal",};
         static List<string[]> propNameList = new List<string[]> {
             new []{ "_DoubleEffectOn", "_CullMode", },
-            new []{ "_MainTex", "_MainTexOffsetStop", "_Color","_ColorScale", "_MainTexMask","_MainTexMask_R_A" },
+            new []{ "_MainTex", "_MainTexOffsetStop", "_Color","_ColorScale", "_MainTexMask","_MainTexMaskUseR" },
             new []{ "_DistortionOn", "_NoiseTex", "_DistortionMaskTex", "_DistortionIntensity", "_DistortTile", "_DistortDir",},
-            new []{ "_DissolveOn", "_DissolveTex", "_DissolveTexUseR", "_DissolveByVertexColor", "_DissolveByCustomData", "_Cutoff", "_DissolveEdgeOn", "_EdgeColor", "_EdgeWidth",},
-            new []{ "_OffsetOn", "_OffsetTex", "_OffsetMaskTex", "_OffsetTexColorTint", "_OffsetTile", "_OffsetDir", "_BlendIntensity", },
+            new []{ "_DissolveOn", "_DissolveTex", "_DissolveTexUseR", "_DissolveByVertexColor", "_DissolveByCustomData", "_Cutoff", "_DissolveEdgeOn", "_EdgeColor", "_EdgeWidth","_EdgeColorIntensity"},
+            new []{ "_OffsetOn", "_OffsetTex", "_OffsetMaskTex", "_OffsetMaskTexUseR", "_OffsetTexColorTint", "_OffsetTexColorTint2", "_OffsetTile", "_OffsetDir", "_BlendIntensity", "_OffsetHeightMap", "_OffsetHeight"},
             new []{ "_FresnalOn", "_FresnalColor", "_FresnalPower", "_FresnalTransparentOn" },
         };
 
@@ -44,6 +44,8 @@ namespace PowerVFX
         Dictionary<string, string> propNameTextDict;
 
         bool isFirstRunOnGUI = true;
+        string helpStr;
+        string[] tabNamesInConfig;
 
         public PowerVFXInspector()
         {
@@ -67,7 +69,7 @@ namespace PowerVFX
                 OnInit(mat, properties);
             }
             // title
-            EditorGUILayout.HelpBox("PowerVFX", MessageType.Info);
+            EditorGUILayout.HelpBox(helpStr, MessageType.Info);
 
             //show original
             showOriginalPage = GUILayout.Toggle(showOriginalPage, ConfigTool.Text(propNameTextDict, "ShowOriginalPage"));
@@ -77,10 +79,14 @@ namespace PowerVFX
                 return;
             }
 
-            
             EditorGUILayout.BeginVertical("Box");
-            DrawPageTabs();
-            DrawPageDetail(materialEditor, mat);
+            {
+                DrawPageTabs();
+
+                EditorGUILayout.BeginVertical("Box");
+                DrawPageDetail(materialEditor, mat);
+                EditorGUILayout.EndVertical();
+            }
             EditorGUILayout.EndVertical();
         }
 
@@ -105,12 +111,10 @@ namespace PowerVFX
 
         private void DrawPageTabs()
         {
-            EditorGUILayout.BeginHorizontal("Box");
             //cache selectedId
             selectedId = EditorPrefs.GetInt(POWERVFX_SELETECTED_ID, selectedId);
-            selectedId = GUILayout.Toolbar(selectedId, tabNames);
+            selectedId = GUILayout.Toolbar(selectedId, tabNamesInConfig);
             EditorPrefs.SetInt(POWERVFX_SELETECTED_ID, selectedId);
-            EditorGUILayout.EndHorizontal();
         }
 
         private void OnInit(Material mat,MaterialProperty[] properties)
@@ -118,6 +122,10 @@ namespace PowerVFX
             presetBlendMode = GetPresetBlendMode(mat);
             propNameTextDict = ConfigTool.ReadConfig(mat.shader);
             propDict = ConfigTool.CacheProperties(properties);
+
+            helpStr = ConfigTool.Text(propNameTextDict,"Help").Replace('|','\n');
+
+            tabNamesInConfig = tabNames.Select(item => ConfigTool.Text(propNameTextDict, item)).ToArray();
         }
 
         void DrawBlendMode(Material mat)
