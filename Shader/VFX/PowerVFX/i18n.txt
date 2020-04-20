@@ -10,14 +10,16 @@ Dissovle = 溶解
 Offset = 流光
 Fresnal = 轮廓光
 
+_DoubleEffectOn=开启双层效果?
+_CullMode=剔除模式
+_ZWriteMode=写入深度?
 PresetBlendMode=预制混合模式
 
 _MainTex=主纹理
-_MainTexOffsetStop=禁用主纹理自动滚动
+_MainTexOffsetStop=禁用主纹理自动滚动?
+_MainTexOffsetUseCustomData_XY=纹理滚动使用CustomData.xy->uv.zw
 _Color=主纹理颜色
 _ColorScale=主纹理颜色倍数
-_DoubleEffectOn=开启双层效果
-_CullMode=剔除模式
 _MainTexMask=主纹理遮罩
 _MainTexMaskUseR=遮罩使用R通道?
 
@@ -33,7 +35,7 @@ _DissolveOn=开启溶解
 _DissolveTex=溶解图
 _DissolveTexUseR=使用溶解图R通道?
 _DissolveByVertexColor=溶解使用顶点颜色(A)
-_DissolveByCustomData=溶解使用CustomData1(x)
+_DissolveByCustomData=溶解使用CustomData.z->uv1.x
 _Cutoff=透明测试参考值
 _DissolveEdgeOn=开启溶解边
 _EdgeColor=边颜色

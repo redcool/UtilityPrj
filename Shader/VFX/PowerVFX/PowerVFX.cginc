@@ -8,6 +8,8 @@
     sampler2D _MainTex;
     half4 _MainTex_ST;
     int _MainTexOffsetStop;
+    int _MainTexOffsetUseCustomData_XY;
+
     int _DoubleEffectOn; //2层效果,
     sampler2D _MainTexMask;
     float4 _MainTexMask_ST;
@@ -58,6 +60,7 @@
         float3 normal:NORMAL;
         float4 color : COLOR;
         half4 uv : TEXCOORD0; // xy:main uv,zw : particle's customData
+        half4 uv1:TEXCOORD1;
     };
 
     struct v2f
@@ -72,15 +75,22 @@
         float4 fresnal:TEXCOORD5;// x:fresnal,y:customData.x
     };
 
+    void ApplyMainTexOffset(inout v2f o,in appdata v){
+        float2 offsetScale = lerp(_Time.xx, 1 ,_MainTexOffsetStop);
+        float2 mainTexOffset = (_MainTex_ST.zw * offsetScale);
+        mainTexOffset = lerp(mainTexOffset,v.uv.zw, _MainTexOffsetUseCustomData_XY); // vertex uv0.z : particle customData1.xy
+
+        o.uv.xy = v.uv.xy * _MainTex_ST.xy + mainTexOffset;
+        o.uv.zw = v.uv.xy;
+    }
+
     v2f vert(appdata v)
     {
         v2f o = (v2f)0;
         o.color = v.color;
         o.vertex = UnityObjectToClipPos(v.vertex);
 
-        float2 offsetScale = lerp(_Time.xx,1,_MainTexOffsetStop);
-        o.uv.xy = v.uv.xy * _MainTex_ST.xy + frac(_MainTex_ST.zw * offsetScale);//TRANSFORM_TEX(v.uv, _MainTex);
-        o.uv.zw = v.uv.xy;
+        ApplyMainTexOffset(o,v);
 
         #if defined(DISTORTION_ON)
             o.distortUV = v.uv.xyxy * _DistortTile + frac(_DistortDir * _Time.xxxx);
@@ -91,7 +101,7 @@
         #endif
 
         #if defined(OFFSET_ON)
-            o.offsetUV = v.uv.xyxy * _OffsetTile + frac(_Time.xxxx * _OffsetDir);
+            o.offsetUV = v.uv.xyxy * _OffsetTile + (_Time.xxxx * _OffsetDir); //暂时去除 frac
         #endif
 
         #if defined(_GRAB_PASS)
@@ -105,7 +115,7 @@
             o.fresnal.x = 1 - dot(worldNormal,viewDir) ;
         #endif
 
-        o.fresnal.y = v.uv.z;// particle custom data
+        o.fresnal.y = v.uv1.x;// particle customData.z
         return o;
     }
 

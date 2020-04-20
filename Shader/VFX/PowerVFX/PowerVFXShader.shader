@@ -5,6 +5,7 @@ Shader "ZX/FX/PowerVFXShader"
 	{
 		_MainTex("Main Texture", 2D) = "white" {}
 		[Toggle]_MainTexOffsetStop("禁用MainTex自动滚动?",int)=0
+		[Toggle]_MainTexOffsetUseCustomData_XY("_MainTexOffsetUseCustomData_XY -> uv.zw",int)=0
 		[HDR]_Color("Main Color",Color) = (1,1,1,1)
 		_ColorScale("ColorScale",range(1,3)) = 1
 		[Header(MaskTexMask)]
@@ -20,6 +21,7 @@ Shader "ZX/FX/PowerVFXShader"
 		
 		[Header(CullMode)]
 		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull Mode",float) = 2
+		[Toggle]_ZWriteMode("ZWriteMode",int) = 0
 
 		[Header(Distortion)]
 		[Toggle(DISTORTION_ON)]_DistortionOn("Distortion On?",int)=0
@@ -38,7 +40,7 @@ Shader "ZX/FX/PowerVFXShader"
 		
 		[Header(DissolveType)]
 		[Toggle]_DissolveByVertexColor("Dissolve By Vertex Color ?",int)=0
-		[Toggle]_DissolveByCustomData("Dissolve By Custom Data ?",int)=0
+		[Toggle]_DissolveByCustomData("Dissolve By customData.z -> uv1.x ?",int)=0
 		_Cutoff ("AlphaTest cutoff", Range(0,1)) = 0.5
 
 		[Header(DissolveEdge)]
@@ -71,7 +73,8 @@ Shader "ZX/FX/PowerVFXShader"
 		Pass
 		{
 			Tags{ "LightMode" = "ForwardBase" }
-			Cull Off Lighting Off ZWrite Off
+			Lighting Off 
+			ZWrite[_ZWriteMode]
 			Blend [_SrcMode][_DstMode] //,srcAlpha oneMinusSrcAlpha
 			Cull[_CullMode]
 			CGPROGRAM
