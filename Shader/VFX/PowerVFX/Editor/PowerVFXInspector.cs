@@ -64,6 +64,7 @@ namespace PowerVFX
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
         {
             var mat = materialEditor.target as Material;
+            propDict = ConfigTool.CacheProperties(properties);
 
             if (isFirstRunOnGUI || lastShader != mat.shader)
             {
@@ -132,7 +133,7 @@ namespace PowerVFX
                 presetBlendMode = GetPresetBlendMode(mat);
 
             propNameTextDict = ConfigTool.ReadConfig(mat.shader);
-            propDict = ConfigTool.CacheProperties(properties);
+
 
             helpStr = ConfigTool.Text(propNameTextDict,"Help").Replace('|','\n');
 
