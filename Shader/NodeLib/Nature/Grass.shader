@@ -13,8 +13,10 @@ Shader "Unlit/Nature/Grass"
         _WaveIntensity("WaveIntensity",float) = 1
 
         _PushRadius("Radius",float) = 0.5
-        _PushIntensity("_PushIntensity",float) = 1
+        _PushIntensity("Push Intensity",float) = 1
         //_PlayerPos("playerPos",vector) = (0,0,0,0)
+        // _GlobalWindDir("Global WindDir",vector)=(1,0,0,0)
+        // _GlobalWindIntensity("Global WindIntensity",float)=1
     }
 
     CGINCLUDE
@@ -33,6 +35,9 @@ Shader "Unlit/Nature/Grass"
     float3 _PlayerPos;
     float _PushRadius;
     float _PushIntensity;
+
+    float3 _GlobalWindDir;
+    float _GlobalWindIntensity;
 
     float3 CalcForce(float3 pos,float2 uv,float3 color){
         //---interactive
@@ -54,9 +59,13 @@ Shader "Unlit/Nature/Grass"
         Unity_GradientNoise_float(uv,1,noise);
         noise -= 0.5;
         noise = noise * v.uv.y * 0.2 * waveIntensity;
-
+        
         pos.x += noise;
         pos.xyz += CalcForce(pos.xyz,v.uv,v.color);
+        //apply weather
+        float3 windDir = _GlobalWindDir * _GlobalWindIntensity;
+        pos.xyz += noise * 0.4 * windDir;
+
         return mul(unity_WorldToObject,pos);
     }
     ENDCG
@@ -89,7 +98,8 @@ Shader "Unlit/Nature/Grass"
                 float4 lmap:TEXCOORD2;
                 // UNITY_SHADOW_COORDS(3)
                 SHADOW_COORDS(3)
-                float diff:TEXCOORD5;
+                float diff:TEXCOORD4;
+                float4 color:COLOR;
             };
 
             sampler2D _MainTex;
@@ -97,6 +107,8 @@ Shader "Unlit/Nature/Grass"
             float _Cutoff;
             float4 _Color;
             float _ColorScale;
+
+
 
             v2f vert (appdata v)
             {
@@ -111,24 +123,26 @@ Shader "Unlit/Nature/Grass"
                 UNITY_TRANSFER_FOG(o,o.pos);
                 //float3 normal = UnityObjectToWorldNormal(v.normal);
                 float3 lightDir = length(_WorldSpaceLightPos0.xyz) > 0 ? _WorldSpaceLightPos0.xyz : float3(0.1,.35,0.02);
-                float3 normal = UnityObjectToWorldNormal(v.pos.xyz);
-                float nl = dot(normal,lightDir) ;
-                o.diff = smoothstep(0.3,.32,nl);
+                float3 normal = UnityObjectToWorldNormal(v.normal);
+                //float3 pos = mul(unity_ObjectToWorld,v.pos).xyz;
+                float nl = dot(normal,lightDir);
+                o.diff = smoothstep(0.2,.6,nl);
+                o.color = v.color;
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
-                // return i.diff;
-                //return smoothstep(0.2,.4,i.diff)+.2;
+                //return i.diff;
+                //return smoothstep(0,.4,i.diff);
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
                 clip(col.a - _Cutoff);
-                col *= _Color * _ColorScale;
+                col *= i.color * _Color * _ColorScale;
                 
                 //UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos)
                 fixed atten = SHADOW_ATTENUATION(i);
-                float diff = smoothstep(0.2,0.4,i.diff) + .5;
+                float diff = i.diff;//smoothstep(0.2,.6,i.diff);
                 col *= diff * atten;
                 //return atten;
                 #if defined(LIGHTMAP_ON)
