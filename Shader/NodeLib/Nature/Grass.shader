@@ -20,7 +20,7 @@ Shader "Unlit/Nature/Grass"
     }
 
     CGINCLUDE
-    #include "NodeLib.cginc"
+    #include "../NodeLib.cginc"
     struct appdata
     {
         float4 pos : POSITION;
@@ -58,7 +58,7 @@ Shader "Unlit/Nature/Grass"
         float noise = 0;
         Unity_GradientNoise_float(uv,1,noise);
         noise -= 0.5;
-        noise = noise * v.uv.y * 0.2 * waveIntensity;
+        noise = noise * v.uv.y * v.color.x * 0.2 * waveIntensity ;
         
         pos.x += noise;
         pos.xyz += CalcForce(pos.xyz,v.uv,v.color);
@@ -83,8 +83,8 @@ Shader "Unlit/Nature/Grass"
             #pragma fragment frag
             // make fog work
             #pragma multi_compile_fog
-            #pragma multi_compile _ LIGHTMAP_ON SHADOWS_SCREEN
-            //#pragma multi_compile_fwdbase 
+            //#pragma multi_compile _ LIGHTMAP_ON
+            #pragma multi_compile_fwdbase 
 
             #include "UnityCG.cginc"
 
@@ -96,9 +96,9 @@ Shader "Unlit/Nature/Grass"
                 UNITY_FOG_COORDS(1)
                 float4 pos : SV_POSITION;
                 float4 lmap:TEXCOORD2;
+                // UNITY_SHADOW_COORDS(3)
                 SHADOW_COORDS(3)
-                float diff:TEXCOORD4;
-                float4 color:TEXCOORD5;
+                float diff:TEXCOORD5;
             };
 
             sampler2D _MainTex;
@@ -117,28 +117,29 @@ Shader "Unlit/Nature/Grass"
                 #if defined(LIGHTMAP_ON)
                     o.lmap.xy = v.uv1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
                 #endif
+                //UNITY_TRANSFER_LIGHTING(o,v.uv.xy);
                 TRANSFER_SHADOW(o)
                 UNITY_TRANSFER_FOG(o,o.pos);
+                //float3 normal = UnityObjectToWorldNormal(v.normal);
+                float3 lightDir = length(_WorldSpaceLightPos0.xyz) > 0 ? _WorldSpaceLightPos0.xyz : float3(0.1,.35,0.02);
                 float3 normal = UnityObjectToWorldNormal(v.normal);
-                float3 lightDir = length(_WorldSpaceLightPos0.xyz) > 0 ? _WorldSpaceLightPos0.xyz : float3(0.1,.7,0.02);
-                float nl = dot(normal,lightDir) * 0.5+0.5;
-                o.diff = nl;//smoothstep(0.1,.8,nl);
-                o.color = v.color;
+                float nl = dot(normal,lightDir) * 0.5 + 0.5;
+                o.diff = nl;//smoothstep(0,.32,nl);
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
-                //return i.diff;
+                // return i.diff;
                 //return smoothstep(0,.4,i.diff);
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
                 clip(col.a - _Cutoff);
-                col *= i.color * _Color * _ColorScale;
-
-                fixed atten = SHADOW_ATTENUATION(i);
+                col *= _Color * _ColorScale;
                 
-                float diff = smoothstep(0.2,.4,i.diff)+0.5;
+                //UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos)
+                fixed atten = SHADOW_ATTENUATION(i);
+                float diff = smoothstep(0.2,0.4,i.diff) + 0.1;
                 col *= diff * atten;
                 //return atten;
                 #if defined(LIGHTMAP_ON)
@@ -185,7 +186,8 @@ Shader "Unlit/Nature/Grass"
             {
                 fixed4 col = tex2D(_MainTex, i.uv);
                 clip(col.a- _Cutoff);
-                return 0;
+
+                SHADOW_CASTER_FRAGMENT(i)
                 
             }
             ENDCG
