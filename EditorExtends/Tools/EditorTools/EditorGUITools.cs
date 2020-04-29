@@ -5,6 +5,7 @@ namespace MyTools
     using System.Collections;
     using System.Collections.Generic;
     using UnityEditor;
+    using UnityEditorInternal;
     using UnityEngine;
 
     public static class EditorGUITools
@@ -29,6 +30,21 @@ namespace MyTools
             EditorGUIUtility.labelWidth = width;
             drawAction();
             EditorGUIUtility.labelWidth = lastLabelWidth;
+        }
+
+        public static void BeginVerticalBox(Action drawAction,string style="Box")
+        {
+            EditorGUILayout.BeginVertical(style);
+            if (drawAction != null)
+                drawAction();
+            EditorGUILayout.EndVertical();
+        }
+
+        public static int LayerMaskField(string label, int layers)
+        {
+            var tempLayers = InternalEditorUtility.LayerMaskToConcatenatedLayersMask(layers);
+            tempLayers = EditorGUILayout.MaskField(label, tempLayers, InternalEditorUtility.layers);
+            return InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(tempLayers);
         }
     }
 }

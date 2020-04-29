@@ -5,6 +5,7 @@ using UnityEngine;
 using System;
 using UnityEditor;
 using Random = UnityEngine.Random;
+using UnityEditorInternal;
 
 namespace MyTools.Scenes.Tools
 {
@@ -12,7 +13,7 @@ namespace MyTools.Scenes.Tools
         public Vector2 scale = new Vector2(0.1f,1f);
         public Vector2 rotation = new Vector2(0,359);
         public Transform target;
-
+        public LayerMask colliderLayers = 1;
     }
     public class PlacementWindow : EditorWindow
     {
@@ -52,11 +53,11 @@ Hierarchy中对选中节点的子节点进行
 
             info.target = target;
 
-            EditorGUILayout.BeginVertical("Box");
+            EditorGUITools.BeginVerticalBox(() =>
             {
                 EditorGUILayout.ObjectField("Target : ", target, typeof(Transform), true);
 
-                EditorGUILayout.BeginVertical("Box");
+                EditorGUITools.BeginVerticalBox(() =>
                 {
                     //EditorGUIUtility.labelWidth = 100;
                     info.scale.x = EditorGUILayout.FloatField("min scale:", info.scale.x);
@@ -66,9 +67,9 @@ Hierarchy中对选中节点的子节点进行
                         RandomScale(info.target, info.scale);
                     }
                 }
-                EditorGUILayout.EndVertical();
+                );
 
-                EditorGUILayout.BeginVertical("Box");
+                EditorGUITools.BeginVerticalBox(() =>
                 {
                     info.rotation.x = EditorGUILayout.FloatField("min rotation:", info.rotation.x);
                     info.rotation.y = EditorGUILayout.FloatField("max rotation:", info.rotation.y);
@@ -76,19 +77,21 @@ Hierarchy中对选中节点的子节点进行
                     {
                         RandomRotation(info.target, info.rotation);
                     }
-                }
-                EditorGUILayout.EndVertical();
 
-                EditorGUILayout.BeginVertical("Box");
+                });
+
+
+                EditorGUITools.BeginVerticalBox(() =>
                 {
+                    info.colliderLayers = EditorGUITools.LayerMaskField("Collide Layer:", info.colliderLayers);
+
                     if (GUILayout.Button("放置到地面"))
                     {
                         PutOnLand(info.target);
                     }
-                }
-                EditorGUILayout.EndVertical();
-            }
-            EditorGUILayout.EndVertical();
+                });
+            });
+
         }
 
         private void PutOnLand(Transform tr)
@@ -98,7 +101,7 @@ Hierarchy中对选中节点的子节点进行
                 var ray = new Ray(pos + new Vector3(0, 1, 0), Vector3.down);
 
                 RaycastHit hit;
-                if (Physics.Raycast(ray, out hit, float.MaxValue))
+                if (Physics.Raycast(ray, out hit, float.MaxValue,info.colliderLayers))
                 {
                     return hit.point;
                 }
@@ -144,5 +147,5 @@ Hierarchy中对选中节点的子节点进行
             }
         }
     }
-#endif
 }
+#endif
