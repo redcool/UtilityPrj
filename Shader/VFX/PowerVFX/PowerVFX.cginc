@@ -196,10 +196,9 @@
     void ApplyFresnal(inout float4 mainColor,float fresnal){
         #if defined(FRESNAL_ON)
         float f =  saturate(smoothstep(fresnal,0,_FresnalPower));
-        float4 fresnalColor = _FresnalColor *f;
-        //mainColor += fresnalColor;
-        mainColor = mainColor * 0.9 + fresnalColor;
-        mainColor.a = lerp( f*2,mainColor.a,step(_FresnalTransparentOn,0));
+        float4 fresnalColor = _FresnalColor *f * _FresnalColor.a;
+        mainColor.rgb = mainColor.rgb * 0.9 + fresnalColor;
+        mainColor.a *= lerp( f*2,mainColor.a,step(_FresnalTransparentOn,0));
         #endif
     }
 
@@ -230,7 +229,7 @@
             ApplyDissolve(mainColor,i.dissolveUV,i.color,i.fresnal.y);
         #endif
         #if defined(FRESNAL_ON)
-        ApplyFresnal(mainColor,i.fresnal);
+        ApplyFresnal(mainColor,i.fresnal.x);
         #endif
 
         return mainColor;
