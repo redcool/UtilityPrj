@@ -20,14 +20,16 @@ Shader "Unlit/Nature/Grass"
     }
 
     CGINCLUDE
-    #include "../NodeLib.cginc"
+    #include "UnityCG.cginc"
+    #include "NodeLib.cginc"
     struct appdata
     {
-        float4 pos : POSITION;
+        float4 vertex : POSITION;
         float2 uv : TEXCOORD0;
         float2 uv1:TEXCOORD1;
         float4 color:COLOR;
         float3 normal:NORMAL;
+        UNITY_VERTEX_INPUT_INSTANCE_ID
     };
     float _WaveIntensity;
     float _WaveSpeed;
@@ -42,15 +44,19 @@ Shader "Unlit/Nature/Grass"
     float3 CalcForce(float3 pos,float2 uv,float3 color){
         //---interactive
         float3 dir = pos - _PlayerPos;
-        dir.y *= 0.1;
-
+        
         float dist = length(dir);
-        float atten = uv.y * max(0,_PushRadius - dist) * color * _PushIntensity;
-        return normalize(dir) * atten;
+        float circle = saturate(_PushRadius - dist);
+        float atten = uv.y * circle * color * _PushIntensity;
+
+        dir.xz = normalize(dir.xz)*0.5;
+        dir.y = -0.5;
+        return dir * saturate(atten);
     }
 
+
     float4 WaveVertex(appdata v,float waveSpeed,float waveIntensity){
-        float4 pos = mul(unity_ObjectToWorld,v.pos);
+        float4 pos = mul(unity_ObjectToWorld,v.vertex);
 
         float2 timeOffset = _Time.y * waveSpeed;
         float2 uv = pos.xz + timeOffset;
@@ -85,9 +91,9 @@ Shader "Unlit/Nature/Grass"
             #pragma multi_compile_fog
             //#pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile_fwdbase 
+            #pragma multi_compile_instancing
 
             #include "UnityCG.cginc"
-
             #include "AutoLight.cginc"
 
             struct v2f
@@ -99,19 +105,27 @@ Shader "Unlit/Nature/Grass"
                 // UNITY_SHADOW_COORDS(3)
                 SHADOW_COORDS(3)
                 float diff:TEXCOORD5;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
             float _Cutoff;
-            float4 _Color;
             float _ColorScale;
+            //float4 _Color;
 
+            UNITY_INSTANCING_BUFFER_START(Props)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _Color)
+				//UNITY_DEFINE_INSTANCED_PROP(float4,_PlayerPos)
+            UNITY_INSTANCING_BUFFER_END(Props)
 
 
             v2f vert (appdata v)
             {
                 v2f o = (v2f)0;
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_TRANSFER_INSTANCE_ID(v, o);
+
                 o.pos = UnityObjectToClipPos( WaveVertex(v,_WaveSpeed,_WaveIntensity) );
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 #if defined(LIGHTMAP_ON)
@@ -130,24 +144,25 @@ Shader "Unlit/Nature/Grass"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                // return i.diff;
-                //return smoothstep(0,.4,i.diff);
+                UNITY_SETUP_INSTANCE_ID(i);
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
                 clip(col.a - _Cutoff);
-                col *= _Color * _ColorScale;
+                col *= UNITY_ACCESS_INSTANCED_PROP(Props,_Color) * _ColorScale;
                 
-                //UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos)
+                
+                // ao 
                 fixed atten = SHADOW_ATTENUATION(i);
                 float diff = smoothstep(0.2,0.4,i.diff) + 0.1;
                 col *= diff * atten;
-                //return atten;
+                
                 #if defined(LIGHTMAP_ON)
                     half4 bakedColorTex = UNITY_SAMPLE_TEX2D(unity_Lightmap, i.lmap.xy);
                     half3 bakedColor = DecodeLightmap(bakedColorTex);
 
                     col.rgb *= bakedColor;
                 #endif
+
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
@@ -163,6 +178,7 @@ Shader "Unlit/Nature/Grass"
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_shadowcaster
+            #pragma multi_compile_instancing            
             #include "UnityCG.cginc"
 
             sampler2D _MainTex;
@@ -171,13 +187,16 @@ Shader "Unlit/Nature/Grass"
             struct v2f { 
                 V2F_SHADOW_CASTER;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             v2f vert(appdata v)
             {
-                v2f o;
+                v2f o = (v2f)0;
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_TRANSFER_INSTANCE_ID(v, o);
+                
                 o.pos = UnityObjectToClipPos( WaveVertex(v,_WaveSpeed,_WaveIntensity) );
-                //TRANSFER_SHADOW_CASTER_NORMALOFFSET(o)
                 o.uv = v.uv;
                 return o;
             }
