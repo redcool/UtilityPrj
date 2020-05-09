@@ -5,11 +5,16 @@ Shader "ZX/FX/PowerVFXShader_GrabPass"
 	{
 		_MainTex("Main Texture", 2D) = "white" {}
 		[Toggle]_MainTexOffsetStop("禁用MainTex自动滚动?",int)=0
+		[Toggle]_MainTexOffsetUseCustomData_XY("_MainTexOffsetUseCustomData_XY -> uv.zw",int)=0
 		[HDR]_Color("Main Color",Color) = (1,1,1,1)
 		_ColorScale("ColorScale",range(1,3)) = 1
 		[Header(MaskTexMask)]
 		_MainTexMask("Main Texture Mask(R)", 2D) = "white" {}
 		[Toggle]_MainTexMaskUseR("_MainTexMaskUseR",int) = 1
+
+		[Header(MatCap)]
+		[noscaleoffset]_MatCapTex("_MapCapTex",2d)=""{}
+		_MatCapIntensity("_MatCapIntensity",float) = 1
 
 		[Header(BlendMode)]
 		[Enum(UnityEngine.Rendering.BlendMode)]_SrcMode("Src Mode",int) = 5
@@ -20,6 +25,7 @@ Shader "ZX/FX/PowerVFXShader_GrabPass"
 		
 		[Header(CullMode)]
 		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull Mode",float) = 2
+		[Toggle]_ZWriteMode("ZWriteMode",int) = 0
 
 		[Header(Distortion)]
 		[Toggle(DISTORTION_ON)]_DistortionOn("Distortion On?",int)=0
@@ -38,7 +44,7 @@ Shader "ZX/FX/PowerVFXShader_GrabPass"
 		
 		[Header(DissolveType)]
 		[Toggle]_DissolveByVertexColor("Dissolve By Vertex Color ?",int)=0
-		[Toggle]_DissolveByCustomData("Dissolve By Custom Data ?",int)=0
+		[Toggle]_DissolveByCustomData("Dissolve By customData.z -> uv1.x ?",int)=0
 		_Cutoff ("AlphaTest cutoff", Range(0,1)) = 0.5
 
 		[Header(DissolveEdge)]
@@ -63,6 +69,15 @@ Shader "ZX/FX/PowerVFXShader_GrabPass"
 		_FresnalColor("Fresnal Color",color) = (1,1,1,1)
 		_FresnalPower("Fresnal Power",range(0,1)) = 0.5
 		[Toggle]_FresnalTransparentOn("Fresnal Transparent?",range(0,1)) = 0
+		_FresnalTransparent("_FresnalTransparent",range(0,1)) = 0
+		
+		[Header(EnvReflection)]
+		[Toggle(ENV_REFLECT)]_EnvReflectOn("EnvReflect On?",int)=0
+		[NoScaleOffset]_EnvMap("Env Map",Cube) = ""{}
+		[NoScaleOffset]_EnvMapMask("Env Map Mask",2d) = ""{}
+		[Toggle]_EnvMapMaskUseR("EnvMapMaskUseR",int)=1
+		_EnvIntensity("Env intensity",float) = 1
+		_EnvOffset("EnvOffset",vector) = (0,0,0,0)
 	}
 	SubShader
 	{
@@ -71,23 +86,25 @@ Shader "ZX/FX/PowerVFXShader_GrabPass"
 
 		Pass
 		{
-			Tags{ "LightMode" = "ForwardBase" }
+			// Tags{ "LightMode" = "ForwardBase" }
 			Cull Off Lighting Off ZWrite Off
 			Blend [_SrcMode][_DstMode]
 			Cull[_CullMode]
 			CGPROGRAM
-			
-			#pragma shader_feature _ DISTORTION_ON
-			#pragma shader_feature _ DISSOLVE_ON
-			#pragma shader_feature _ DISSOLVE_EDGE_ON
-			#pragma shader_feature _ OFFSET_ON
-			#pragma shader_feature _ FRESNAL_ON
+			#define _GRAB_PASS
+
+			#pragma shader_feature DISTORTION_ON
+			#pragma shader_feature DISSOLVE_ON
+			#pragma shader_feature DISSOLVE_EDGE_ON
+			#pragma shader_feature OFFSET_ON
+			#pragma shader_feature FRESNAL_ON
+			#pragma shader_feature ENV_REFLECT
 
 			#pragma vertex vert
 			#pragma fragment frag
 
 			#include "UnityCG.cginc"
-			#define _GRAB_PASS
+			
 			#include "PowerVFX.cginc"
 
 			ENDCG

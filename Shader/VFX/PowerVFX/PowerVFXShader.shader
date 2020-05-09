@@ -12,6 +12,10 @@ Shader "ZX/FX/PowerVFXShader"
 		_MainTexMask("Main Texture Mask(R)", 2D) = "white" {}
 		[Toggle]_MainTexMaskUseR("_MainTexMaskUseR",int) = 1
 
+		[Header(MatCap)]
+		[noscaleoffset]_MatCapTex("_MapCapTex",2d)=""{}
+		_MatCapIntensity("_MatCapIntensity",float) = 1
+
 		[Header(BlendMode)]
 		[Enum(UnityEngine.Rendering.BlendMode)]_SrcMode("Src Mode",int) = 5
 		[Enum(UnityEngine.Rendering.BlendMode)]_DstMode("Dst Mode",int) = 10
@@ -65,6 +69,15 @@ Shader "ZX/FX/PowerVFXShader"
 		_FresnalColor("Fresnal Color",color) = (1,1,1,1)
 		_FresnalPower("Fresnal Power",range(0,1)) = 0.5
 		[Toggle]_FresnalTransparentOn("Fresnal Transparent?",range(0,1)) = 0
+		_FresnalTransparent("_FresnalTransparent",range(0,1)) = 0
+		
+		[Header(EnvReflection)]
+		[Toggle(ENV_REFLECT)]_EnvReflectOn("EnvReflect On?",int)=0
+		[NoScaleOffset]_EnvMap("Env Map",Cube) = ""{}
+		[NoScaleOffset]_EnvMapMask("Env Map Mask",2d) = ""{}
+		[Toggle]_EnvMapMaskUseR("EnvMapMaskUseR",int)=1
+		_EnvIntensity("Env intensity",float) = 1
+		_EnvOffset("EnvOffset",vector) = (0,0,0,0)
 	}
 	SubShader
 	{
@@ -72,18 +85,19 @@ Shader "ZX/FX/PowerVFXShader"
 
 		Pass
 		{
-			Tags{ "LightMode" = "ForwardBase" }
+			//Tags{ "LightMode" = "ForwardBase" }
 			Lighting Off 
 			ZWrite[_ZWriteMode]
 			Blend [_SrcMode][_DstMode] //,srcAlpha oneMinusSrcAlpha
 			Cull[_CullMode]
 			CGPROGRAM
 			
-			#pragma shader_feature _ DISTORTION_ON
-			#pragma shader_feature _ DISSOLVE_ON
-			#pragma shader_feature _ DISSOLVE_EDGE_ON
-			#pragma shader_feature _ OFFSET_ON
-			#pragma shader_feature _ FRESNAL_ON
+			#pragma shader_feature DISTORTION_ON
+			#pragma shader_feature DISSOLVE_ON
+			#pragma shader_feature DISSOLVE_EDGE_ON
+			#pragma shader_feature OFFSET_ON
+			#pragma shader_feature FRESNAL_ON
+			#pragma shader_feature ENV_REFLECT
 
 			#pragma vertex vert
 			#pragma fragment frag

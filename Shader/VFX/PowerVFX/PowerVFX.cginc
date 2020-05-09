@@ -52,7 +52,19 @@
     float4 _FresnalColor;
     float _FresnalPower;
     int _FresnalTransparentOn;
+    float _FresnalTransparent;
     #endif
+
+    #if defined(ENV_REFLECT)
+    samplerCUBE _EnvMap;
+    sampler2D _EnvMapMask;
+    int _EnvMapMaskUseR;
+    float _EnvIntensity;
+    float4 _EnvOffset;
+    #endif
+
+    sampler2D _MatCapTex;
+    float _MatCapIntensity;
 
     struct appdata
     {
@@ -68,6 +80,9 @@
         float4 uv : TEXCOORD0;
         float4 vertex : SV_POSITION;
         float4 color : COLOR;
+        float3 reflectDir:COLOR1;
+        float2 viewNormal:COLOR2;
+
         float4 distortUV : TEXCOORD1;
         float4 offsetUV:TEXCOORD2;
         float4 dissolveUV:TEXCOORD3;
@@ -108,10 +123,18 @@
             o.grabPos = ComputeGrabScreenPos(o.vertex);
         #endif
 
+        float3 worldPos = mul(unity_ObjectToWorld,v.vertex);
+        float3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
+        float3 worldNormal = normalize(UnityObjectToWorldNormal(v.normal));
+
+        #if defined(ENV_REFLECT)
+        o.reflectDir = reflect(- viewDir,worldNormal + _EnvOffset.xyz);
+        #endif
+
+        float3 viewNormal = normalize(mul((float3x3)UNITY_MATRIX_MV,v.normal));
+        o.viewNormal = viewNormal.xy * 0.5 + 0.5;
+
         #if defined(FRESNAL_ON)
-            float3 worldPos = mul(unity_ObjectToWorld,v.vertex);
-            float3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
-            float3 worldNormal = normalize(UnityObjectToWorldNormal(v.normal));
             o.fresnal.x = 1 - dot(worldNormal,viewDir) ;
         #endif
 
@@ -164,10 +187,9 @@
             half a = gray - cutoff;
             clip(a);
 
-            half edge = 0;
             #if defined(DISSOLVE_EDGE_ON)
                 half edgeRate = cutoff + _EdgeWidth;
-                edge = step(gray,edgeRate);
+                half edge = step(gray,edgeRate);
                 edgeColor = edge * _EdgeColor * _EdgeColorIntensity;
 
                 // edge color fadeout.
@@ -198,13 +220,30 @@
         float f =  saturate(smoothstep(fresnal,0,_FresnalPower));
         float4 fresnalColor = _FresnalColor *f * _FresnalColor.a;
         mainColor.rgb = mainColor.rgb * 0.9 + fresnalColor;
-        mainColor.a *= lerp( f*2,mainColor.a,step(_FresnalTransparentOn,0));
+        mainColor.a *= lerp(_FresnalTransparent + f*2,mainColor.a,step(_FresnalTransparentOn,0));
         #endif
+    }
+
+    void ApplyEnvReflection(inout float4 mainColor,float2 mainUV,float3 reflectDir){
+        #if defined(ENV_REFLECT)
+        float4 maskMap = tex2D(_EnvMapMask,mainUV);
+        float mask = _EnvMapMaskUseR > 0?maskMap.r:maskMap.a;
+
+        float4 envMap = texCUBE(_EnvMap,reflectDir);
+        envMap *= _EnvIntensity * mask;
+        mainColor.rgb += envMap.rgb;
+        #endif
+    }
+
+    void ApplyMatcap(inout float4 mainColor,float2 mainUV,float2 viewNormal){
+        float4 matCapMap = tex2D(_MatCapTex,viewNormal.xy);
+        matCapMap *= _MatCapIntensity;
+        mainColor.rgb += matCapMap;
     }
 
     fixed4 frag(v2f i) : SV_Target
     {
-        half4 mainColor = (half4)0;
+        half4 mainColor = float4(0,0,0,1);
         // setup mainUV
         float4 mainUV = i.uv;
         #if defined(_GRAB_PASS)
@@ -218,7 +257,11 @@
         #endif
 
         ApplyMainTexMask(mainColor,mainUV.zw);
-        //float mainAlpha = mainColor.a;
+        ApplyMatcap(mainColor,mainUV.zw,i.viewNormal);
+
+        #if defined(ENV_REFLECT)
+        ApplyEnvReflection(mainColor,mainUV.zw,i.reflectDir);
+        #endif
 
         #if defined(OFFSET_ON)
             ApplyOffset(mainColor,i.offsetUV,i.uv.zw);

@@ -9,6 +9,7 @@ Distortion = 扭曲
 Dissovle = 溶解
 Offset = 流光
 Fresnal = 轮廓光
+EnvReflect=环境
 
 _DoubleEffectOn=开启双层效果?
 _CullMode=剔除模式
@@ -57,3 +58,13 @@ _FresnalOn=开启轮廓光
 _FresnalColor=轮廓光颜色
 _FresnalPower=轮廓宽度
 _FresnalTransparentOn=轮廓中心透明
+
+_EnvReflectOn=开启环境反射
+_EnvMap=环境cube
+_EnvMapMask=环境遮罩
+_EnvMapMaskUseR=环境遮罩使用R通道?
+_EnvIntensity=环境强度
+_EnvOffset=视线偏移
+
+_MatCapTex=matcap图
+_MatCapIntensity=matcap强度
