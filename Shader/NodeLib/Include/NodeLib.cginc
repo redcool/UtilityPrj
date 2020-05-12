@@ -5,6 +5,28 @@
 
 #define PI 3.14159
 
+/**
+	计算太阳斑点的衰减
+	sunSize : 太阳亮斑,大小
+	sunPos : 世界空间中太阳的方向
+	worldPos:片段的世界坐标
+*/
+float sunAtten(float sunSize,float3 sunPos,float3 worldPos){
+	float3 delta = normalize(worldPos.xyz) - sunPos.xyz;
+	float dist = length(delta);
+	float circle = 1 - smoothstep(0,sunSize,dist);
+	return circle * circle;
+}
+
+/**
+	col.rgb += sunAtten2(_SunSizeConvergence,_SunSize,_WorldSpaceLightPos0.xyz,worldPos);
+*/
+float sunAtten2(float sunPower,float sunSize,float3 sunPos,float3 worldPos){
+	float atten = pow(saturate(dot(sunPos.xyz,normalize(worldPos))),sunPower);
+	for(int i=0;i<3;i++)
+		atten *= atten;
+	return atten * sunSize;
+}
 
 float3 ComputeRipple(sampler2D rippleTex,float2 uv, float t)
 {
