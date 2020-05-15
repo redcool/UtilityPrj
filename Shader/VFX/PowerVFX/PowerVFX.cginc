@@ -19,6 +19,7 @@
         sampler2D _NoiseTex;
         half4 _NoiseTex_ST;
         sampler2D _DistortionMaskTex;
+        int _DistortionMaskUseR;
         float _DistortionIntensity;
         float4 _DistortTile,_DistortDir;
     #endif
@@ -77,69 +78,30 @@
 
     struct v2f
     {
-        float4 uv : TEXCOORD0;
         float4 vertex : SV_POSITION;
         float4 color : COLOR;
         float3 reflectDir:COLOR1;
         float2 viewNormal:COLOR2;
 
-        float4 distortUV : TEXCOORD1;
-        float4 offsetUV:TEXCOORD2;
-        float4 dissolveUV:TEXCOORD3;
-        float4 grabPos:TEXCOORD4;
-        float4 fresnal:TEXCOORD5;// x:fresnal,y:customData.x
+        float4 uv : TEXCOORD0;
+        float4 fresnal_customDataZ:TEXCOORD1;// x:fresnal,y:customData.x
+        float4 grabPos:TEXCOORD2;
     };
 
-    void ApplyMainTexOffset(inout v2f o,in appdata v){
+    /**
+        return : float4
+        xy:ofset and scalel vertex uv,
+        zw:vertex uv
+    */
+    float4 MainTexOffset(float4 uv){
         float2 offsetScale = lerp(_Time.xx, 1 ,_MainTexOffsetStop);
         float2 mainTexOffset = (_MainTex_ST.zw * offsetScale);
-        mainTexOffset = lerp(mainTexOffset,v.uv.zw, _MainTexOffsetUseCustomData_XY); // vertex uv0.z : particle customData1.xy
+        mainTexOffset = lerp(mainTexOffset,uv.zw, _MainTexOffsetUseCustomData_XY); // vertex uv0.z : particle customData1.xy
 
-        o.uv.xy = v.uv.xy * _MainTex_ST.xy + mainTexOffset;
-        o.uv.zw = v.uv.xy;
-    }
-
-    v2f vert(appdata v)
-    {
-        v2f o = (v2f)0;
-        o.color = v.color;
-        o.vertex = UnityObjectToClipPos(v.vertex);
-
-        ApplyMainTexOffset(o,v);
-
-        #if defined(DISTORTION_ON)
-            o.distortUV = v.uv.xyxy * _DistortTile + frac(_DistortDir * _Time.xxxx);
-        #endif
-
-        #if defined(DISSOLVE_ON)
-            o.dissolveUV.xy = TRANSFORM_TEX(v.uv.xy,_DissolveTex);
-        #endif
-
-        #if defined(OFFSET_ON)
-            o.offsetUV = v.uv.xyxy * _OffsetTile + (_Time.xxxx * _OffsetDir); //暂时去除 frac
-        #endif
-
-        #if defined(_GRAB_PASS)
-            o.grabPos = ComputeGrabScreenPos(o.vertex);
-        #endif
-
-        float3 worldPos = mul(unity_ObjectToWorld,v.vertex);
-        float3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
-        float3 worldNormal = normalize(UnityObjectToWorldNormal(v.normal));
-
-        #if defined(ENV_REFLECT)
-        o.reflectDir = reflect(- viewDir,worldNormal + _EnvOffset.xyz);
-        #endif
-
-        float3 viewNormal = normalize(mul((float3x3)UNITY_MATRIX_MV,v.normal));
-        o.viewNormal = viewNormal.xy * 0.5 + 0.5;
-
-        #if defined(FRESNAL_ON)
-            o.fresnal.x = 1 - dot(worldNormal,viewDir) ;
-        #endif
-
-        o.fresnal.y = v.uv1.x;// particle customData.z
-        return o;
+        float4 scrollUV = (float4)0;
+        scrollUV.xy = uv.xy * _MainTex_ST.xy + mainTexOffset;
+        scrollUV.zw = uv.xy;
+        return scrollUV;
     }
 
     float4 SampleMainTex(float2 uv,float4 vertexColor){
@@ -157,16 +119,21 @@
         mainColor.a *= mask;
     }
 
-    void ApplyDistortion(inout float4 mainColor,float2 mainUV,float4 distortUV,float4 color){
+    void ApplyDistortion(inout float4 mainColor,float4 mainUV,float4 distortUV,float4 color){
         #if defined(DISTORTION_ON)
-            half3 noise = (tex2D(_NoiseTex, distortUV.xy));
+            half3 noise = (tex2D(_NoiseTex, distortUV.xy) -0.5) * 2;
+            noise += _DoubleEffectOn > 0 ? (tex2D(_NoiseTex, distortUV.zw).rgb -0.5)*2 : 0;
+            
+            
+            float2 maskUV = mainUV.xy;
+            #if defined(_GRAB_PASS)
+                maskUV = mainUV.zw;
+            #endif
 
-            noise += _DoubleEffectOn > 0 ? tex2D(_NoiseTex, distortUV.zw).rgb : 0;
-            // center noise uv.
-            noise = (noise -0.5)*2;
+            float4 maskTex = tex2D(_DistortionMaskTex,maskUV);
+            float mask = _DistortionMaskUseR > 0? maskTex.r : maskTex.a;
 
-            half3 ramp = tex2D(_DistortionMaskTex,mainUV);
-            half2 uv = mainUV + noise * 0.2  * _DistortionIntensity * ramp.r;
+            half2 uv = mainUV.xy + noise * 0.2  * _DistortionIntensity * mask;
             mainColor = SampleMainTex(uv,color);
         #endif
     }
@@ -212,6 +179,7 @@
 
             offsetColor = offsetColor * _BlendIntensity * mask;
             color.rgb *= lerp(1,offsetColor,mask);
+            
         #endif
     }
 
@@ -219,7 +187,8 @@
         #if defined(FRESNAL_ON)
         float f =  saturate(smoothstep(fresnal,0,_FresnalPower));
         float4 fresnalColor = _FresnalColor *f * _FresnalColor.a;
-        mainColor.rgb = mainColor.rgb * 0.9 + fresnalColor;
+        //mainColor.rgb = mainColor.rgb * 0.9 + fresnalColor;
+        mainColor.rgb =lerp(mainColor.rgb,fresnalColor.rgb,f*2);
         mainColor.a *= lerp(_FresnalTransparent + f*2,mainColor.a,step(_FresnalTransparentOn,0));
         #endif
     }
@@ -241,39 +210,76 @@
         mainColor.rgb += matCapMap;
     }
 
+    v2f vert(appdata v)
+    {
+        v2f o = (v2f)0;
+        o.color = v.color;
+        o.vertex = UnityObjectToClipPos(v.vertex);
+        o.uv = v.uv; // uv.xy : main uv, zw : custom data.xy
+        o.uv.xy = v.uv;
+        
+
+        #if defined(_GRAB_PASS)
+            o.grabPos = ComputeGrabScreenPos(o.vertex);
+        #endif
+
+        float3 worldPos = mul(unity_ObjectToWorld,v.vertex);
+        float3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
+        float3 worldNormal = normalize(UnityObjectToWorldNormal(v.normal));
+
+        #if defined(ENV_REFLECT)
+        o.reflectDir = reflect(- viewDir,worldNormal + _EnvOffset.xyz);
+        #endif
+
+        float3 viewNormal = normalize(mul((float3x3)UNITY_MATRIX_MV,v.normal));
+        o.viewNormal = viewNormal.xy * 0.5 + 0.5;
+
+        #if defined(FRESNAL_ON)
+            o.fresnal_customDataZ.x = 1 - dot(worldNormal,viewDir) ;
+        #endif
+
+        o.fresnal_customDataZ.y = v.uv1.x;// particle customData.z
+        return o;
+    }
     fixed4 frag(v2f i) : SV_Target
     {
         half4 mainColor = float4(0,0,0,1);
         // setup mainUV
-        float4 mainUV = i.uv;
+        float4 mainUV = MainTexOffset(i.uv);
+        float fresnal = i.fresnal_customDataZ.x;
+        float dissolveCustomData = i.fresnal_customDataZ.y;
+
         #if defined(_GRAB_PASS)
             mainUV.xy = i.grabPos.xy/i.grabPos.w;
         #endif
         
         #if defined(DISTORTION_ON)
-            ApplyDistortion(mainColor,mainUV.xy,i.distortUV,i.color);
+            float4 distortUV = mainUV.zwzw * _DistortTile + frac(_DistortDir * _Time.xxxx);
+            ApplyDistortion(mainColor,mainUV,distortUV,i.color);
         #else
             mainColor = SampleMainTex(mainUV.xy,i.color);
         #endif
 
         ApplyMainTexMask(mainColor,mainUV.zw);
-        ApplyMatcap(mainColor,mainUV.zw,i.viewNormal);
 
         #if defined(ENV_REFLECT)
         ApplyEnvReflection(mainColor,mainUV.zw,i.reflectDir);
         #endif
 
         #if defined(OFFSET_ON)
-            ApplyOffset(mainColor,i.offsetUV,i.uv.zw);
+            float4 offsetUV = mainUV.zwzw * _OffsetTile + (_Time.xxxx * _OffsetDir); //暂时去除 frac
+            ApplyOffset(mainColor,offsetUV,mainUV.zw);
         #endif
 
         //dissolve
         #if defined(DISSOLVE_ON)
-            ApplyDissolve(mainColor,i.dissolveUV,i.color,i.fresnal.y);
+            float2 dissolveUV = TRANSFORM_TEX(mainUV.zw,_DissolveTex);
+            ApplyDissolve(mainColor,dissolveUV,i.color,dissolveCustomData);
         #endif
         #if defined(FRESNAL_ON)
-        ApplyFresnal(mainColor,i.fresnal.x);
+        ApplyFresnal(mainColor,fresnal);
         #endif
+        ApplyMatcap(mainColor,mainUV.zw,i.viewNormal);
 
         return mainColor;
     }

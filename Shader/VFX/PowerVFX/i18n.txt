@@ -28,6 +28,7 @@ _MainTexMaskUseR=遮罩使用R通道?
 _DistortionOn=开启扭曲
 _NoiseTex=杂点图
 _DistortionMaskTex=效果遮罩
+_DistortionMaskUseR=遮罩使用R通道?
 _DistortionIntensity=强度
 _DistortTile=平铺(xy:1层,zw:2层)
 _DistortDir=方向(xy:1层,zw:2层)

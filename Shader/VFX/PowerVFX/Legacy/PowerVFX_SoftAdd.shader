@@ -86,7 +86,7 @@
 			#pragma fragment frag
 
 			#include "UnityCG.cginc"
-			#include "PowerVFX.cginc"
+			#include "../PowerVFX.cginc"
 
 			ENDCG
 		}

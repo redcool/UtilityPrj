@@ -12,10 +12,6 @@ Shader "ZX/FX/PowerVFXShader_GrabPass"
 		_MainTexMask("Main Texture Mask(R)", 2D) = "white" {}
 		[Toggle]_MainTexMaskUseR("_MainTexMaskUseR",int) = 1
 
-		[Header(MatCap)]
-		[noscaleoffset]_MatCapTex("_MapCapTex",2d)=""{}
-		_MatCapIntensity("_MatCapIntensity",float) = 1
-
 		[Header(BlendMode)]
 		[Enum(UnityEngine.Rendering.BlendMode)]_SrcMode("Src Mode",int) = 5
 		[Enum(UnityEngine.Rendering.BlendMode)]_DstMode("Dst Mode",int) = 10
@@ -31,6 +27,7 @@ Shader "ZX/FX/PowerVFXShader_GrabPass"
 		[Toggle(DISTORTION_ON)]_DistortionOn("Distortion On?",int)=0
 		[noscaleoffset]_NoiseTex("Noise Texture",2D) = "white" {}
 		[noscaleoffset]_DistortionMaskTex("Distortion Mask Tex(R)",2d) = "white"{}
+		[Toggle]_DistortionMaskUseR("DistortionMaskUseR",int)=1
 		_DistortionIntensity("Distortion Intensity",Range(0,1)) = 0.5
 
 		_DistortTile("Distort Tile",vector) = (1,1,1,1)
@@ -78,6 +75,10 @@ Shader "ZX/FX/PowerVFXShader_GrabPass"
 		[Toggle]_EnvMapMaskUseR("EnvMapMaskUseR",int)=1
 		_EnvIntensity("Env intensity",float) = 1
 		_EnvOffset("EnvOffset",vector) = (0,0,0,0)
+		
+		[Header(MatCap)]
+		[noscaleoffset]_MatCapTex("_MapCapTex",2d)=""{}
+		_MatCapIntensity("_MatCapIntensity",float) = 0
 	}
 	SubShader
 	{
