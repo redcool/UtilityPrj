@@ -23,7 +23,7 @@ _Color=主纹理颜色
 _ColorScale=主纹理颜色倍数
 _MainTexMask=主纹理遮罩
 _MainTexMaskUseR=遮罩使用R通道?
-
+_MainTexUseScreenColor=主纹理使用屏幕颜色?
 
 _DistortionOn=开启扭曲
 _NoiseTex=杂点图
@@ -59,6 +59,7 @@ _FresnalOn=开启轮廓光
 _FresnalColor=轮廓光颜色
 _FresnalPower=轮廓宽度
 _FresnalTransparentOn=轮廓中心透明
+_FresnalTransparent=透明强度
 
 _EnvReflectOn=开启环境反射
 _EnvMap=环境cube

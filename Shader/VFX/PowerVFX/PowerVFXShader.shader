@@ -11,6 +11,7 @@ Shader "ZX/FX/PowerVFXShader"
 		[Header(MaskTexMask)]
 		_MainTexMask("Main Texture Mask(R)", 2D) = "white" {}
 		[Toggle]_MainTexMaskUseR("_MainTexMaskUseR",int) = 1
+		[Toggle]_MainTexUseScreenColor("_MainTexUseScreenColor",int) = 0
 
 		[Header(BlendMode)]
 		[Enum(UnityEngine.Rendering.BlendMode)]_SrcMode("Src Mode",int) = 5
@@ -20,7 +21,7 @@ Shader "ZX/FX/PowerVFXShader"
 		[Toggle(_DoubleEffectOn)]_DoubleEffectOn("双重效果?",int)=0
 		
 		[Header(CullMode)]
-		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull Mode",float) = 2
+		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull Mode",float) = 0
 		[Toggle]_ZWriteMode("ZWriteMode",int) = 0
 
 		[Header(Distortion)]
@@ -92,6 +93,7 @@ Shader "ZX/FX/PowerVFXShader"
 			Blend [_SrcMode][_DstMode] //,srcAlpha oneMinusSrcAlpha
 			Cull[_CullMode]
 			CGPROGRAM
+            #pragma multi_compile_instancing
 			
 			#pragma shader_feature DISTORTION_ON
 			#pragma shader_feature DISSOLVE_ON

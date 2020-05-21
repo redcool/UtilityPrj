@@ -14,6 +14,7 @@
     sampler2D _MainTexMask;
     float4 _MainTexMask_ST;
     int _MainTexMaskUseR;
+    int _MainTexUseScreenColor;
 
     #if defined(DISTORTION_ON)
         sampler2D _NoiseTex;
@@ -45,9 +46,7 @@
         float _BlendIntensity;
     #endif
 
-    #if defined(_GRAB_PASS)
-        sampler2D _ScreenTex;
-    #endif
+    sampler2D _ScreenColorTexture;
 
     #if defined(FRESNAL_ON)
     float4 _FresnalColor;
@@ -105,11 +104,7 @@
     }
 
     float4 SampleMainTex(float2 uv,float4 vertexColor){
-        #if defined(_GRAB_PASS)
-            float4 mainTex = tex2D(_ScreenTex,uv);
-        #else
-            float4 mainTex = tex2D(_MainTex,uv);
-        #endif
+        float4 mainTex = _MainTexUseScreenColor ==0 ? tex2D(_MainTex,uv) : tex2D(_ScreenColorTexture,uv);
         return mainTex * _Color * vertexColor * _ColorScale;
     }
 
@@ -186,10 +181,11 @@
     void ApplyFresnal(inout float4 mainColor,float fresnal){
         #if defined(FRESNAL_ON)
         float f =  saturate(smoothstep(fresnal,0,_FresnalPower));
+        float fMask  =1-f;
+        
         float4 fresnalColor = _FresnalColor *f * _FresnalColor.a;
-        //mainColor.rgb = mainColor.rgb * 0.9 + fresnalColor;
         mainColor.rgb =lerp(mainColor.rgb,fresnalColor.rgb,f*2);
-        mainColor.a *= lerp(_FresnalTransparent + f*2,mainColor.a,step(_FresnalTransparentOn,0));
+        mainColor.a = saturate( lerp((_FresnalTransparent + f*2) ,mainColor.a,step(_FresnalTransparentOn,0)));
         #endif
     }
 
@@ -217,11 +213,7 @@
         o.vertex = UnityObjectToClipPos(v.vertex);
         o.uv = v.uv; // uv.xy : main uv, zw : custom data.xy
         o.uv.xy = v.uv;
-        
-
-        #if defined(_GRAB_PASS)
-            o.grabPos = ComputeGrabScreenPos(o.vertex);
-        #endif
+        o.grabPos = ComputeGrabScreenPos(o.vertex);
 
         float3 worldPos = mul(unity_ObjectToWorld,v.vertex);
         float3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
@@ -249,10 +241,8 @@
         float fresnal = i.fresnal_customDataZ.x;
         float dissolveCustomData = i.fresnal_customDataZ.y;
 
-        #if defined(_GRAB_PASS)
-            mainUV.xy = i.grabPos.xy/i.grabPos.w;
-        #endif
-        
+        mainUV.xy = _MainTexUseScreenColor == 0 ? mainUV.xy : i.grabPos.xy/i.grabPos.w;
+
         #if defined(DISTORTION_ON)
             float4 distortUV = mainUV.zwzw * _DistortTile + frac(_DistortDir * _Time.xxxx);
             ApplyDistortion(mainColor,mainUV,distortUV,i.color);
