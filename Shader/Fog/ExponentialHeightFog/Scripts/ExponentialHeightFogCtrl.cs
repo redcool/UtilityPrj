@@ -57,13 +57,28 @@ public class ExponentialHeightFogCtrl : MonoBehaviour
     [Header("方向光强度")]
     public float directionalInscatteringIntensity = 1.0f;
 
+    public Camera mainCamera;
+
+    private void CheckMainCamera()
+    {
+        if(!mainCamera)
+            mainCamera = Camera.main;
+    }
+
     // Update is called once per frame
     void Update()
     {
+        CheckMainCamera();
+
+        SendParams();
+    }
+
+    private void SendParams()
+    {
         const float USELESS_VALUE = 0.0f;
 
-        var ExponentialFogParameters = new Vector4(RayOriginTerm(fogDensity, fogHeightFalloff, fogHeight), fogHeightFalloff, USELESS_VALUE, startDistance);
-        var ExponentialFogParameters2 = new Vector4(RayOriginTerm(fogDensity2, fogHeightFalloff2, fogHeight2), fogHeightFalloff2, fogDensity2, fogHeight2);
+        var ExponentialFogParameters = new Vector4(RayOriginTerm(mainCamera.transform.position, fogDensity, fogHeightFalloff, fogHeight), fogHeightFalloff, USELESS_VALUE, startDistance);
+        var ExponentialFogParameters2 = new Vector4(RayOriginTerm(mainCamera.transform.position, fogDensity2, fogHeightFalloff2, fogHeight2), fogHeightFalloff2, fogDensity2, fogHeight2);
         var ExponentialFogParameters3 = new Vector4(fogDensity, fogHeight, USELESS_VALUE, fogCutoffDistance);
         var DirectionalInscatteringColor = new Vector4(
             directionalInscatteringIntensity * directionalInscatteringColor.r,
@@ -71,19 +86,25 @@ public class ExponentialHeightFogCtrl : MonoBehaviour
             directionalInscatteringIntensity * directionalInscatteringColor.b,
             directionalInscatteringExponent
         );
+
+        var forward = new Vector3(0.5f,-0.5f,0);
+        if (dirLight)
+            forward = dirLight.transform.forward;
+
         var InscatteringLightDirection = new Vector4(
-            -dirLight.transform.forward.x,
-            -dirLight.transform.forward.y,
-            -dirLight.transform.forward.z,
+            -forward.x,
+            -forward.y,
+            -forward.z,
             directionalInscatteringStartDistance
         );
+
         var ExponentialFogColorParameter = new Vector4(
             fogInscatteringColor.r,
             fogInscatteringColor.g,
             fogInscatteringColor.b,
             1.0f - fogMaxOpacity
         );
-        
+
         Shader.SetGlobalVector(nameof(ExponentialFogParameters), ExponentialFogParameters);
         Shader.SetGlobalVector(nameof(ExponentialFogParameters2), ExponentialFogParameters2);
         Shader.SetGlobalVector(nameof(ExponentialFogParameters3), ExponentialFogParameters3);
@@ -92,9 +113,9 @@ public class ExponentialHeightFogCtrl : MonoBehaviour
         Shader.SetGlobalVector(nameof(ExponentialFogColorParameter), ExponentialFogColorParameter);
     }
 
-    private static float RayOriginTerm(float density, float heightFalloff, float heightOffset)
+    private static float RayOriginTerm(Vector3 cameraPos,float density, float heightFalloff, float heightOffset)
     {
-        float exponent = heightFalloff * (Camera.main.transform.position.y - heightOffset);
+        float exponent = heightFalloff * (cameraPos.y - heightOffset);
         return density * Mathf.Pow(2.0f, - exponent);
     }
 }
