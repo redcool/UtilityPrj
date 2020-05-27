@@ -20,14 +20,22 @@ void TangentToWorldVertex(float3 vertex,float3 objectNormal,float4 objectTangent
 }
 
 // -- tangent to world matrix fragment.
-void TangentToWorldFrag(float3 packedNormal,float4 t2w0,float4 t2w1,float4 t2w2,
+void TangentToWorldFrag(float3 normalTangent,float4 t2w0,float4 t2w1,float4 t2w2,
 	out float3 worldPos,out float3 t,out float3 b,out float3 n)
 {
 	worldPos = float3(t2w0.w,t2w1.w,t2w2.w);
 	t = normalize(float3(t2w0.x,t2w1.x,t2w2.x));
 	b = normalize(float3(t2w0.y,t2w1.y,t2w2.y));
-	n = normalize(float3(dot(t2w0.xyz,packedNormal),dot(t2w1.xyz,packedNormal),dot(t2w2.xyz,packedNormal)));
+	n = normalize(float3(dot(t2w0.xyz,normalTangent),dot(t2w1.xyz,normalTangent),dot(t2w2.xyz,normalTangent)));
 }
+
+// macro type
+#define TANGENT_TO_WORLD_VERT(vertex,objectNormal,objectTangent,v2f)\
+	TangentToWorldVertex(vertex,objectNormal,objectTangent,v2f.t2w0,v2f.t2w1,v2f.t2w2);
+
+#define TANGENT_TO_WORLD_FRAG(normalTangent,v2f)\
+	float3 worldPos,tangentWorld,normalWorld,binormalWorld;\
+	TangentToWorldFrag(normalTangent,v2f.t2w0,v2f.t2w1,v2f.t2w2,worldPos,tangentWorld,binormalWorld,normalWorld);\
 
 /*
 	使用 切线空间数据
