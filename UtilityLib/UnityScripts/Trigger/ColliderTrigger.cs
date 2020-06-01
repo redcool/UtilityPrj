@@ -1,31 +1,32 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class ColliderTrigger : MonoBehaviour
+namespace TriggerUtils
 {
-    public UnityEvent OnTrigerEnterEvent;
-    public UnityEvent OnTriggerExitEvent;
-    // Start is called before the first frame update
-    void Start()
+    [Serializable]
+    public class GameObjectUnityEvent : UnityEvent<GameObject> { }
+
+    public class ColliderTrigger : MonoBehaviour
     {
-        
+
+        public GameObjectUnityEvent onEnter;
+        public GameObjectUnityEvent onExit;
+        public string targetTag = "Player";
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if(other.CompareTag(targetTag))
+                onEnter?.Invoke(null);
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            if (other.CompareTag(targetTag))
+                onExit?.Invoke(null);
+        }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
-    public void OnTriggerEnter(Collider other)
-    {
-        OnTrigerEnterEvent.Invoke();
-    }
-
-    public void OnTriggerExit(Collider other)
-    {
-        OnTriggerExitEvent.Invoke();
-    }
 }
