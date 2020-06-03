@@ -4,26 +4,25 @@
 /** version 1
     result = (uv,scale,flowLerp)
 */
-float4 Flow(float2 uv,float2 flowVec,float time,bool flowB,float tiling){
-    float phase = flowB? 0.5:0;
+float3 CalcFlow(float2 mainUV,float2 flowVec,float time,bool flowB,float speed){
+    float phase = flowB?0.5:0;
     float p = frac(time + phase);
-
-    float4 uvst = (float4)0;
-    uvst.xy = uv - flowVec * p;
-    uvst.xy *= tiling ;//*(1 - length(flowVec))
-    uvst.xy += phase;
-    uvst.z = 1 - abs(1 - 2 * p);
-    uvst.w = p;
-    return uvst;
+    float2 result = mainUV - flowVec * p * speed;
+    float scale = abs((0.5-p)/0.5);
+    return float3(result, scale);
 }
 
-float4 FlowColor(sampler2D tex,float2 uv,float2 flowVec,float tiling){
-    float4 flow = Flow(uv,flowVec,_Time.y,true,tiling);
-    float4 flow2 = Flow(uv,flowVec,_Time.y,false,tiling);
+float4 FlowColor(sampler2D flowTex,sampler2D tex,float2 uv,float tiling,float speed){
+    float4 flowMap = tex2D(flowTex,uv);
+    float2 flowVec = flowMap.xy * 2 -1;
 
-    float4 c = tex2D(tex,flow.xy) * flow.z;
-    float4 c2 = tex2D(tex,flow2.xy) * flow2.z;
-    return c+c2;
+    float3 flow = CalcFlow(uv,flowVec,_Time.y,true,speed);
+    float3 flow2 = CalcFlow(uv,flowVec,_Time.y,false,speed);
+
+    float4 c = tex2D(tex,flow.xy);
+    float4 c2 = tex2D(tex,flow2.xy);
+    float4 col = lerp(c,c2,flow.z);
+    return col;
 }
 
 /** version 2
@@ -36,7 +35,7 @@ float3 Flow2(float2 uv,float2 flowVec,float time,bool flowB,float tiling){
     float3 result = float3(0,0,0);
     result.xy = uv - flowVec * p;
     result.xy *= tiling;
-    result += phase;
+    //result += phase;
     result.z = flowLerp;
     return result;
 }
