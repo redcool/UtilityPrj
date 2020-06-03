@@ -56,25 +56,30 @@
                 return o;
             }
 
-            float3 Flow1(float2 mainUV,float2 flowVec,float time,bool flowB,float speed){
+            float3 CalcFlow(float2 mainUV,float2 flowVec,float time,bool flowB,float speed){
                 float phase = flowB?0.5:0;
                 float p = frac(time + phase);
                 float2 result = mainUV - flowVec * p * speed;
                 float scale = abs((0.5-p)/0.5);
                 return float3(result, scale);
             }
+
+            float4 FlowColor(sampler2D flowTex,sampler2D tex,float2 uv,float tiling,float speed){
+                float4 flowMap = tex2D(flowTex,uv);
+                float2 flowVec = flowMap.xy * 2 -1;
+
+                float3 flow = CalcFlow(uv,flowVec,_Time.y,true,speed);
+                float3 flow2 = CalcFlow(uv,flowVec,_Time.y,false,speed);
+
+                float4 c = tex2D(tex,flow.xy);
+                float4 c2 = tex2D(tex,flow2.xy);
+                float4 col = lerp(c,c2,flow.z);
+                return col;
+            }
             
             fixed4 frag (v2f i) : SV_Target
             {
-                float4 flowMap = tex2D(_FlowMap,i.uv);
-                float2 flowVec = flowMap.xy * 2 -1;
-
-                float3 flow = Flow1(i.uv,flowVec,_Time.y,true,_Speed);
-                float3 flow2 = Flow1(i.uv,flowVec,_Time.y,false,_Speed);
-
-                float4 c = tex2D(_MainTex,flow.xy);
-                float4 c2 = tex2D(_MainTex,flow2.xy);
-                float4 col = lerp(c,c2,flow.z);
+                float4 col = FlowColor(_FlowMap,_MainTex,i.uv,_Tiling,_Speed);
                 
                 float4 flowMask = tex2D(_FlowMask,i.uv);
                 col.a = saturate(flowMask.r - _FlowThreshold);
