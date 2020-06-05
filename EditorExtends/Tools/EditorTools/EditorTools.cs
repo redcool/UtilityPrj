@@ -66,6 +66,8 @@ namespace MyTools
 
             var q = gos.Select(go => {
                 var path = AssetDatabase.GetAssetPath(go);
+                if (string.IsNullOrEmpty(path))
+                    return "";
                 // selected a folder
                 if (Directory.Exists(path))
                     return path;
@@ -73,7 +75,7 @@ namespace MyTools
                 return PathTools.GetAssetPath(Path.GetDirectoryName(path));
             });
 
-            return q.ToArray();
+            return q.Where(p => !string.IsNullOrEmpty(p)).ToArray();
         }
 
         #endregion
