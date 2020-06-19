@@ -1,7 +1,7 @@
 #if !defined(DISSOLVE_CORE_CGINC)
 #define DISSOLVE_CORE_CGINC
 
-
+int _DissolveDirectionX;
 int _DissolveReverseOn;
 float _DissolveIntensity;
 float _DissolveBaseY;
@@ -21,7 +21,8 @@ float4 DissolveClip(float3 posWorld,float2 uv){
     float noise = noiseMap.x * _DissolveNoiseScale;
     noise *= _DissolveReverseOn ? (_DissolveIntensity) : 1;  // reverse handle
 
-    float posY = posWorld.y - _DissolveBaseY;
+    float curPos = _DissolveDirectionX == 1 ? posWorld.x : posWorld.y;
+    float posY = curPos - _DissolveBaseY;
     float targetY = _DissolveIntensity * _DissolveHeight;
 
     float heightDiff = posY - targetY;
