@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+﻿#if UNITY_EDITOR && NGUI
 namespace MyTools
 {
     using System.Collections;
