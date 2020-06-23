@@ -4,43 +4,77 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-public class TileTerrainEditor
+public class TileTerrainWindow : EditorWindow
 {
-    [MenuItem("MyEditors/Terrain/Command/GenerateTileTerrain")]
+    public const string ROOT_PATH = "MyEditors/Terrain/Command";
+    Terrain terrainObj;
+    Material terrainMat;
+
+    int countX=1, countZ=1;
+
+    public enum SaveResolution { Full, Half, Quarter, Eighth, Sixteeth }
+    SaveResolution saveResolution = SaveResolution.Half;
+
+    [MenuItem(ROOT_PATH + "/Tile Terrain Window")]
     static void Init()
     {
-        if (Terrain.activeTerrain)
-        {
-            //GenerateWhole(Terrain.activeTerrain);
+        var win = GetWindow<TileTerrainWindow>();
+        win.Show();
+    }
 
-            var parentGo = new GameObject(Terrain.activeTerrain.name+"(Tiles)");
-            var mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/TileTerrain/Test.mat");
-            var td = Terrain.activeTerrain.terrainData;
-            GenerateTiles(td, 8, 8, parentGo.transform, mat);
+    private void OnGUI()
+    {
+        terrainObj = (Terrain)EditorGUILayout.ObjectField("Terrain:",terrainObj, typeof(Terrain), true);
+        if (!terrainObj)
+        {
+            EditorGUILayout.HelpBox("需要先拖放一个terrain", MessageType.Info);
+            return;
+        }
+
+        saveResolution = (SaveResolution)EditorGUILayout.EnumPopup("Save Resolution:",saveResolution);
+
+        countX = Mathf.Max(1, EditorGUILayout.IntField("Horizontal Count:",countX));
+        countZ = Mathf.Max(1, EditorGUILayout.IntField("Vertical Count:",countZ));
+        terrainMat = (Material)EditorGUILayout.ObjectField("Terrain Material:",terrainMat, typeof(Material), false);
+
+        if (GUILayout.Button("Export"))
+        {
+            var terrainGo = new GameObject("Terrain Mesh");
+            GenerateTiles(terrainObj, countX, countZ, terrainGo.transform, terrainMat,saveResolution);
         }
     }
 
-    static void GenerateTiles(TerrainData td,int countX,int countZ,Transform parent,Material mat)
+    static void GenerateTiles(Terrain terrain,int countX,int countZ,Transform parent,Material mat,SaveResolution saveResolution)
     {
+        var resScale = (int)Mathf.Pow(2, (int)saveResolution);
+
+        var td = terrain.terrainData;
+
         var sizeX = td.size.x / countX;
         var sizeZ = td.size.z / countZ;
 
-        var sizeXHm = (td.heightmapWidth - 1) / countX;
-        var sizeZHm = (td.heightmapHeight - 1) / countZ;
+        var sizeXHm = (td.heightmapResolution - 1) / countX * resScale;
+        var sizeZHm = (td.heightmapResolution - 1) / countZ * resScale;
+
+        var id = 0;
+        var count = countX * countZ;
 
         for (int x = 0; x < countX; x++)
         {
             for (int z = 0; z < countZ; z++)
             {
                 var rectInHeightmap = new RectInt(x * sizeXHm, z * sizeZHm, sizeXHm + 1, sizeZHm + 1);
-                var tileMesh = GenerateTileMesh(Terrain.activeTerrain, rectInHeightmap, new Vector2(sizeX, sizeZ));
+                var tileMesh = TerrainTools.GenerateTileMesh(terrain, rectInHeightmap, new Vector2(sizeX, sizeZ), resScale);
 
                 GenerateTileGo(string.Format("Tile-{0}_{1}", x, z),tileMesh, parent, new Vector3(x * sizeX, 0, z * sizeZ), mat);
+                id++;
+
+                DisplayProgress(id,count);
             }
         }
     }
 
-    static void GenerateTileGo(string name,Mesh mesh,Transform parent,Vector3 worldPos,Material mat)
+    public static void GenerateTileGo(string name,Mesh mesh,Transform parent,Vector3 worldPos,Material mat)
     {
         var tileGo = new GameObject(name);
         tileGo.transform.SetParent(parent);
@@ -55,127 +89,12 @@ public class TileTerrainEditor
         tileGo.AddComponent<MeshCollider>();
     }
 
-    static Mesh GenerateTileMesh(Terrain terrain,RectInt heightmapRect,Vector2 tileSize)
+    static void DisplayProgress(int id,int count)
     {
-        var td = terrain.terrainData;
-        var hw = heightmapRect.width;
-        var hh = heightmapRect.height;
-
-        var w = hw - 1;
-        var h = hh - 1;
-        var resolution = td.heightmapResolution - 1;
-        //Vector3 heightmapScale = new Vector3(td.heightmapScale.x, 1, td.heightmapScale.z);
-        Vector3 heightmapScale = new Vector3(tileSize.x / w, 1, tileSize.y / h);
-        Vector2 uvScale = new Vector2(1f / resolution, 1f / resolution);
-
-        Vector3[] verts = new Vector3[hw * hh];
-        int[] triangles = new int[w * h * 6];
-        Vector2[] uvs = new Vector2[verts.Length];
-
-        int vertexIndex = 0;
-        int triangleIndex = 0;
-        for (int z = 0; z < hh; z++)
-        {
-            for (int x = 0; x < hw; x++)
-            {
-                var offset = new Vector2Int(x + heightmapRect.x, z + heightmapRect.y);
-                float y = td.GetHeight(offset.x,offset.y);
-                verts[vertexIndex] = Vector3.Scale(new Vector3(x, y, z), heightmapScale);
-                uvs[vertexIndex] = Vector2.Scale(new Vector2(offset.x, offset.y), uvScale);
-                vertexIndex++;
-
-                /**
-                 c d
-                 a b
-                 */
-                if (x < w && z < h)
-                {
-                    int a = z * hw + x;
-                    int b = a + 1;
-                    int c = (z + 1) * hw + x;
-                    int d = c + 1;
-
-                    triangles[triangleIndex++] = a;
-                    triangles[triangleIndex++] = c;
-                    triangles[triangleIndex++] = d;
-
-                    triangles[triangleIndex++] = a;
-                    triangles[triangleIndex++] = d;
-                    triangles[triangleIndex++] = b;
-                }
-            }
-        }
-
-        var mesh = new Mesh();
-        mesh.vertices = verts;
-        mesh.triangles = triangles;
-        mesh.uv = uvs;
-        mesh.RecalculateBounds();
-        mesh.RecalculateNormals();
-        //mesh.RecalculateTangents();
-        return mesh;
+        EditorUtility.DisplayProgressBar("Progress", "Export Progress", (float)id / count);
+        if (id == count)
+            EditorUtility.ClearProgressBar();
     }
-
-    static void GenerateWhole(Terrain terrain)
-    {
-        var td = terrain.terrainData;
-        var hw = td.heightmapWidth;
-        var hh = td.heightmapHeight;
-
-        var resolution = td.heightmapResolution - 1;
-        Vector3 heightmapScale = new Vector3(td.heightmapScale.x, 1, td.heightmapScale.z);
-        Vector2 uvScale = new Vector2(1f / resolution, 1f / resolution);
-
-        Vector3[] verts = new Vector3[hw * hh];
-        int[] triangles = new int[resolution * resolution * 6];
-        Vector2[] uvs = new Vector2[verts.Length];
-
-        int vertexIndex = 0;
-        int triangleIndex = 0;
-        for (int z = 0; z < hh; z++)
-        {
-            for (int x = 0; x < hw; x++)
-            {
-                float y = td.GetHeight(x, z);
-                verts[vertexIndex] = Vector3.Scale(new Vector3(x, y, z), heightmapScale);
-                uvs[vertexIndex] = Vector2.Scale(new Vector2(x, z), uvScale);
-                vertexIndex++;
-
-                /**
-                 c d
-                 a b
-                 */
-                if (x < resolution && z < resolution)
-                {
-                    int a = z * hw + x;
-                    int b = a + 1;
-                    int c = (z + 1) * hw + x;
-                    int d = c + 1;
-
-                    triangles[triangleIndex++] = a;
-                    triangles[triangleIndex++] = c;
-                    triangles[triangleIndex++] = d;
-
-                    triangles[triangleIndex++] = a;
-                    triangles[triangleIndex++] = d;
-                    triangles[triangleIndex++] = b;
-                }
-            }
-        }
-
-        var mesh = new Mesh();
-        mesh.vertices = verts;
-        mesh.triangles = triangles;
-        mesh.uv = uvs;
-        mesh.RecalculateBounds();
-        mesh.RecalculateNormals();
-        //mesh.RecalculateTangents();
-
-        var go = new GameObject("TerrainMesh");
-        var mf = go.AddComponent<MeshFilter>();
-        mf.sharedMesh = mesh;
-
-        var mr = go.AddComponent<MeshRenderer>();
-        Debug.Log(uvs[0] + ":" + uvs[uvs.Length - 1]);
-    }
+    
+    
 }
