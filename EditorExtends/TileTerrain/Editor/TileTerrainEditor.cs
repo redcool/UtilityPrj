@@ -56,12 +56,16 @@ public class TileTerrainWindow : EditorWindow
         var id = 0;
         var count = countX * countZ;
 
+        var path = EditorUtility.SaveFilePanel("Save obj?", "", "TerrainMesh", "obj");
+
         for (int x = 0; x < countX; x++)
         {
             for (int z = 0; z < countZ; z++)
             {
                 var heightmapRect = new RectInt(x * heightmapWidth, z * heightrmapHeight, heightmapWidth + 1, heightrmapHeight + 1);
-                var tileMesh = TerrainTools.GenerateTileMesh(terrain, heightmapRect, new Vector2(sizeX, sizeZ), resScale);
+                var tileMesh = TerrainTools.GenerateTileMesh(terrain, heightmapRect, resScale);
+
+                TerrainTools.WriteObj(tileMesh, path + "Tile-{0}_{1}");
 
                 GenerateTileGo(string.Format("Tile-{0}_{1}", x, z),tileMesh, parent, mat);
                 id++;

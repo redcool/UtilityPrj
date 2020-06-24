@@ -60,7 +60,7 @@
             return tex;
         }
 
-        public static Mesh GenerateTileMesh(Terrain terrain, RectInt heightmapRect, Vector2 tileSize, int resScale)
+        public static Mesh GenerateTileMesh(Terrain terrain, RectInt heightmapRect, int resScale)
         {
             var td = terrain.terrainData;
             var meshScale = td.heightmapScale;
@@ -119,7 +119,7 @@
                     uvs[vertexIndex] = Vector2.Scale(new Vector2(x, z), uvScale) + tileId * uvTileRate;
                     vertexIndex++;
 
-                    Debug.DrawRay(pos, Vector3.up, Color.green,1);
+                    //Debug.DrawRay(pos, Vector3.up, Color.green,1);
 
                     if (x < resolution && z < resolution)
                     {
