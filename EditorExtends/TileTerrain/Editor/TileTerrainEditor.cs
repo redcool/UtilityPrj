@@ -50,11 +50,8 @@ public class TileTerrainWindow : EditorWindow
 
         var td = terrain.terrainData;
 
-        var sizeX = td.size.x / countX;
-        var sizeZ = td.size.z / countZ;
-
-        var sizeXHm = (td.heightmapResolution - 1) / countX * resScale;
-        var sizeZHm = (td.heightmapResolution - 1) / countZ * resScale;
+        var heightmapWidth = (td.heightmapResolution - 1) / countX ;
+        var heightrmapHeight = (td.heightmapResolution - 1) / countZ ;
 
         var id = 0;
         var count = countX * countZ;
@@ -63,10 +60,10 @@ public class TileTerrainWindow : EditorWindow
         {
             for (int z = 0; z < countZ; z++)
             {
-                var rectInHeightmap = new RectInt(x * sizeXHm, z * sizeZHm, sizeXHm + 1, sizeZHm + 1);
-                var tileMesh = TerrainTools.GenerateTileMesh(terrain, rectInHeightmap, new Vector2(sizeX, sizeZ), resScale);
+                var heightmapRect = new RectInt(x * heightmapWidth, z * heightrmapHeight, heightmapWidth + 1, heightrmapHeight + 1);
+                var tileMesh = TerrainTools.GenerateTileMesh(terrain, heightmapRect, new Vector2(sizeX, sizeZ), resScale);
 
-                GenerateTileGo(string.Format("Tile-{0}_{1}", x, z),tileMesh, parent, new Vector3(x * sizeX, 0, z * sizeZ), mat);
+                GenerateTileGo(string.Format("Tile-{0}_{1}", x, z),tileMesh, parent, mat);
                 id++;
 
                 DisplayProgress(id,count);
@@ -74,11 +71,10 @@ public class TileTerrainWindow : EditorWindow
         }
     }
 
-    public static void GenerateTileGo(string name,Mesh mesh,Transform parent,Vector3 worldPos,Material mat)
+    public static void GenerateTileGo(string name,Mesh mesh,Transform parent,Material mat)
     {
         var tileGo = new GameObject(name);
         tileGo.transform.SetParent(parent);
-        tileGo.transform.position = worldPos;
 
         var mr = tileGo.AddComponent<MeshRenderer>();
         mr.sharedMaterial = mat;

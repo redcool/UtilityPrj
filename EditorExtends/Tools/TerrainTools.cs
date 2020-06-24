@@ -60,49 +60,77 @@
             return tex;
         }
 
-        public static Mesh GenerateTileMesh(Terrain terrain, RectInt heightmapRect, Vector2 tileSize,int resScale)
+        public static Mesh GenerateTileMesh(Terrain terrain, RectInt heightmapRect, Vector2 tileSize, int resScale)
         {
             var td = terrain.terrainData;
+            var meshScale = td.heightmapScale;
+            meshScale.y = 1;
+
+            //uv scale
             var hw = heightmapRect.width;
             var hh = heightmapRect.height;
+            var resolution = heightmapRect.width - 1;
 
-            var w = hw - 1;
-            var h = hh - 1;
-            var resolution = td.heightmapResolution - 1;
-            Vector3 heightmapScale = new Vector3(tileSize.x / w * resScale, 1, tileSize.y / h * resScale);
-            Vector2 uvScale = new Vector2(1f / resolution * resScale, 1f / resolution * resScale);
+            var tileId = new Vector2(heightmapRect.x / (heightmapRect.width - 1), heightmapRect.y / (heightmapRect.height - 1));
 
-            hw = w / resScale + 1;
-            hh = h / resScale + 1;
-            w = hw - 1;
-            h = hh - 1;
+            var uvTileCount = td.heightmapResolution / resolution;
+            var uvTileRate = 1f / uvTileCount;
+            var uvScale = new Vector2(uvTileRate / resolution * resScale, uvTileRate / resolution * resScale);
 
-            Vector3[] verts = new Vector3[hw * hh];
-            int[] triangles = new int[w * h * 6];
-            Vector2[] uvs = new Vector2[verts.Length];
+            // triangles 
+            hh = (hh - 1) / resScale + 1;
+            hw = (hw - 1) / resScale + 1;
+            resolution /= resScale;
 
-            int vertexIndex = 0;
-            int triangleIndex = 0;
+            //for (int z = 0; z < hh; z++)
+            //{
+            //    for (int x = 0; x < hw; x++)
+            //    {
+            //        var offsetX = (x * resScale + heightmapRect.x);
+            //        var offsetZ = (z * resScale + heightmapRect.y);
+            //        var y = td.GetHeight(offsetX * 1, offsetZ * 1);
+            //        var pos = Vector3.Scale(new Vector3(offsetX, y, offsetZ), meshScale);
+            //        Debug.DrawRay(pos, Vector3.up, Color.green, 1);
+            //    }
+            //}
+            //return;
+
+            //heightmapRect = new RectInt(0, 0, td.heightmapResolution, td.heightmapResolution);
+            //resScale = 4;
+
+            var verts = new Vector3[hw * hh];
+            var uvs = new Vector2[verts.Length];
+            var triangles = new int[resolution * resolution * 6];
+            var vertexIndex = 0;
+            var triangleIndex = 0;
+
+
             for (int z = 0; z < hh; z++)
             {
                 for (int x = 0; x < hw; x++)
                 {
-                    var offset = new Vector2Int(x + heightmapRect.x, z + heightmapRect.y);
-                    float y = td.GetHeight(offset.x * resScale, offset.y*resScale);
-                    verts[vertexIndex] = Vector3.Scale(new Vector3(x, y, z), heightmapScale);
-                    uvs[vertexIndex] = Vector2.Scale(new Vector2(offset.x, offset.y), uvScale);
+                    var offsetX = x * resScale + heightmapRect.x;
+                    var offsetZ = z * resScale + heightmapRect.y;
+
+                    var y = td.GetHeight(offsetX, offsetZ);
+                    var pos = Vector3.Scale(new Vector3(offsetX, y, offsetZ), meshScale);
+
+                    verts[vertexIndex] = pos;
+                    uvs[vertexIndex] = Vector2.Scale(new Vector2(x, z), uvScale) + tileId * uvTileRate;
                     vertexIndex++;
 
-                    /**
-                     c d
-                     a b
-                     */
-                    if (x < w && z < h)
+                    Debug.DrawRay(pos, Vector3.up, Color.green,1);
+
+                    if (x < resolution && z < resolution)
                     {
-                        int a = z * hw + x;
-                        int b = a + 1;
-                        int c = (z + 1) * hw + x;
-                        int d = c + 1;
+                        /**
+                         c d
+                         a b
+                         */
+                        var a = z * hw + x;
+                        var b = a + 1;
+                        var c = (z + 1) * hw + x;
+                        var d = c + 1;
 
                         triangles[triangleIndex++] = a;
                         triangles[triangleIndex++] = c;
@@ -126,41 +154,50 @@
             return mesh;
         }
 
-        public static void GenerateWhole(Terrain terrain)
+        public static void GenerateWhole(Terrain terrain, Material mat, int resScale = 1)
         {
             var td = terrain.terrainData;
             var hw = td.heightmapResolution;
             var hh = td.heightmapResolution;
-
             var resolution = td.heightmapResolution - 1;
-            Vector3 heightmapScale = new Vector3(td.heightmapScale.x, 1, td.heightmapScale.z);
-            Vector2 uvScale = new Vector2(1f / resolution, 1f / resolution);
 
-            Vector3[] verts = new Vector3[hw * hh];
-            int[] triangles = new int[resolution * resolution * 6];
-            Vector2[] uvs = new Vector2[verts.Length];
+            var meshScale = td.heightmapScale * resScale;
+            meshScale.y = 1;
 
-            int vertexIndex = 0;
-            int triangleIndex = 0;
+            var uvScale = new Vector2(1f / resolution * resScale, 1f / resolution * resScale);
+
+            hh = (hh - 1) / resScale + 1;
+            hw = (hw - 1) / resScale + 1;
+            resolution /= resScale;
+
+            var verts = new Vector3[hw * hh];
+            var uvs = new Vector2[verts.Length];
+            var triangles = new int[resolution * resolution * 6];
+            var vertexIndex = 0;
+            var triangleIndex = 0;
+
+
             for (int z = 0; z < hh; z++)
             {
                 for (int x = 0; x < hw; x++)
                 {
-                    float y = td.GetHeight(x, z);
-                    verts[vertexIndex] = Vector3.Scale(new Vector3(x, y, z), heightmapScale);
+                    var y = td.GetHeight(x * resScale, z * resScale);
+                    var pos = Vector3.Scale(new Vector3(x, y, z), meshScale);
+
+                    verts[vertexIndex] = pos;
                     uvs[vertexIndex] = Vector2.Scale(new Vector2(x, z), uvScale);
                     vertexIndex++;
 
-                    /**
-                     c d
-                     a b
-                     */
                     if (x < resolution && z < resolution)
                     {
-                        int a = z * hw + x;
-                        int b = a + 1;
-                        int c = (z + 1) * hw + x;
-                        int d = c + 1;
+                        /**
+                         c d
+                         a b
+                         */
+                        var a = z * hw + x;
+                        var b = a + 1;
+                        var c = (z + 1) * hw + x;
+                        var d = c + 1;
 
                         triangles[triangleIndex++] = a;
                         triangles[triangleIndex++] = c;
@@ -173,6 +210,7 @@
                 }
             }
 
+
             var mesh = new Mesh();
             mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
             mesh.vertices = verts;
@@ -183,11 +221,8 @@
             mesh.RecalculateTangents();
 
             var go = new GameObject("TerrainMesh");
-            var mf = go.AddComponent<MeshFilter>();
-            mf.sharedMesh = mesh;
-
-            var mr = go.AddComponent<MeshRenderer>();
-            Debug.Log(uvs[0] + ":" + uvs[uvs.Length - 1]);
+            go.AddComponent<MeshFilter>().mesh = mesh;
+            go.AddComponent<MeshRenderer>().sharedMaterial = mat;
         }
 
         public static void WriteObj(Mesh mesh,string filename)
