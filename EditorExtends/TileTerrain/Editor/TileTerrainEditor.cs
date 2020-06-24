@@ -10,7 +10,7 @@ public class TileTerrainWindow : EditorWindow
     Terrain terrainObj;
     Material terrainMat;
 
-    int countX=1, countZ=1;
+    int tileCount=1, countZ=1;
 
     public enum SaveResolution { Full, Half, Quarter, Eighth, Sixteeth }
     SaveResolution saveResolution = SaveResolution.Half;
@@ -33,39 +33,33 @@ public class TileTerrainWindow : EditorWindow
 
         saveResolution = (SaveResolution)EditorGUILayout.EnumPopup("Save Resolution:",saveResolution);
 
-        countX = Mathf.Max(1, EditorGUILayout.IntField("Horizontal Count:",countX));
-        countZ = Mathf.Max(1, EditorGUILayout.IntField("Vertical Count:",countZ));
+        tileCount = Mathf.Max(1, EditorGUILayout.IntField("Tile Count:",Mathf.NextPowerOfTwo(tileCount)));
         terrainMat = (Material)EditorGUILayout.ObjectField("Terrain Material:",terrainMat, typeof(Material), false);
 
         if (GUILayout.Button("Export"))
         {
             var terrainGo = new GameObject("Terrain Mesh");
-            GenerateTiles(terrainObj, countX, countZ, terrainGo.transform, terrainMat,saveResolution);
+            GenerateTiles(terrainObj, tileCount, terrainGo.transform, terrainMat,saveResolution);
         }
     }
 
-    static void GenerateTiles(Terrain terrain,int countX,int countZ,Transform parent,Material mat,SaveResolution saveResolution)
+    static void GenerateTiles(Terrain terrain,int tileCount,Transform parent,Material mat,SaveResolution saveResolution)
     {
         var resScale = (int)Mathf.Pow(2, (int)saveResolution);
 
         var td = terrain.terrainData;
 
-        var heightmapWidth = (td.heightmapResolution - 1) / countX ;
-        var heightrmapHeight = (td.heightmapResolution - 1) / countZ ;
+        var heightmapSize = (td.heightmapResolution - 1) / tileCount ;
 
         var id = 0;
-        var count = countX * countZ;
+        var count = tileCount * tileCount;
 
-        var path = EditorUtility.SaveFilePanel("Save obj?", "", "TerrainMesh", "obj");
-
-        for (int x = 0; x < countX; x++)
+        for (int x = 0; x < tileCount; x++)
         {
-            for (int z = 0; z < countZ; z++)
+            for (int z = 0; z < tileCount; z++)
             {
-                var heightmapRect = new RectInt(x * heightmapWidth, z * heightrmapHeight, heightmapWidth + 1, heightrmapHeight + 1);
+                var heightmapRect = new RectInt(x * heightmapSize, z * heightmapSize, heightmapSize + 1, heightmapSize + 1);
                 var tileMesh = TerrainTools.GenerateTileMesh(terrain, heightmapRect, resScale);
-
-                TerrainTools.WriteObj(tileMesh, path + "Tile-{0}_{1}");
 
                 GenerateTileGo(string.Format("Tile-{0}_{1}", x, z),tileMesh, parent, mat);
                 id++;
