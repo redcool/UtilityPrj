@@ -7,8 +7,12 @@ Shader "PowerPBS/Lit"
         _MainTex ("Texture", 2D) = "white" {}
         _NormalMap("NormalMap",2d) = "bump"{}
         _NormalScale("NormalScale",float) = 1
-        _Metallic("metallic",range(0,1)) = 0.5
+
+        _MetallicMap("MetallicMap(Metallic:R,Smoothness:A)",2d) = "white"{}
+        _Metallic("Metallic",range(0,1)) = 0.5
         _Smoothness("Smoothness",range(0,1)) = 0.5
+
+        _OcclusionMap("OcclusionMap(G))",2d)="white"{}
         _Occlusion("Occlusion",range(0,1)) = 1
     }
 
@@ -90,6 +94,7 @@ Shader "PowerPBS/Lit"
         ){
             float a = 1- smoothness;
             float a2 = a * a;
+            a2 = max(0.002,a2);
             
             float3 l = normalize(light.dir);
             float3 n = normalize(normal);
@@ -109,16 +114,80 @@ Shader "PowerPBS/Lit"
             float D = D_GGXTerm(nh,a2);
             float3 F = FresnelTerm(specColor,lh);
 
-            float3 specTerm = V * D * PI * nl * F;
+            float3 specTerm = V * D * PI * nl ;
             specTerm = max(0,specTerm);
             specTerm *= any(specColor)?1:0;
 
             float surfaceReduction =1 /(a2 * a2+1);
             float grazingTerm = saturate(smoothness + (1 - oneMinusReflectivity));
             float3 color = diffColor * (gi.diffuse + light.color * diffuseTerm) 
-                + specTerm * light.color 
+                + specTerm * light.color * F
                 + surfaceReduction * gi.specular * FresnelLerp(specColor,grazingTerm,nv);
             return float4(color,1);
+        }
+
+        float4 VertexGI(float4 lmapUV/*xy:lmap,zw: realtime lightmap*/,float3 worldPos,float3 worldNormal){
+            float4 shlmap = (float4)0;
+            #ifdef DYNAMICLIGHTMAP_ON
+            shlmap.zw = lmapUV.zw * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
+            #endif
+            #ifdef LIGHTMAP_ON
+            shlmap.xy = lmapUV.xy * unity_LightmapST.xy + unity_LightmapST.zw;
+            #endif
+
+            // SH/ambient and vertex lights
+            #ifndef LIGHTMAP_ON
+                #if UNITY_SHOULD_SAMPLE_SH && !UNITY_SAMPLE_FULL_SH_PER_PIXEL
+                    shlmap = 0;
+                    #ifdef VERTEXLIGHT_ON
+                        o.sh += Shade4PointLights (
+                        unity_4LightPosX0, unity_4LightPosY0, unity_4LightPosZ0,
+                        unity_LightColor[0].rgb, unity_LightColor[1].rgb, unity_LightColor[2].rgb, unity_LightColor[3].rgb,
+                        unity_4LightAtten0, worldPos, worldNormal);
+                    #endif
+                    shlmap.rgb = ShadeSHPerVertex (worldNormal, shlmap);
+                #endif
+            #endif // !LIGHTMAP_ON
+            return shlmap;
+        }
+
+        UnityGI CalcGI(float3 lightDir,float3 viewDir,float3 worldPos,float3 normal,
+            float atten,float4 shlmap,
+            float smoothness,float occlusion){
+            // gi(sh,lightmap,indirect specular)
+            UnityLight light = (UnityLight)0;
+            light.color = _LightColor0.rgb;
+            light.dir = lightDir;
+            
+            UnityGIInput giInput = (UnityGIInput)0;
+            giInput.light = light;
+            giInput.worldPos = worldPos;
+            giInput.worldViewDir = viewDir;
+            giInput.atten = atten;
+            #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+                giInput.lightmapUV = shlmap;
+            #endif
+            #if UNITY_SHOULD_SAMPLE_SH && !UNITY_SAMPLE_FULL_SH_PER_PIXEL
+                giInput.ambient = shlmap;
+            #endif
+            giInput.probeHDR[0] = unity_SpecCube0_HDR;
+            giInput.probeHDR[1] = unity_SpecCube1_HDR;
+            #if defined(UNITY_SPECCUBE_BLENDING) || defined(UNITY_SPECCUBE_BOX_PROJECTION)
+                giInput.boxMin[0] = unity_SpecCube0_BoxMin; // .w holds lerp value for blending
+            #endif
+            #ifdef UNITY_SPECCUBE_BOX_PROJECTION
+                giInput.boxMax[0] = unity_SpecCube0_BoxMax;
+                giInput.probePosition[0] = unity_SpecCube0_ProbePosition;
+                giInput.boxMax[1] = unity_SpecCube1_BoxMax;
+                giInput.boxMin[1] = unity_SpecCube1_BoxMin;
+                giInput.probePosition[1] = unity_SpecCube1_ProbePosition;
+            #endif
+
+            Unity_GlossyEnvironmentData g = (Unity_GlossyEnvironmentData)0;
+            g.roughness = 1 - smoothness;
+            g.reflUVW = reflect(-viewDir,normal);
+
+            return UnityGlobalIllumination(giInput,occlusion,normal,g);
         }
     ENDCG
 
@@ -158,87 +227,14 @@ Shader "PowerPBS/Lit"
             sampler2D _NormalMap;
             float _NormalScale;
 
+            sampler2D _MetallicMap;
             float _Metallic;
+
             float _Smoothness;
+
+            sampler2D _OcclusionMap;
             float _Occlusion;
 
-        
-            float3 GetIndirectDiffuse(float3 sh,float4 lightmapUV,float occlusion){
-                float3 indirectDiffuse = 0;
-                #if UNITY_SHOULD_SAMPLE_SH
-                    indirectDiffuse = sh.rgb;
-                #endif
-                #if LIGHTMAP_ON
-                    indirectDiffuse = DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap,lightmapUV.xy));
-                #endif
-                #if DYNAMICLIGHTMAP_ON
-                    indirectDiffuse += DecodeRealtimeLightmap(UNITY_SAMPLE_TEX2D(unity_DynamicLightmap,lightmapUV.zw));
-                #endif
-                return indirectDiffuse * occlusion;
-            }
-
-            float4 VertexGI(float4 lmapUV/*xy:lmap,zw: realtime lightmap*/,float3 worldPos,float3 worldNormal){
-                float4 shlmap = (float4)0;
-                #ifdef DYNAMICLIGHTMAP_ON
-                shlmap.zw = lmapUV.xy * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
-                #endif
-                #ifdef LIGHTMAP_ON
-                shlmap.xy = lmapUV.zw * unity_LightmapST.xy + unity_LightmapST.zw;
-                #endif
-
-                // SH/ambient and vertex lights
-                #ifndef LIGHTMAP_ON
-                    #if UNITY_SHOULD_SAMPLE_SH
-                    #ifdef VERTEXLIGHT_ON
-                        o.sh += Shade4PointLights (
-                        unity_4LightPosX0, unity_4LightPosY0, unity_4LightPosZ0,
-                        unity_LightColor[0].rgb, unity_LightColor[1].rgb, unity_LightColor[2].rgb, unity_LightColor[3].rgb,
-                        unity_4LightAtten0, worldPos, worldNormal);
-                    #endif
-                    shlmap.rgb = ShadeSHPerVertex (worldNormal, shlmap);
-                    #endif
-                #endif // !LIGHTMAP_ON
-                return shlmap;
-            }
-
-            UnityGI CalcGI(float3 lightDir,float3 viewDir,float3 worldPos,float3 normal,
-                float atten,float4 shlmap,
-                float smoothness,float occlusion){
-                // gi(sh,lightmap,indirect specular)
-                UnityLight light = (UnityLight)0;
-                light.color = _LightColor0.rgb;
-                light.dir = lightDir;
-                
-                UnityGIInput giInput = (UnityGIInput)0;
-                giInput.light = light;
-                giInput.worldPos = worldPos;
-                giInput.worldViewDir = viewDir;
-                giInput.atten = atten;
-                #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
-                    giInput.lightmapUV = shlmap;
-                #endif
-                #if UNITY_SHOULD_SAMPLE_SH && !UNITY_SAMPLE_FULL_SH_PER_PIXEL
-                    giInput.ambient = shlmap;
-                #endif
-                giInput.probeHDR[0] = unity_SpecCube0_HDR;
-                giInput.probeHDR[1] = unity_SpecCube1_HDR;
-                #if defined(UNITY_SPECCUBE_BLENDING) || defined(UNITY_SPECCUBE_BOX_PROJECTION)
-                    giInput.boxMin[0] = unity_SpecCube0_BoxMin; // .w holds lerp value for blending
-                #endif
-                #ifdef UNITY_SPECCUBE_BOX_PROJECTION
-                    giInput.boxMax[0] = unity_SpecCube0_BoxMax;
-                    giInput.probePosition[0] = unity_SpecCube0_ProbePosition;
-                    giInput.boxMax[1] = unity_SpecCube1_BoxMax;
-                    giInput.boxMin[1] = unity_SpecCube1_BoxMin;
-                    giInput.probePosition[1] = unity_SpecCube1_ProbePosition;
-                #endif
-
-                Unity_GlossyEnvironmentData g = (Unity_GlossyEnvironmentData)0;
-                g.roughness = 1 - smoothness;
-                g.reflUVW = reflect(-viewDir,normal);
-
-                return UnityGlobalIllumination(giInput,occlusion,normal,g);
-            }
 
             v2f vert (appdata_full v)
             {
@@ -276,13 +272,21 @@ Shader "PowerPBS/Lit"
                 float3 l = normalize(UnityWorldSpaceLightDir(worldPos));
                 n = normalize(n);
 
-                UnityGI gi = CalcGI(l,v,worldPos,n,atten,i.shlmap,_Smoothness,_Occlusion);
-                
+                //occlusion
+                float4 occlusionMap = tex2D(_OcclusionMap,i.uv);
+                float occlusion = occlusionMap.g * _Occlusion;
+                //metallic
+                float4 metallicMap = tex2D(_MetallicMap,i.uv);
+                float metallic = metallicMap.r * _Metallic;
+                float smoothness = metallicMap.a * _Smoothness;
+                // calculate gi
+                UnityGI gi = CalcGI(l,v,worldPos,n,atten,i.shlmap,smoothness,occlusion);
+ 
                 // sample the texture
                 fixed4 albedo = tex2D(_MainTex, i.uv);
                 float3 specColor;
                 float oneMinusReflectivity;
-                albedo.rgb = DiffuseSpecularFromMetallic(albedo.rgb,_Metallic,specColor,oneMinusReflectivity);
+                albedo.rgb = DiffuseSpecularFromMetallic(albedo.rgb,metallic,specColor,oneMinusReflectivity);
 
                 float outputAlpha;
                 albedo.rgb = PreMultiplyAlpha(albedo.rgb,albedo.a,oneMinusReflectivity,outputAlpha);
