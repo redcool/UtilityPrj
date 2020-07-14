@@ -14,6 +14,9 @@ Shader "PowerPBS/Lit"
 
         _OcclusionMap("OcclusionMap(G))",2d)="white"{}
         _Occlusion("Occlusion",range(0,1)) = 1
+
+        _HeightMap("Height map(B)",2d) = "white"{}
+        _Height("Height",float) = 0
     }
 
     SubShader
@@ -35,6 +38,16 @@ Shader "PowerPBS/Lit"
             #include "AutoLight.cginc"
             #include "UnityLightingCommon.cginc"
             #include "PowerPBSCore.cginc"
+
+            struct appdata{
+                float3 vertex:POSITION;
+                float4 texcoord:TEXCOORD;
+                float4 texcoord1:TEXCOORD1;
+                float4 texcoord2:TEXCOORD2;
+                float4 texcoord3:TEXCOORD3;
+                float3 normal:NORMAL;
+                float4 tangent:TANGENT;
+            };
 
             struct v2f
             {
@@ -61,8 +74,11 @@ Shader "PowerPBS/Lit"
             sampler2D _OcclusionMap;
             float _Occlusion;
 
+            sampler2D _HeightMap;
+            float _Height;
 
-            v2f vert (appdata_full v)
+
+            v2f vert (appdata v)
             {
                 v2f o = (v2f)0;
                 o.pos = UnityObjectToClipPos(v.vertex);
@@ -87,37 +103,49 @@ Shader "PowerPBS/Lit"
             fixed4 frag (v2f i) : SV_Target
             {
                 float3 worldPos = float3(i.t2w0.w,i.t2w1.w,i.t2w2.w);
-                UNITY_LIGHT_ATTENUATION(atten,i,worldPos);
-
-                //normal map
-                float3 n = UnpackScaleNormal(tex2D(_NormalMap,i.uv),_NormalScale);
-                n.z = sqrt(1 - saturate(dot(n.xy,n.xy)));
-                n = float3(dot(i.t2w0.xyz,n),dot(i.t2w1.xyz,n),dot(i.t2w2.xyz,n));
+                float3x3 tangentSpace = float3x3(i.t2w0.xyz,i.t2w1.xyz,i.t2w2.xyz);
 
                 float3 v = normalize(UnityWorldSpaceViewDir(worldPos));
                 float3 l = normalize(UnityWorldSpaceLightDir(worldPos));
+
+                UNITY_LIGHT_ATTENUATION(atten,i,worldPos);
+
+                //parallax(height)
+                float4 heightMap = tex2D(_HeightMap,i.uv);
+                float height = heightMap.b;
+                float3 tangentView = normalize(mul(tangentSpace,v));
+                float2 offset = ParallaxOffset1Step(height,_Height,tangentView);
+                //float2 offset = float2(height*(_Height) * tangentView.xy);
+                float2 uv = i.uv.xy + offset;
+
+                //normal map
+                float3 n = UnpackScaleNormal(tex2D(_NormalMap,uv),_NormalScale);
+                n.z = sqrt(1 - saturate(dot(n.xy,n.xy)));
+                n = mul(tangentSpace,n);//float3(dot(i.t2w0.xyz,n),dot(i.t2w1.xyz,n),dot(i.t2w2.xyz,n));
                 n = normalize(n);
 
                 //occlusion
-                float4 occlusionMap = tex2D(_OcclusionMap,i.uv);
+                float4 occlusionMap = tex2D(_OcclusionMap,uv);
                 float occlusion = occlusionMap.g * _Occlusion;
                 //metallic
-                float4 metallicMap = tex2D(_MetallicMap,i.uv);
+                float4 metallicMap = tex2D(_MetallicMap,uv);
                 float metallic = metallicMap.r * _Metallic;
                 float smoothness = metallicMap.a * _Smoothness;
+
+                
                 // calculate gi
                 UnityGI gi = CalcGI(l,v,worldPos,n,atten,i.shlmap,smoothness,occlusion);
                 // sample the texture
-                fixed4 albedo = tex2D(_MainTex, i.uv);
+                fixed4 albedo = tex2D(_MainTex, uv);
                 float3 specColor;
                 float oneMinusReflectivity;
                 albedo.rgb = DiffuseSpecularFromMetallic(albedo.rgb,metallic,specColor,oneMinusReflectivity);
 
-                // float outputAlpha;
-                // albedo.rgb = PreMultiplyAlpha(albedo.rgb,albedo.a,oneMinusReflectivity,outputAlpha);
+                float outputAlpha;
+                albedo.rgb = PreMultiplyAlpha(albedo.rgb,albedo.a,oneMinusReflectivity,outputAlpha);
 
                 float4 c = PBS(albedo.rgb,specColor,oneMinusReflectivity,_Smoothness,n,v,gi.light,gi.indirect);
-                // c.a = outputAlpha;
+                c.a = outputAlpha;
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, c);
                 return c;
