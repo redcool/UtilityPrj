@@ -5,7 +5,7 @@ Shader "Example/Sample2DArrayTexture"
     Properties
     {
         _MyArr ("Tex", 2DArray) = "" {}
-        _SliceRange ("Slices", Range(0,2)) = 0
+        _SliceRange ("Slices", Range(0,16)) = 0
         _UVScale ("UVScale", Float) = 1.0
     }
     SubShader

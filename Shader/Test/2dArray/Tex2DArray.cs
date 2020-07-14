@@ -1,22 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
+#if UNITY_EDITOR
 
-public class Tex2DArray : MonoBehaviour
+using UnityEditor;
+[CustomEditor(typeof(Tex2DArray))]
+public class Tex2DArrayEditor : Editor
 {
-    public Texture2D[] texs;
-
-    public Texture2DArray texArr;
-    public int width = 1024, height = 1024, depth = 4;
-    // Start is called before the first frame update
-    void Start()
-    {
-        var texArr = CreateTexArray(width,height,depth);
-        AssetDatabase.CreateAsset(texArr, "Assets/Test/texArr.asset");
-    }
-
-    Texture2DArray CreateTexArray(int width,int height,int depth)
+    Texture2DArray CreateTexArray(int width, int height, int depth,Texture2D[] texs)
     {
         var texArr = new Texture2DArray(width, height, depth, TextureFormat.RGB24, true);
 
@@ -30,4 +21,24 @@ public class Tex2DArray : MonoBehaviour
         texArr.Apply();
         return texArr;
     }
+
+    public override void OnInspectorGUI()
+    {
+        base.OnInspectorGUI();
+        if (GUILayout.Button("Create"))
+        {
+            var t = ((Tex2DArray)target);
+
+            var texArr = CreateTexArray(t.width, t.height, t.depth, t.texs);
+            AssetDatabase.CreateAsset(texArr, "Assets/Test/texArr.asset");
+        }
+    }
+}
+#endif
+
+public class Tex2DArray : MonoBehaviour
+{
+    public Texture2D[] texs;
+
+    public int width = 1024, height = 1024, depth = 4;
 }
