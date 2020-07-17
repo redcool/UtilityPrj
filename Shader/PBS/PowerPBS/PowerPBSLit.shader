@@ -31,6 +31,9 @@ Shader "PowerPBS/Lit"
         [Toggle(CLEAR_COAT)]_ClearCoatOn("_ClearCoatOn",int) = 0
         _ClearCoatSpecColor("_ClearCoatSpecColor",color) = (.3,.3,.3,1)
         _ClearCoatSmoothness("_ClearCoatSmoothness",range(0,1)) = 1
+        _ClearCoatNormalMap("_ClearCoatNormalMap",2d)="bump"{}
+        _ClearCoatNormalScale("_ClearCoatNormalScale",float) = 1
+
     }
 
     SubShader

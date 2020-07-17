@@ -53,6 +53,8 @@ float _DetailNormalScale;
 
 float4 _ClearCoatSpecColor;
 float _ClearCoatSmoothness;
+sampler2D _ClearCoatNormalMap;
+float _ClearCoatNormalScale;
 
 v2f vert (appdata v)
 {
@@ -157,7 +159,8 @@ fixed4 frag (v2f i) : SV_Target
     c.a = outputAlpha;
 
     #if defined(CLEAR_COAT)
-        UnityGI giClearCoat = CalcGI(l,v,worldPos,n,atten,i.shlmap,_ClearCoatSmoothness,occlusion);
+        float3 normalClearCoat = GetNormal(_ClearCoatNormalMap,uv,_ClearCoatNormalScale);
+        UnityGI giClearCoat = CalcGI(l,v,worldPos,normalClearCoat,atten,i.shlmap,_ClearCoatSmoothness,occlusion);
         float4 colorClearCoat = PBS(0,_ClearCoatSpecColor,oneMinusReflectivity,_ClearCoatSmoothness,n,v,gi.light,giClearCoat.indirect);
         c.rgb += colorClearCoat.rgb;
     #endif
