@@ -134,7 +134,7 @@ float4 VertexGI(float4 lmapUV/*xy:lmap,zw: realtime lightmap*/,float3 worldPos,f
         #if UNITY_SHOULD_SAMPLE_SH && !UNITY_SAMPLE_FULL_SH_PER_PIXEL
             shlmap = 0;
             #ifdef VERTEXLIGHT_ON
-                o.sh += Shade4PointLights (
+                shlmap.rgb += Shade4PointLights (
                 unity_4LightPosX0, unity_4LightPosY0, unity_4LightPosZ0,
                 unity_LightColor[0].rgb, unity_LightColor[1].rgb, unity_LightColor[2].rgb, unity_LightColor[3].rgb,
                 unity_4LightAtten0, worldPos, worldNormal);
