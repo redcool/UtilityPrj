@@ -63,7 +63,7 @@ v2f vert (appdata v)
     o.uv.xy = TRANSFORM_TEX(v.texcoord.xy, _MainTex);
     o.uv.zw = v.texcoord2.xy;
 
-    UNITY_TRANSFER_FOG(o,o.vertex);
+    UNITY_TRANSFER_FOG(o,o.pos);
     float3 worldPos = mul(unity_ObjectToWorld,v.vertex);
     float3 n = UnityObjectToWorldNormal(v.normal);
     float3 t = UnityObjectToWorldDir(v.tangent.xyz);
@@ -75,7 +75,7 @@ v2f vert (appdata v)
     // UNITY_TRANSFER_LIGHTING(o , v.uv1);
     TRANSFER_SHADOW(o)
 
-    o.shlmap = VertexGI(float4(v.texcoord.xy,v.texcoord1.xy),worldPos,n);
+    o.shlmap = VertexGI(float4(v.texcoord1.xy,v.texcoord2.xy),worldPos,n);
 
     return o;
 }
@@ -145,6 +145,7 @@ fixed4 frag (v2f i) : SV_Target
 
     // calculate gi
     UnityGI gi = CalcGI(l,v,worldPos,n,atten,i.shlmap,smoothness,occlusion);
+    
     // sample the texture
     float4 albedo = CalcAlbedo(uv.xy,mask);
 
@@ -154,7 +155,8 @@ fixed4 frag (v2f i) : SV_Target
 
     float outputAlpha;
     albedo.rgb = PreMultiplyAlpha(albedo.rgb,albedo.a,oneMinusReflectivity,outputAlpha);
-
+    
+    // float3 indirectColor = gi.indirect.diffuse*(metallic); //keep indirect ?
     float4 c = PBS(albedo.rgb,specColor,oneMinusReflectivity,_Smoothness,n,v,gi.light,gi.indirect);
     c.a = outputAlpha;
 
