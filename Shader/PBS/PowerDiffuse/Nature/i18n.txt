@@ -1,0 +1,64 @@
+//WeatherShader 属性
+ShowOriginalPage = 显示原始页面
+_MainTex=主纹理
+_Color=主纹理颜色
+_BumpMap=法线图
+_LightDir=光照方向
+_LightColor=光照颜色
+_DisableWeather=关闭该材质天气效果(雨,雪)?
+_DaytimeOn=开启昼夜?
+
+_DisableSnowDir=禁用方向雪积累
+_DefaultSnowRate=默认积雪比例
+_SnowNoiseMapOn=开启积雪杂点图
+_SnowNoiseMap=积雪杂点图
+_NoiseDistortNormalIntensity=杂点强度
+
+_SnowDirection=积雪方向
+_SnowColor=积雪颜色
+_SnowAngleIntensity=积雪倾斜程度
+_SnowTile=继续平铺
+_BorderWidth=积雪边宽度
+_ToneMapping=颜色色调
+
+_WaveColor=流水颜色
+_Tile=流水平铺
+_Direction=流水方向
+_WaveNoiseMap=流水杂点图
+
+_WaveBorderWidth=流水边宽度
+_DirAngle=流水倾斜度
+_WaveIntensity=流水强度
+
+_EnvTex=环境图
+_EnvColor=环境颜色
+_EnvNoiseMap=环境杂点图
+_EnvIntensity=环境反射强度
+_EnvTileOffset=环境平铺偏移
+
+
+_RippleOn=开启涟漪
+_RippleTex=涟漪数据图
+_RippleScale=涟漪缩放
+_RippleIntensity=涟漪强度
+_RippleColorTint=涟漪颜色
+_RippleSpeed=涟漪速度
+
+//wind only
+_SplatSnowIntensity=积雪分层强度
+
+_Plants_Off=关闭风力
+_ExpandBillboard=叶片膨胀?
+_Wave=抖动(树枝,边抖动,风向偏移,风向回弹)
+_Wind=风力(xyz:方向,w:风强)
+_AttenField=无抖动范围 (x: 水平距离,y:竖直距离)
+
+//terrain shader only
+_SpecDir=高光方向
+_SpecColor=高光颜色
+_WaveLayerIntensity=流水(涟漪)分层强度
+_EnvLayerIntensity=环境反射分层强度
+
+_RainSpecDir=雨天高光方向
+_RainSpecColor=雨天地表高光颜色
+_RainTerrainShininess=雨天地表分层光泽度
