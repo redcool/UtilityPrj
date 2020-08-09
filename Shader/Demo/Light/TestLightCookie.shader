@@ -2,12 +2,13 @@
 
 // Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 
-Shader "Unlit/TestLightCookie"
+Shader "Unlit/testLightCookie"
 {
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
         _Cookie("cookie",2d) = ""{}
+        _Scale("scale",float) = 1
     }
     SubShader
     {
@@ -39,24 +40,25 @@ Shader "Unlit/TestLightCookie"
             sampler2D _MainTex;
             float4 _MainTex_ST;
             // unity lightcookie vars
-            // float4x4 unity_WorldToLight;
+            float4x4 unity_WorldToLight;
             // sampler2D _LightTexture0;
             
             float4x4 _WorldToLight;
             sampler2D _Cookie;
+            float _Scale;
 
             v2f vert (appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                o.posLight = mul(_WorldToLight,mul(unity_ObjectToWorld,v.vertex));
+                o.posLight = mul(unity_WorldToLight,mul(unity_ObjectToWorld,v.vertex));
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float2 uv = i.posLight.xy/i.posLight.w + 0.5;
+                float2 uv = i.posLight.xy /(i.posLight.w * _Scale) + 0.5;
 
                 float atten = tex2D(_Cookie,uv).a;
                 return atten;
