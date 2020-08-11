@@ -62,17 +62,21 @@ float4 LightingBlinn(SurfaceOutput s,float3 halfDir,UnityGI gi,float shadowAtten
     fixed kd = 1 - dot(float3(0.2,0.7,0.07),specColor);
     // fixed ks = 1 - kd;
 
-    fixed diff = max (0,dot (s.Normal, gi.light.dir));
-
+    fixed diff = saturate(dot (s.Normal, gi.light.dir));
     fixed4 c=(float4)0;
     c.rgb = s.Albedo * gi.light.color * diff * saturate(shadowAtten + _ShadowStrength) * kd;
     c.a = s.Alpha;
 
     #ifdef UNITY_LIGHT_FUNCTION_APPLY_INDIRECT
-        c.rgb += s.Albedo * gi.indirect.diffuse;
+        float g = min(0.5,Luminance(gi.indirect.diffuse));
+        // float shadow = smoothstep(0.4,0.5,g);
+        // return g;
+        float diffPart = lerp(1,diff,g);
+        // return diffPart;
+        c.rgb += s.Albedo * gi.indirect.diffuse * diffPart;
     #endif
 
-    float nh = saturate(dot(s.Normal,halfDir));
+    float nh = saturate(dot(normalize(s.Normal),halfDir));
     float3 specular = min(MAX_SPECULAR,pow(nh,s.Specular * 128)) * s.Gloss  * specColor * shadowAtten;
     c.rgb += specular;
     return c;
@@ -119,20 +123,22 @@ UnityGIInput SetupGIInput(UnityLight light,float3 worldPos,float atten,float4 lm
 }
 
 float MainLightShadowFromLightmap(float3 bakedColor){
-    // _MainLightShadowIntensity = 0.1;
-    float gray = dot(float3(0.2,0.7,0.07),bakedColor);
+    float g = Luminance(bakedColor);
 
-    float hardShadow = step(_MainLightShadowIntensity,gray);
-    float softShadow = smoothstep(gray*2,gray,_MainLightShadowIntensity) ;
+    float hardShadow = step(_MainLightShadowIntensity,g);
+    float softShadow = smoothstep(g*2,g,_MainLightShadowIntensity) ;
     // return softShadow;
     return saturate(lerp(hardShadow,softShadow,_ShadowEdge));
 }
 
-//使用sh,去除环境色,使用 _AmbientColor.
 float3 ApplyAmbient(float3 c){
-    return c - UNITY_LIGHTMODEL_AMBIENT + _AmbientColor;
+    return c + _AmbientColor + 0.2;
 }
-
+//使用sh,去除环境色,使用 _AmbientColor.
+float3 ApplyAmbientMinusUnityAmbient(float3 c){
+    c = c - UNITY_LIGHTMODEL_AMBIENT;
+    return ApplyAmbient(c);
+}
  
 inline void CalcGI (
     SurfaceOutput s,
@@ -168,9 +174,12 @@ inline void CalcGI (
         atten = MainLightShadowFromLightmap(bakedColor);
         
         //use sh + lightmap shadow
-        float3 sh = ApplyAmbient(ShadeSHPerPixel(normalWorld, data.ambient, data.worldPos));
-        float3 diffuse = lerp(sh,bakedColor,sh*bakedColor + _LightingType);
-        o_gi.indirect.diffuse += diffuse;//ApplyAmbient(diffuse);
+        float3 sh = ApplyAmbientMinusUnityAmbient(ShadeSHPerPixel(normalWorld, data.ambient, data.worldPos));
+        bakedColor = ApplyAmbient(bakedColor);
+
+        float nl = saturate(dot(normalWorld,data.light.dir));
+        float3 diffuse = lerp(sh,bakedColor, _LightingType);
+        o_gi.indirect.diffuse += diffuse ;
 
         #if defined(LIGHTMAP_SHADOW_MIXING) && !defined(SHADOWS_SHADOWMASK) && defined(SHADOWS_SCREEN)
             ResetUnityLight(o_gi.light);
