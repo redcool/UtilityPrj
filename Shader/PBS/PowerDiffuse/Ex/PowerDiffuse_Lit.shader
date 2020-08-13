@@ -1,15 +1,17 @@
 // Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
 
-Shader "Legacy Shaders/Bumped Diffuse" {
+Shader "PowerDiffuse/Lit" {
   /**
-    诛仙,基础渲染.
+    基础渲染.
     光照模型 : blinn phong + gi
-    CustomLight.cginc,处理光照计算,光照图, sh等.
+    CustomLight.cginc : 处理光照计算,光照图, sh等.
+    RenderingCore.cginc : 组织数据,几何,gi
     支持2平行光:
       1 场景光照
         _WorldSpaceLightPos0(实时光照), _MainLightDir(光照图,通过LightingProcess.cs来传递光照数据)
       2 物体自身的光照信息 
         _LightDir
+    
   */
   Properties {
     _MainTex ("Base (RGB)", 2D) = "white" {}
@@ -156,10 +158,10 @@ Shader "Legacy Shaders/Bumped Diffuse" {
       #include "Lighting.cginc"
       #include "AutoLight.cginc"
       #include "UnityStandardUtils.cginc"
-      #include "../../FogLib.cginc"
-      #include "../../NatureLibMacro.cginc"
-      #include "../../CustomLight.cginc"
-      #include "../../RenderingCore.cginc"
+      #include "../FogLib.cginc"
+      #include "../NatureLibMacro.cginc"
+      #include "../CustomLight.cginc"
+      #include "../RenderingCore.cginc"
 
       ENDCG
 
@@ -192,10 +194,10 @@ Shader "Legacy Shaders/Bumped Diffuse" {
       #include "AutoLight.cginc"
 
       //#define SNOW
-      #include "../../NatureLibMacro.cginc"
-      #include "../../CustomLight.cginc"
-      #include "../../FogLib.cginc"
-      #include "../../RenderingCore.cginc"
+      #include "../NatureLibMacro.cginc"
+      #include "../CustomLight.cginc"
+      #include "../FogLib.cginc"
+      #include "../RenderingCore.cginc"
       
       #endif
 
@@ -242,10 +244,10 @@ Shader "Legacy Shaders/Bumped Diffuse" {
       #include "Lighting.cginc"
       #include "AutoLight.cginc"
       #include "UnityStandardUtils.cginc"
-      #include "../../FogLib.cginc"
-      #include "../../NatureLibMacro.cginc"
-      #include "../../CustomLight.cginc"
-      #include "../../RenderingCore.cginc"
+      #include "../FogLib.cginc"
+      #include "../NatureLibMacro.cginc"
+      #include "../CustomLight.cginc"
+      #include "../RenderingCore.cginc"
 
       ENDCG
 

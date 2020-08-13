@@ -21,6 +21,7 @@ float4 _HeightFogColor;
 
 float2 GetHeightFog(float3 worldPos){
     float3 viewPos = UnityWorldToViewPos(worldPos.xyzx);
+    // float dist = length(viewPos);
     float hightFogFactor = saturate((viewPos - _HeightFogNear) / (_HeightFogFar - _HeightFogNear));
     float height = 1 - saturate((worldPos.y - _HeightFogMin) / (_HeightFogMax - _HeightFogMin));
     float2 fog = (float2)0;

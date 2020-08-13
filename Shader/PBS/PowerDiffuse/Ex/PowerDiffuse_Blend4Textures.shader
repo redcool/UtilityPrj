@@ -4,7 +4,7 @@
 // Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 // Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
-Shader "T4MShaders/Specular/T4M 4 Textures Spec" {
+Shader "PowerDiffuse/Blend4Textures" {
   Properties {
     [Toggle(SPLAT_NORMAL_ON)] _Is_Normal("_Is_Normal ?",float) = 0
 
@@ -143,7 +143,7 @@ Shader "T4MShaders/Specular/T4M 4 Textures Spec" {
 	//  #else
 	 // #endif
       #include "HLSLSupport.cginc"
-	    #include "Assets/Game/GameRes/Shader/PWIM_CG.cginc"
+	    // #include "Assets/Game/GameRes/Shader/PWIM_CG.cginc"
       #include "UnityShaderVariables.cginc"
 	    //#include "Assets/Game/GameRes/Shader/PWIM_CG.cginc"
       // Surface shader code generated based on:
@@ -175,8 +175,9 @@ Shader "T4MShaders/Specular/T4M 4 Textures Spec" {
 
       #define TERRAIN_WEATHER
 
-      #include "../../NatureLibMacro.cginc"
-      #include "Assets/Game/GameRes/Shader/Weather/Nature/CustomLight.cginc"
+      #include "../NatureLibMacro.cginc"
+      #include "../FogLib.cginc"
+      #include "../CustomLight.cginc"
 
       #define INTERNAL_DATA
       #define WorldReflectionVector(data,normal) data.worldRefl
@@ -367,7 +368,7 @@ Shader "T4MShaders/Specular/T4M 4 Textures Spec" {
 	      //	HeightFog(v.vertex,o.worldPos.y,o.fog);
         TRANSFER_SHADOW(o); // pass shadow coordinates to pixel shader
 
-		    HeightFog(v.vertex,worldPos.y,o.fog);
+		    o.fog = GetHeightFog(worldPos);
         UNITY_TRANSFER_FOG(o,o.pos); // pass fog coordinates to pixel shader
 
         #ifdef _FEATURE_SURFACE_WAVE
@@ -391,7 +392,7 @@ Shader "T4MShaders/Specular/T4M 4 Textures Spec" {
         float3 worldPos = float3(IN.tSpace0.w,IN.tSpace1.w,IN.tSpace2.w);
         float3 worldNormal = float3(IN.tSpace0.z,IN.tSpace1.z,IN.tSpace2.z);
         half3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
-        half3 halfDir = SafeNormalize(light.dir + viewDir);
+        half3 halfDir = normalize(light.dir + viewDir);
         #ifdef UNITY_COMPILER_HLSL
           SurfaceOutput o = (SurfaceOutput)0;
         #else

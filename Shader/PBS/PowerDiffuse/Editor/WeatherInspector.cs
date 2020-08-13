@@ -125,11 +125,11 @@ public class WeatherInspector : ShaderGUI
         propNameTextDict = ConfigTool.ReadConfig(mat.shader);
 
         //关闭天气效果
-        if (propDict.ContainsKey(DISABLE_WEATHER) && propDict[DISABLE_WEATHER].floatValue == 1 && !mat.IsKeywordEnabled(WeatherShader.FEATURE_NONE))
+        if (propDict.ContainsKey(DISABLE_WEATHER) && propDict[DISABLE_WEATHER].floatValue == 1 && !mat.IsKeywordEnabled("_FEATURE_NONE"))
         {
-            mat.DisableKeyword(WeatherShader.FEATURE_SNOW);
-            mat.DisableKeyword(WeatherShader.FEATURE_SURFACE_WAVE);
-            mat.EnableKeyword(WeatherShader.FEATURE_NONE);
+            mat.DisableKeyword("_FEATURE_SNOW");
+            mat.DisableKeyword("_FEATURE_SURFACE_WAVE");
+            mat.EnableKeyword("_FEATURE_NONE");
         }
     }
 

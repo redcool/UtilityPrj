@@ -1,6 +1,5 @@
 #ifndef CUSTOM_LIGHT_CGINC
 #define CUSTOM_LIGHT_CGINC
-#include "Assets/Game/GameRes/Shader/Weather/Nature/GlobalControl.cginc"
 #include "Lighting.cginc"
 #include "GlobalControl.cginc"
 
@@ -188,8 +187,6 @@ inline void CalcGI (
     #endif
     
 }
-
-
 
 inline void CalcGI (
     SurfaceOutput s,

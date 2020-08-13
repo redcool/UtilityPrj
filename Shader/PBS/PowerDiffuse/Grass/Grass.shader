@@ -10,6 +10,8 @@ Shader "Unlit/Nature/Grass"
         _Color("Color",color) = (1,1,1,1)
         _ColorScale("ColorScale",range(0,3)) = 1
         _Cutoff ("Alpha cutoff", Range(0,1)) = 0.5
+
+        [Header(BakedColor)]
         _BakedColorMin("_BakedColorMin",range(0,1)) = 0.1
         _BakedColorScale("_BakedColorScale",range(1,10)) = 1
 
@@ -115,9 +117,9 @@ Shader "Unlit/Nature/Grass"
             #include "UnityCG.cginc"
             #include "Lighting.cginc"
             #include "AutoLight.cginc"
-            //#include "Assets/Game/GameRes/Shader/Weather/Nature/GlobalControl.cginc"
-			#include "Assets/Game/GameRes/Shader/PWIM_CG.cginc"
-            #include "Assets/Game/GameRes/Shader/Weather/Nature/CustomLight.cginc"
+            //#include "../GlobalControl.cginc"
+			#include "../FogLib.cginc"
+            #include "../CustomLight.cginc"
 
             struct v2f
             {
@@ -178,7 +180,7 @@ Shader "Unlit/Nature/Grass"
                 float3 normal = UnityObjectToWorldNormal(v.normal);
                 float nl = dot(normal,light.dir) * 0.5 + 0.5;
                 o.diff = nl;
-                o.diff *=  light.color;
+                o.diff *= light.color;
 
                 // ambient light
                 o.ambient = 0;
@@ -193,7 +195,7 @@ Shader "Unlit/Nature/Grass"
 
                 o.normal = normal;
                 o.worldPos = worldPos.xyz;
-				  	HeightFog(v.vertex,o.worldPos.y,o.fog);
+				o.fog = GetHeightFog(o.worldPos);
                 UNITY_TRANSFER_FOG(o,o.pos);
                 return o;
             }
@@ -208,17 +210,17 @@ Shader "Unlit/Nature/Grass"
                 // ao 
                 fixed atten = LIGHT_ATTENUATION(i);
 //return atten;
-                //float diff = max(_BaseAO,smoothstep(0.2,0.4,i.diff));
                 float4 attenColor = lerp(0.2,1,atten);
                 col.rgb *= i.diff * attenColor + i.ambient;
 
                 #if defined(LIGHTMAP_ON)
                     half4 bakedColorTex = UNITY_SAMPLE_TEX2D(unity_Lightmap, i.lmap.xy);
                     half3 bakedColor = DecodeLightmap(bakedColorTex);
+                    // bakedColor = lerp(Luminance(bakedColor),bakedColor,1);
+// return float4(bakedColor,1) * col;
                     bakedColor = max(_BakedColorMin,bakedColor);
                     // half gray = dot(float3(0.2,0.7,0.07),bakedColor);
                     // return gray;
-// return float4(bakedColor,1);
                     col.rgb *= bakedColor * _BakedColorScale;
                 #endif
 

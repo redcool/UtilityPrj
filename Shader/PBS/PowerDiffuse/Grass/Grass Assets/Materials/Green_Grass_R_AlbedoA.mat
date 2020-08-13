@@ -4,8 +4,9 @@
 Material:
   serializedVersion: 6
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_Name: Green_Grass_R_AlbedoA
   m_Shader: {fileID: 4800000, guid: 84aabb9f53427e343b0936732191a08a, type: 3}
   m_ShaderKeywords: _ALPHAPREMULTIPLY_ON
@@ -39,7 +40,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 5705901846731d243a66e243a04047c5, type: 3}
+        m_Texture: {fileID: 2800000, guid: 4efae63670d05304dbf7d092fc208449, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
@@ -59,6 +60,8 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
+    - _BakedColorMin: 0.1
+    - _BakedColorScale: 1
     - _BumpScale: 1
     - _ColorScale: 1.82
     - _Cutoff: 0.436
