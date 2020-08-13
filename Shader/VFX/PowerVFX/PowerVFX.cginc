@@ -18,7 +18,8 @@
 
     #if defined(DISTORTION_ON)
         sampler2D _NoiseTex;
-        half4 _NoiseTex_ST;
+        sampler2D _NoiseTex2;
+        int _DistortionNoiseTex2On;
         sampler2D _DistortionMaskTex;
         int _DistortionMaskUseR;
         float _DistortionIntensity;
@@ -117,13 +118,9 @@
     void ApplyDistortion(inout float4 mainColor,float4 mainUV,float4 distortUV,float4 color){
         #if defined(DISTORTION_ON)
             half3 noise = (tex2D(_NoiseTex, distortUV.xy) -0.5) * 2;
-            noise += _DoubleEffectOn > 0 ? (tex2D(_NoiseTex, distortUV.zw).rgb -0.5)*2 : 0;
+            noise += _DoubleEffectOn > 0 ? (tex2D(_NoiseTex2, distortUV.zw).rgb -0.5)*2 : 0;
             
-            
-            float2 maskUV = mainUV.xy;
-            #if defined(_GRAB_PASS)
-                maskUV = mainUV.zw;
-            #endif
+            float2 maskUV = _MainTexUseScreenColor == 0 ? mainUV.xy : mainUV.zw;
 
             float4 maskTex = tex2D(_DistortionMaskTex,maskUV);
             float mask = _DistortionMaskUseR > 0? maskTex.r : maskTex.a;
@@ -241,6 +238,7 @@
         float fresnal = i.fresnal_customDataZ.x;
         float dissolveCustomData = i.fresnal_customDataZ.y;
 
+        //use _ScreenColorTexture
         mainUV.xy = _MainTexUseScreenColor == 0 ? mainUV.xy : i.grabPos.xy/i.grabPos.w;
 
         #if defined(DISTORTION_ON)

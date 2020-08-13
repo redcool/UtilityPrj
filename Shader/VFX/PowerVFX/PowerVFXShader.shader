@@ -27,9 +27,11 @@ Shader "ZX/FX/PowerVFXShader"
 		[Header(Distortion)]
 		[Toggle(DISTORTION_ON)]_DistortionOn("Distortion On?",int)=0
 		[noscaleoffset]_NoiseTex("Noise Texture",2D) = "white" {}
+		[noscaleoffset]_NoiseTex2("Noise Texture2",2D) = "white" {}
+
 		[noscaleoffset]_DistortionMaskTex("Distortion Mask Tex(R)",2d) = "white"{}
 		[Toggle]_DistortionMaskUseR("DistortionMaskUseR",int)=1
-		_DistortionIntensity("Distortion Intensity",Range(0,1)) = 0.5
+		_DistortionIntensity("Distortion Intensity",Range(0,10)) = 0.5
 
 		_DistortTile("Distort Tile",vector) = (1,1,1,1)
 		_DistortDir("Distort Dir",vector) = (0,1,0,-1)
@@ -64,7 +66,7 @@ Shader "ZX/FX/PowerVFXShader"
 
 		[Header(Fresnal)]
 		[Toggle(FRESNAL_ON)]_FresnalOn("Fresnal On?",int)=0
-		_FresnalColor("Fresnal Color",color) = (1,1,1,1)
+		[HDR]_FresnalColor("Fresnal Color",color) = (1,1,1,1)
 		_FresnalPower("Fresnal Power",range(0,1)) = 0.5
 		[Toggle]_FresnalTransparentOn("Fresnal Transparent?",range(0,1)) = 0
 		_FresnalTransparent("_FresnalTransparent",range(0,1)) = 0
@@ -95,12 +97,12 @@ Shader "ZX/FX/PowerVFXShader"
 			CGPROGRAM
             #pragma multi_compile_instancing
 			
-			#pragma shader_feature DISTORTION_ON
-			#pragma shader_feature DISSOLVE_ON
-			#pragma shader_feature DISSOLVE_EDGE_ON
-			#pragma shader_feature OFFSET_ON
-			#pragma shader_feature FRESNAL_ON
-			#pragma shader_feature ENV_REFLECT
+			#pragma multi_compile _ DISTORTION_ON
+			#pragma multi_compile _ DISSOLVE_ON
+			#pragma multi_compile _ DISSOLVE_EDGE_ON
+			#pragma multi_compile _ OFFSET_ON
+			#pragma multi_compile _ FRESNAL_ON
+			#pragma multi_compile _ ENV_REFLECT
 
 			#pragma vertex vert
 			#pragma fragment frag

@@ -4,9 +4,8 @@
 Material:
   serializedVersion: 6
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
   m_Name: test
   m_Shader: {fileID: 4800000, guid: 8cf021abb8a27644490ac2f7e882470a, type: 3}
   m_ShaderKeywords: _DISTORTIONMASKUSER_ON _ENVMAPMASKUSER_ON _MAINTEXMASKUSER_ON
@@ -123,6 +122,7 @@ Material:
     - _MainTexMaskUseR: 1
     - _MainTexOffsetStop: 0
     - _MainTexOffsetUseCustomData_XY: 0
+    - _MainTexUseScreenColor: 0
     - _MatCapIntensity: 0
     - _Metallic: 0
     - _Mode: 0
