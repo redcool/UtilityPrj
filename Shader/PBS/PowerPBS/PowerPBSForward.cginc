@@ -145,7 +145,6 @@ fixed4 frag (v2f i) : SV_Target
 
     // calculate gi
     UnityGI gi = CalcGI(l,v,worldPos,n,atten,i.shlmap,smoothness,occlusion);
-    
     // sample the texture
     float4 albedo = CalcAlbedo(uv.xy,mask);
 
@@ -155,8 +154,7 @@ fixed4 frag (v2f i) : SV_Target
 
     float outputAlpha;
     albedo.rgb = PreMultiplyAlpha(albedo.rgb,albedo.a,oneMinusReflectivity,outputAlpha);
-    
-    // float3 indirectColor = gi.indirect.diffuse*(metallic); //keep indirect ?
+
     float4 c = PBS(albedo.rgb,specColor,oneMinusReflectivity,_Smoothness,n,v,gi.light,gi.indirect);
     c.a = outputAlpha;
 
