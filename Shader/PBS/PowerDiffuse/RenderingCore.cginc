@@ -162,7 +162,7 @@ fixed4 frag_surf (v2f_surf IN) : SV_Target {
     UnityLight light = GetLight();
     
     SurfaceOutput o = (SurfaceOutput)0;
-    fixed3 normalWorldVertex = fixed3(0,0,1);
+    o.Normal = worldNormal;
 
     // call surface function
     surf (surfIN, o);
@@ -274,7 +274,7 @@ fixed4 frag_surf_add (v2f_surf IN) : SV_Target {
         fixed3 lightDir = _WorldSpaceLightPos0.xyz;
     #endif
     SurfaceOutput o = (SurfaceOutput)0;
-    fixed3 normalWorldVertex = fixed3(0,0,1);
+    o.Normal = worldNormal;
 
     // call surface function
     surf (surfIN, o);

@@ -220,7 +220,6 @@ Shader "PowerDiffuse/Lit" {
       #pragma multi_compile_instancing
 	    #pragma multi_compile_fog
       #define USING_FOG (defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2))
-      #pragma multi_compile_fwdbase nodynlightmap nodirlightmap
       // #pragma skip_variants DIRECTIONAL_COOKIE POINT_COOKIE SPOT
       // #pragma skip_variants LIGHTMAP_SHADOW_MIXING SHADOWS_SHADOWMASK VERTEXLIGHT_ON DIRLIGHTMAP_COMBINED DYNAMICLIGHTMAP_ON
 
