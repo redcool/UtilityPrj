@@ -226,7 +226,17 @@ fixed4 frag_surf (v2f_surf IN) : SV_Target {
 
 
 //--------------------------------- additive pass
+void surf_add (Input IN, inout SurfaceOutput o) {
+    fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
 
+    o.Albedo = c.rgb;
+    o.Alpha = c.a;
+    o.Normal = UnpackScaleNormal(tex2D(_BumpMap, IN.uv_BumpMap),_NormalMapScale);
+    o.Specular = _SpecIntensity;
+    o.Gloss = _Gloss;
+
+    o.Emission = c.rgb * tex2D(_Illum, IN.uv_BumpMap).a * _EmissionScale * _IllumColor;
+}
 // vertex shader
 v2f_surf vert_surf_add (appdata_full v) {
     UNITY_SETUP_INSTANCE_ID(v);
@@ -277,7 +287,7 @@ fixed4 frag_surf_add (v2f_surf IN) : SV_Target {
     o.Normal = worldNormal;
 
     // call surface function
-    surf (surfIN, o);
+    surf_add (surfIN, o);
 
     // alpha test
     #if defined(ALPHA_TEST_ON)
