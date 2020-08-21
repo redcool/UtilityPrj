@@ -15,7 +15,12 @@ Shader "PowerDiffuse/Lit" {
   */
   Properties {
     _MainTex ("Base (RGB)", 2D) = "white" {}
-    _Color ("Main Color", Color) = (1,1,1,1)
+    [hdr]_Color ("Main Color", Color) = (1,1,1,1)
+    // [Header(Test)]
+    // [Toggle(NORMAL_MAP_ON)]_NormalMapOn("NormalMapOn",int) = 1
+    // [Toggle(BLINN_ON)]_BlinnOn("Blinn",int) = 1
+
+    [HideInInspector]_PresetBlendMode("_PresetBlendMode",int) = 0
 
     [Header(NormalMap)]
     _BumpMap ("Normalmap", 2D) = "bump" {}
@@ -58,7 +63,7 @@ Shader "PowerDiffuse/Lit" {
     [Header(Wind)]
     //[Toggle(PLANTS_OFF)]_PlantsOff("禁用风力",float) = 0
     [Toggle(PLANTS_OFF)]_Plants_Off("禁用风力",float) = 1
-    [Toggle(EXPAND_BILLBOARD)]_ExpandBillboard("叶片膨胀?",float) = 0
+    // [Toggle(EXPAND_BILLBOARD)]_ExpandBillboard("叶片膨胀?",float) = 0
     _Wave("抖动(树枝,边抖动,风向偏移,风向回弹)",vector) = (0,0.2,0.2,0.1)
     _Wind("风力(xyz:方向,w:风强)",vector) = (1,1,1,1)
     _AttenField("无抖动范围 (x: 水平距离,y:竖直距离)",vector) = (1,1,1,1)
@@ -134,22 +139,28 @@ Shader "PowerDiffuse/Lit" {
 	    #pragma multi_compile_fog
       #define USING_FOG (defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2))
       #pragma multi_compile_fwdbase nodynlightmap nodirlightmap
-      // #pragma skip_variants DIRECTIONAL_COOKIE POINT_COOKIE SPOT
-      // #pragma skip_variants LIGHTMAP_SHADOW_MIXING SHADOWS_SHADOWMASK VERTEXLIGHT_ON DIRLIGHTMAP_COMBINED DYNAMICLIGHTMAP_ON
-      #define UNITY_PASS_FORWARDBASE
+      #pragma skip_variants DIRECTIONAL_COOKIE POINT_COOKIE SPOT VERTEXLIGHT_ON 
+      // #define UNITY_PASS_FORWARDBASE
 
       #pragma target 3.0
       #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
-      #pragma shader_feature SNOW_NOISE_MAP_ON
-      #pragma shader_feature DISABLE_SNOW_DIR
-      #pragma shader_feature _HEIGHT_SNOW
-      #pragma shader_feature RIPPLE_ON
+      #pragma shader_feature  RIPPLE_ON
       #pragma multi_compile _ PLANTS
-      #pragma multi_compile _ PLANTS_OFF
-      //#pragma shader_feature EXPAND_BILLBOARD
+      // #pragma shader_feature PLANTS_OFF
       #pragma multi_compile _ RAIN_REFLECTION
-      #pragma multi_compile _ ALPHA_TEST_ON
-      //#define SNOW
+/*      
+      */
+      // #pragma shader_feature SNOW_NOISE_MAP_ON
+      // #pragma shader_feature DISABLE_SNOW_DIR
+      // #pragma shader_feature _HEIGHT_SNOW
+      //#pragma shader_feature EXPAND_BILLBOARD
+      // #pragma shader_feature ALPHA_TEST_ON
+      // #pragma multi_compile _ NORMAL_MAP_ON
+      // #pragma multi_compile _ BLINN_ON
+      // #pragma multi_compile _ FOG_ON
+      #define NORMAL_MAP_ON
+      #define BLINN_ON
+      #define FOG_ON
 
       #include "HLSLSupport.cginc"
       #include "UnityShaderVariables.cginc"
@@ -157,7 +168,7 @@ Shader "PowerDiffuse/Lit" {
       #include "UnityCG.cginc"
       #include "Lighting.cginc"
       #include "AutoLight.cginc"
-      #include "UnityStandardUtils.cginc"
+      // #include "UnityStandardUtils.cginc"
       #include "../FogLib.cginc"
       #include "../NatureLibMacro.cginc"
       #include "../CustomLight.cginc"
@@ -177,12 +188,15 @@ Shader "PowerDiffuse/Lit" {
       #pragma vertex vert_surf_add
       #pragma fragment frag_surf_add
       #pragma target 3.0
-      #pragma multi_compile_instancing
-      #pragma multi_compile_fog
-      #pragma multi_compile _ ALPHA_TEST_ON
+      #pragma multi_compile _ PLANTS
+      // #pragma multi_compile_instancing
+      // #pragma multi_compile_fog
+      // #pragma multi_compile _ ALPHA_TEST_ON
+      // #pragma multi_compile _ NORMAL_MAP_ON
 
       #pragma skip_variants INSTANCING_ON
       #pragma multi_compile_fwdadd nodynlightmap nodirlightmap
+      #pragma skip_variants POINT_COOKIE DIRECTIONAL_COOKIE
       #include "HLSLSupport.cginc"
       #include "UnityShaderVariables.cginc"
       #include "UnityShaderUtilities.cginc"
@@ -205,6 +219,7 @@ Shader "PowerDiffuse/Lit" {
       ENDCG
 
     }
+    
 
     Pass {
       Tags { "LightMode" = "ShadowCaster" }
@@ -214,26 +229,28 @@ Shader "PowerDiffuse/Lit" {
 
       CGPROGRAM
       // compile directives
-      #pragma vertex vert_surf
-      #pragma fragment frag_surf
+      #pragma vertex vert_shadow
+      #pragma fragment frag_shadow
       #pragma target 3.0
-      #pragma multi_compile_instancing
-	    #pragma multi_compile_fog
+      // #pragma multi_compile_instancing
+	    // #pragma multi_compile_fog
       #define USING_FOG (defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2))
       // #pragma skip_variants DIRECTIONAL_COOKIE POINT_COOKIE SPOT
       // #pragma skip_variants LIGHTMAP_SHADOW_MIXING SHADOWS_SHADOWMASK VERTEXLIGHT_ON DIRLIGHTMAP_COMBINED DYNAMICLIGHTMAP_ON
 
       #pragma target 3.0
-      #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
-      #pragma shader_feature SNOW_NOISE_MAP_ON
-      #pragma shader_feature DISABLE_SNOW_DIR
-      #pragma shader_feature _HEIGHT_SNOW
-      #pragma shader_feature RIPPLE_ON
+      // #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
+      // #pragma shader_feature SNOW_NOISE_MAP_ON
+      // #pragma shader_feature DISABLE_SNOW_DIR
+      // #pragma shader_feature _HEIGHT_SNOW
+      // #pragma shader_feature RIPPLE_ON
       #pragma multi_compile _ PLANTS
-      #pragma multi_compile _ PLANTS_OFF
+      // #pragma multi_compile _ PLANTS_OFF
       //#pragma shader_feature EXPAND_BILLBOARD
-      #pragma multi_compile _ RAIN_REFLECTION
-      #pragma multi_compile _ ALPHA_TEST_ON
+      // #pragma multi_compile _ RAIN_REFLECTION
+      // #pragma multi_compile _ ALPHA_TEST_ON
+      // #pragma multi_compile _ NORMAL_MAP_ON
+      // #pragma multi_compile _ BLINN_ON
       //#define SNOW
 
       #include "HLSLSupport.cginc"
@@ -254,5 +271,5 @@ Shader "PowerDiffuse/Lit" {
 
   }
   CustomEditor "WeatherInspector"
-  FallBack "Legacy Shaders/Diffuse"
+  Fallback "Legacy Shaders/VertexLit"
 }

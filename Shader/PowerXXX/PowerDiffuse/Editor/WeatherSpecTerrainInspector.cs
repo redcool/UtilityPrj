@@ -15,7 +15,7 @@ public class WeatherSpecTerrainInspector : WeatherInspector
 
         propNameList = new List<List<string>> {
                 new List<string> {
-                    "_Is_Normal","_RealtimeBaseNormal",
+                    "_NormalMapOn","_RealtimeBaseNormal",
                     "_Splat0","_BumpSplat0","_NormalRange","_ShininessL0","_GlossIntensity0",
                     "_Splat1","_BumpSplat1","_NormalRange1","_ShininessL1","_GlossIntensity1",
                     "_Splat2","_BumpSplat2","_NormalRange2","_ShininessL2","_GlossIntensity2",
@@ -40,6 +40,7 @@ public class WeatherSpecTerrainInspector : WeatherInspector
                 new List<string>{ "_EnvTex","_EnvColor","_EnvNoiseMap","_EnvIntensity","_EnvTileOffset","_EnvLayerIntensity",},
                 new List<string>{"_RippleOn","_RippleTex","_RippleScale","_RippleIntensity","_RippleColorTint","_RippleSpeed" },
             };
+        showPresetBlendMode = false;
     }
 }
 #endif

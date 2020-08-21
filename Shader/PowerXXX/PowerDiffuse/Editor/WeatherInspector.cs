@@ -53,10 +53,11 @@ public class WeatherInspector : ShaderGUI
     protected int selectedId;
     protected int rainSelectedId;
 
-    bool isRunFirst = true;
     protected Dictionary<string, MaterialProperty> propDict;
     protected Dictionary<string, string> propNameTextDict;//{key,tex}
+    protected bool showPresetBlendMode = true;
 
+    bool isRunFirst = true;
     private PresetBlendMode presetBlendMode;
     private Dictionary<PresetBlendMode, int[]> presetBlendModeDict = new Dictionary<PresetBlendMode, int[]>{
         { PresetBlendMode.Default,new []{1,0 } },
@@ -94,29 +95,45 @@ public class WeatherInspector : ShaderGUI
         DrawFilteredProperties(materialEditor, propDict, propNames);
 
         //draw alpha blend
-        DrawAlphaBlend(mat);
+        if(showPresetBlendMode)
+            DrawAlphaBlend(mat);
     }
 
     void DrawAlphaBlend(Material mat)
     {
         if (selectedId != 0)
             return;
+        presetBlendMode = (PresetBlendMode)mat.GetInt("_PresetBlendMode");
+
+        EditorGUILayout.PrefixLabel("Alpha Blend");
 
         EditorGUI.BeginChangeCheck();
-        EditorGUILayout.PrefixLabel("Alpha Blend");
         presetBlendMode = (PresetBlendMode)EditorGUILayout.EnumPopup(ConfigTool.Text(propNameTextDict, "PresetBlendMode"), presetBlendMode);
         if (EditorGUI.EndChangeCheck())
         {
-            var blendMode = presetBlendModeDict[presetBlendMode];
-            mat.SetFloat("_SrcBlend", blendMode[0]);
-            mat.SetFloat("_DstBlend", blendMode[1]);
-
-            var isDefault = presetBlendMode == PresetBlendMode.Default;
-            // update queue
-            mat.renderQueue = isDefault ? 2000 : 3000;
-            // update zwrite
-            mat.SetFloat("_ZWrite", isDefault ? 1 : 0);
+            SetAlphaMode(mat, presetBlendMode);
         }
+        else // check default mode
+        {
+            if (presetBlendMode == PresetBlendMode.Default)
+            {
+                SetAlphaMode(mat, PresetBlendMode.Default);
+            }
+        }
+    }
+
+    private void SetAlphaMode(Material mat, PresetBlendMode presetBlendMode)
+    {
+        var blendMode = presetBlendModeDict[presetBlendMode];
+        mat.SetFloat("_SrcBlend", blendMode[0]);
+        mat.SetFloat("_DstBlend", blendMode[1]);
+
+        var isDefault = presetBlendMode == PresetBlendMode.Default;
+        // update queue
+        mat.renderQueue = isDefault ? 2000 : 3000;
+        // update zwrite
+        mat.SetFloat("_ZWrite", isDefault ? 1 : 0);
+        mat.SetInt("_PresetBlendMode", (int)presetBlendMode);
     }
 
     protected virtual void OnInit(Material mat, MaterialProperty[] properties)

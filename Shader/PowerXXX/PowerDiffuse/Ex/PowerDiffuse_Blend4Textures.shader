@@ -6,7 +6,8 @@
 
 Shader "PowerDiffuse/Blend4Textures" {
   Properties {
-    [Toggle(SPLAT_NORMAL_ON)] _Is_Normal("_Is_Normal ?",float) = 0
+    // [Toggle(NORMAL_MAP_ON)] _NormalMapOn("_NormalMapOn ?",float) = 0
+    // [Toggle(BLINN_ON)]_BlinnOn("Blinn on",int) = 1
 
     [Header(Specular)]
     _SpecDir("Specular Direction",Vector)=(0,0,0,0)
@@ -134,12 +135,17 @@ Shader "PowerDiffuse/Blend4Textures" {
     
 
       #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
-      #pragma shader_feature SNOW_NOISE_MAP_ON
-      #pragma shader_feature DISABLE_SNOW_DIR
+      // #pragma shader_feature SNOW_NOISE_MAP_ON
+      // #pragma shader_feature DISABLE_SNOW_DIR
       #pragma shader_feature RIPPLE_ON
-	    #pragma shader_feature SPLAT_NORMAL_ON
-      #pragma multi_compile _ RAIN_REFLECTION
-	  //#if !defined(SPLAT_NORMAL_ON)
+      // #pragma multi_compile _ RAIN_REFLECTION
+	    // #pragma multi_compile _ NORMAL_MAP_ON
+      // #pragma multi_compile _ BLINN_ON
+      // #pragma multi_compile _ FOG_ON
+      #define NORMAL_MAP_ON
+      #define BLINN_ON
+      #define FOG_ON
+	  //#if !defined(NORMAL_MAP_ON)
 	//  #else
 	 // #endif
       #include "HLSLSupport.cginc"
@@ -218,31 +224,7 @@ Shader "PowerDiffuse/Blend4Textures" {
       half _NormalRange3;
       half4 _WaveLayerIntensity;
       half4 _EnvLayerIntensity;
-/*
-      inline fixed4 LightingT4MBlinnPhong (SurfaceOutput s, UnityLight light, fixed3 viewDir, fixed atten)
-      {
-        half3 lightDir = normalize(light.dir + _SpecDir);
-        half4 specColor = _SpecColor;
 
-        #if defined(_FEATURE_SURFACE_WAVE)
-          lightDir = _RainSpecDir;
-          specColor *= ApplyWeather(_RainSpecColor);
-        #endif
-        // specColor.a *= 0.03;
-
-        fixed diff = max (0, dot (s.Normal, lightDir));
-        
-        float h = normalize(viewDir + lightDir);
-        fixed nh = max (0, dot (normalize(s.Normal), normalize(h + lightDir.xyz)));
-        fixed spec = pow (nh, s.Specular*128) * s.Gloss;
-        
-        fixed4 c;
-        c.rgb = (s.Albedo * light.color.rgb * diff + _SpecColor.rgb * spec) * (atten*2);
-        
-        c.a = 0.0;
-        return c;
-      }
-*/
       struct Input {
         float2 uv_Control : TEXCOORD0;
         float2 uv_Splat0 : TEXCOORD1;
@@ -263,12 +245,13 @@ Shader "PowerDiffuse/Blend4Textures" {
       void surf (Input IN, inout SurfaceOutput o) {
         fixed4 splat_control = tex2D (_Control, IN.uv_Control);
         
-        #if defined(SPLAT_NORMAL_ON)
+        #if defined(NORMAL_MAP_ON)
           float3 n1 = splat_control.r * UnpackScaleNormal(tex2D(_BumpSplat0, IN.uv_Splat0),_NormalRange);
           float3 n2 = splat_control.g * UnpackScaleNormal(tex2D(_BumpSplat1, IN.uv_Splat1),_NormalRange1);
           float3 n3 = splat_control.b * UnpackScaleNormal(tex2D(_BumpSplat2, IN.uv_Splat2),_NormalRange2);
           float3 n4 = splat_control.a * UnpackScaleNormal(tex2D(_BumpSplat3, IN.uv_Splat3),_NormalRange3);
           o.Normal = normalize(n1 + n2+n3+n4);
+          IN.wn = o.Normal;
           // o.Normal = length(o.Normal)<0.001f? float3(0,0,0.1):o.Normal;
         #endif
 
@@ -416,7 +399,7 @@ Shader "PowerDiffuse/Blend4Textures" {
         surf (surfIN, o);
 // return float4(o.Normal,1);
         // 使用 surf里的法线
-        #if defined(SPLAT_NORMAL_ON)
+        #if defined(NORMAL_MAP_ON)
         fixed3 worldN;
         worldN.x = dot(IN.tSpace0.xyz, o.Normal);
         worldN.y = dot(IN.tSpace1.xyz, o.Normal);
@@ -461,12 +444,15 @@ Shader "PowerDiffuse/Blend4Textures" {
         float3 specColor = _SpecColor.rgb * smoothstep(0,0.9,o.Alpha);
         c += LightingBlinn(o,halfDir,gi,atten,specColor);
 
+        #if defined(FOG_ON)
 		    float3 lightDirection = normalize(_SunFogDir.xyz);
 				float sunFog =saturate( dot(-viewDir,lightDirection));
 				float3 sunFogColor  = lerp(_HeightFogColor,_sunFogColor,pow(sunFog,2));
 				unity_FogColor.rgb = lerp(sunFogColor, unity_FogColor.rgb, IN.fog.y*IN.fog.y);
 				c.rgb= lerp(c.rgb  ,unity_FogColor.rgb, IN.fog.x);
         UNITY_APPLY_FOG(IN.fogCoord, c); // apply fog
+        #endif
+
 		    c.rgb *= DayIntensity(true);
         UNITY_OPAQUE_ALPHA(c.a);
         return c;
@@ -825,5 +811,5 @@ Shader "PowerDiffuse/Blend4Textures" {
     
   }
   CustomEditor "WeatherSpecTerrainInspector"
-  FallBack "Specular"
+  Fallback "Legacy Shaders/VertexLit"
 }

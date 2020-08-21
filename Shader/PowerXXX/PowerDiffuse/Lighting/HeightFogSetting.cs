@@ -38,14 +38,14 @@ public class HeightFogSetting : MonoBehaviour
         if (far < near)
             far = near;
 
-        Shader.SetGlobalFloat("HeightFogMin", min);
-        Shader.SetGlobalFloat("HeightFogMax", max);
+        Shader.SetGlobalFloat("_HeightFogMin", min);
+        Shader.SetGlobalFloat("_HeightFogMax", max);
 
-        Shader.SetGlobalFloat("HeightFogNear", RenderSettings.fogStartDistance);
-        Shader.SetGlobalFloat("HeightFogFar", RenderSettings.fogEndDistance);
+        Shader.SetGlobalFloat("_HeightFogNear", RenderSettings.fogStartDistance);
+        Shader.SetGlobalFloat("_HeightFogFar", RenderSettings.fogEndDistance);
 
-        Shader.SetGlobalColor("sunFogColor", sunFogColor * sunFogLight);
-        Shader.SetGlobalColor("HeightFogColor", heightFogColor);
+        Shader.SetGlobalColor("_sunFogColor", sunFogColor * sunFogLight);
+        Shader.SetGlobalColor("_HeightFogColor", heightFogColor);
         Shader.SetGlobalVector("_SunFogDir", sunFogDir);
 
         RenderSettings.fogColor = gloabFogColor;
