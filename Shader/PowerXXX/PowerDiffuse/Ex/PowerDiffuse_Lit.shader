@@ -25,7 +25,6 @@ Shader "PowerDiffuse/Lit" {
     [Header(NormalMap)]
     _BumpMap ("Normalmap", 2D) = "bump" {}
     _NormalMapScale("_NormalMapScale",range(0.001,5)) = 1
-    // [Toggle]_UseVertexNormal("UseVertexNormal",int) = 0
 
     [Header(CullMode)]
     [Enum(UnityEngine.Rendering.CullMode)]_Cull("Cull Mode",float) = 2
@@ -57,8 +56,11 @@ Shader "PowerDiffuse/Lit" {
     _Gloss("_Gloss",range(0.01,5))= 0.5
 
     [Header(WeatherController)]
-    //[KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
     [Toggle(_FEATURE_NONE)]_DisableWeather("Disable Weather ?",int) = 1
+    //commonly, script control them.
+    [KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
+    _WeatherIntensity("_WeatherIntensity",range(0,1)) = 1
+    [Toggle(RAIN_REFLECTION)]_RainReflection("_RainReflection",int) = 0
 
     [Header(Wind)]
     //[Toggle(PLANTS_OFF)]_PlantsOff("禁用风力",float) = 0

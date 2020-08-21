@@ -5,7 +5,7 @@
 
 #define PI 3.14159
 
-
+/*
 float3 ComputeRipple(sampler2D rippleTex,float2 uv, float t)
 {
 	float4 ripple = tex2D(rippleTex, uv);
@@ -19,6 +19,7 @@ float3 ComputeRipple(sampler2D rippleTex,float2 uv, float t)
 	return float3(ripple.yz * final,1);
 }
 
+*/
 
 float3 BlendNormal(float3 a, float3 b) {
 	return normalize(float3(a.rb + b.rg, a.b*b.b));
@@ -52,9 +53,7 @@ float Random(float2 st){
 	return frac(sin(dot(st,float2(12.123,78.789))) * 65432);
 }
 
-float Gray(float3 rgb){
-	return dot(float3(0.07,0.7,0.2),rgb);
-}
+
 
 //input
 

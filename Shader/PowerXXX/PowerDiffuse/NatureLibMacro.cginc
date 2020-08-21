@@ -23,6 +23,16 @@
 #define WATER_VERT_FUNCTION(uv,outNormalUV)\
     outNormalUV = uv.xyxy * _Tile + _Time.xxxx* _Direction;
 
+#define WATER_FRAG_FUNCTION_INSTANCE(mainColor,normalUV,normal,uv,worldPos,mainTex,mainTint)\
+	float3 noiseNormal;\
+	float2 noiseUV;\
+	float edge;\
+	NoiseUVNormal(mainColor,normalUV,normal,noiseUV,noiseNormal,edge);\
+	float4 noiseCol = tex2D(mainTex,uv + noiseUV) * mainTint;\
+	v2f_surface v2fSurface = {uv,worldPos.xyz,normal};\
+	half4 surfaceColor = SurfaceWaveFrag(v2fSurface,noiseCol,noiseNormal,edge);\
+	mainColor.rgb = surfaceColor.rgb;
+
 #define WATER_FRAG_FUNCTION(mainColor,normalUV,normal,uv,worldPos)\
 	float3 noiseNormal;\
 	float2 noiseUV;\
@@ -32,7 +42,6 @@
 	v2f_surface v2fSurface = {uv,worldPos.xyz,normal};\
 	half4 surfaceColor = SurfaceWaveFrag(v2fSurface,noiseCol,noiseNormal,edge);\
 	mainColor.rgb = surfaceColor.rgb;
-
 //使用涟漪效果(WMSJ_zulongcheng_sea2.shader用)
 #define WATER_RIPPLE_FUNCTION(mainColor,uv,worldPos,normal)\
 	float3 noiseNormal=float3(0,1,0);\

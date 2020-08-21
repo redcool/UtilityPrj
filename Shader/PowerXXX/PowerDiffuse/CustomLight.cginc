@@ -58,7 +58,7 @@ inline fixed4 LightingSimpleLambert (SurfaceOutput s, UnityGI gi)
 }
 
 float4 LightingBlinn(SurfaceOutput s,float3 halfDir,UnityGI gi,float shadowAtten,float3 specColor){
-    fixed kd = max(0.6,1 - Luminance(specColor));
+    fixed kd = 1 - dot(float3(0.2,0.7,0.07),specColor);
     // fixed ks = 1 - kd;
 
     fixed diff = saturate(dot (s.Normal, gi.light.dir));
@@ -74,10 +74,13 @@ float4 LightingBlinn(SurfaceOutput s,float3 halfDir,UnityGI gi,float shadowAtten
         // return diffPart;
         c.rgb += s.Albedo * gi.indirect.diffuse * diffPart;
     #endif
-
+    
+    #ifdef BLINN_ON
     float nh = saturate(dot(normalize(s.Normal),halfDir));
     float3 specular = min(MAX_SPECULAR,pow(nh,s.Specular * 128)) * s.Gloss  * specColor * shadowAtten;
     c.rgb += specular;
+    #endif
+
     return c;
 }
 
@@ -187,6 +190,8 @@ inline void CalcGI (
     #endif
     
 }
+
+
 
 inline void CalcGI (
     SurfaceOutput s,

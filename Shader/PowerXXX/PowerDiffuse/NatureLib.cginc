@@ -43,11 +43,11 @@ float Remap(float a,float b,float x){
 	地形采样
 */
 // --- terrain 4 splats;
-fixed4 SampleSplats(float4 splat_control,float2 uv0,float2 uv1,float2 uv2,float2 uv3,sampler2D _Splat0,sampler2D _Splat1,sampler2D _Splat2,sampler2D _Splat3){
-	fixed4 lay1 = tex2D (_Splat0, uv0);
-	fixed4 lay2 = tex2D (_Splat1, uv1);
-	fixed4 lay3 = tex2D (_Splat2, uv2);
-	fixed4 lay4 = tex2D (_Splat3, uv3);
+fixed4 SampleSplats(float4 splat_control,float2 uv0,float2 uv1,float2 uv2,float2 uv3,sampler2D splat0,sampler2D splat1,sampler2D splat2,sampler2D splat3){
+	fixed4 lay1 = tex2D (splat0, uv0);
+	fixed4 lay2 = tex2D (splat1, uv1);
+	fixed4 lay3 = tex2D (splat2, uv2);
+	fixed4 lay4 = tex2D (splat3, uv3);
 
 	fixed4 c = (lay1 * splat_control.r + lay2 * splat_control.g + lay3 * splat_control.b + lay4 * splat_control.a);
   	return c;
@@ -306,18 +306,18 @@ float3 RippleColor(float3 normal,float2 uv,
 	sampler2D rippleTex,float rippleScale,float rippleSpeed,float rippleIntensity,float3 rippleColorTint){
 		
 	float3 ripple = ComputeRipple(rippleTex,uv * rippleScale, frac(_Time.y * rippleSpeed));
-	float3 normalDir =  UP_AXIS *normal* rippleIntensity * WeatherIntensity();
-
 	#if defined(TERRAIN_WEATHER) //Terrain shader used
 		rippleColorTint = 1;
 	#endif
 	rippleColorTint = ApplyWeather(rippleColorTint);
-	return rippleColorTint + dot(ripple,normalDir);
+	return rippleColorTint+Luminance(ripple);
+	// not use.
+	// float3 normalDir =  UP_AXIS *normal* rippleIntensity * WeatherIntensity();
+	// return rippleColorTint + dot(ripple,normalDir);
 }
 
 float4 SurfaceWaveFrag(v2f_surface i,float4 col,float3 noiseNormal,float edge,out float3 envColor){
 	envColor = (float3)0;
-
 	#if defined(LEVEL_HIGH_PLUS)
 		envColor = CalcEnvReflection(i.uv,i.worldPos,i.normal);
 	#endif
@@ -362,17 +362,16 @@ float SplatIntensity(float4 splatControl,float4 layerIntensity){
 /**
 	地形,分层控制涟漪的强度. 
 */
-float4 TintTerrainColorByLayers(float4 originalCol,float4 finalCol,float3 envColor,float4 splat_control,float4 waveLayerIntensity,float4 envSplatLayerIntensity,float4 tintColor){
+float4 TintTerrainColorByLayers(float4 originalCol,float4 finalCol,float3 envColor,float4 splat_control,
+float4 waveLayerIntensity,float4 envSplatLayerIntensity,float4 tintColor){
 	float4 c = originalCol;
+	// #if defined(RIPPLE_ON)
+	float rippleIntensity = SplatIntensity(splat_control,waveLayerIntensity);
+	half4 rippleColor = (finalCol - originalCol);
+	c += (rippleColor * rippleIntensity);
+	// #endif
 
 	#if defined(LEVEL_HIGH_PLUS)
-		//每层涟漪强度
-		#if defined(RIPPLE_ON)
-		float rippleIntensity = SplatIntensity(splat_control,waveLayerIntensity);
-		half4 rippleColor = (finalCol - originalCol);
-		c += (rippleColor * rippleIntensity);
-		#endif
-
 		//每层环境反射的强度
 		c.rgb += envColor * SplatIntensity(splat_control,envSplatLayerIntensity); 
 	#endif

@@ -81,7 +81,7 @@ void surf (Input IN, inout SurfaceOutput o) {
     o.Specular = _SpecIntensity;
     o.Gloss = _Gloss;
 
-    o.Emission = ApplyThunder(c.rgb) + tex2D(_Illum, IN.uv_BumpMap).a * _EmissionScale * _IllumColor;
+    o.Emission = ApplyThunder(c.rgb) * tex2D(_Illum, IN.uv_BumpMap).a * _EmissionScale * _IllumColor;
     o.Emission *= InverseDayIntensity(false);//emission Apply DayIntensity
     #if defined (UNITY_PASS_META)
     o.Emission *= _Emission.rrr;

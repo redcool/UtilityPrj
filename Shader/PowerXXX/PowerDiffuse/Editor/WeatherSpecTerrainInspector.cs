@@ -36,9 +36,9 @@ public class WeatherSpecTerrainInspector : WeatherInspector
         rainPropNameList = new List<List<string>>
             {
                 new List<string> {"_RainSpecDir","_RainSpecColor","_RainTerrainShininess"},
-                new List<string>{"_WaveColor","_Tile","_Direction","_WaveNoiseMap","_WaveBorderWidth","_DirAngle","_WaveIntensity",},
+                new List<string>{"_WaveColor","_Tile","_Direction","_WaveNoiseMap","_WaveBorderWidth","_DirAngle","_WaveIntensity","_WaveLayerIntensity"},
                 new List<string>{ "_EnvTex","_EnvColor","_EnvNoiseMap","_EnvIntensity","_EnvTileOffset","_EnvLayerIntensity",},
-                new List<string>{"_RippleOn","_RippleTex","_RippleScale","_RippleIntensity","_RippleColorTint","_RippleSpeed" },
+                new List<string>{"_RippleOn","_RippleTex","_RippleScale","_RippleIntensity","_RippleColorTint","_RippleSpeed" ,"_WaveLayerIntensity"},
             };
         showPresetBlendMode = false;
     }

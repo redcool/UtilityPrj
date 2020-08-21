@@ -50,7 +50,13 @@ Shader "PowerDiffuse/Blend4Textures" {
     _Control ("Control (RGBA)", 2D) = "white" {}
     _MainTex ("Never Used", 2D) = "white" {}
     
-    
+    [Header(WeatherController)]
+    [Toggle(_FEATURE_NONE)]_DisableWeather("Disable Weather ?",int) = 1
+    //commonly, script control them.
+    [KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
+    _WeatherIntensity("_WeatherIntensity",range(0,1)) = 1
+    [Toggle(RAIN_REFLECTION)]_RainReflection("_RainReflection",int) = 0
+
     [Header(Snow)] 
     // 积雪是否有方向?
     [Toggle(DISABLE_SNOW_DIR)] _DisableSnowDir("Disable Snow Dir ?",float) = 0
@@ -138,7 +144,7 @@ Shader "PowerDiffuse/Blend4Textures" {
       // #pragma shader_feature SNOW_NOISE_MAP_ON
       // #pragma shader_feature DISABLE_SNOW_DIR
       #pragma shader_feature RIPPLE_ON
-      // #pragma multi_compile _ RAIN_REFLECTION
+      #pragma multi_compile _ RAIN_REFLECTION
 	    // #pragma multi_compile _ NORMAL_MAP_ON
       // #pragma multi_compile _ BLINN_ON
       // #pragma multi_compile _ FOG_ON
@@ -271,10 +277,17 @@ Shader "PowerDiffuse/Blend4Textures" {
 	      #endif
         
         #ifdef _FEATURE_SURFACE_WAVE
+          // 1 apply surface wave or ripple
           half4 originalCol = c;
-          WATER_FRAG_TERRAIN(c,IN.normalUV,IN.worldPos,IN.wn,IN.uv_Control,splat_control,IN.uv_Splat0,IN.uv_Splat1,IN.uv_Splat2,IN.uv_Control*_Tiling3.xy,_Splat0,_Splat1,_Splat2,_Splat3);
-          c = TintTerrainColorByLayers(originalCol,c,envColor,splat_control,_WaveLayerIntensity,_EnvLayerIntensity,_RippleColorTint);
+          WATER_FRAG_TERRAIN(c,IN.normalUV,IN.worldPos,IN.wn,IN.uv_Control,splat_control,IN.uv_Splat0,IN.uv_Splat1,IN.uv_Splat2,IN.uv_Splat3,_Splat0,_Splat1,_Splat2,_Splat3);
 
+          // 2 tint splats color
+          float4 tintColor = _WaveColor;
+          #if defined(RIPPLE_ON)
+            tintColor = _RippleColorTint;
+          #endif
+          c = TintTerrainColorByLayers(originalCol,c,envColor,splat_control,_WaveLayerIntensity,_EnvLayerIntensity,tintColor);
+          // 3 apply rain splats specular 
           shininess = _RainTerrainShininess;
         #endif
 		
@@ -283,8 +296,6 @@ Shader "PowerDiffuse/Blend4Textures" {
 
         o.Gloss = dot(float4(lay1.a,lay2.a,lay3.a,lay4.a) * gloss,splat_control);
         o.Specular = saturate(dot(shininess,normalize(splat_control)));
-        // o.Gloss = (lay1.a * splat_control.r + lay2.a * splat_control.g + lay3.a * splat_control.b + lay4.a * splat_control.a);
-        //o.Specular = (shininess.x * splat_control.r + shininess.y * splat_control.g + shininess.z * splat_control.b + shininess.w * splat_control.a);
       }
       
 
@@ -437,7 +448,7 @@ Shader "PowerDiffuse/Blend4Textures" {
         // return atten;
         // realtime lighting: call lighting function
         #if defined(_FEATURE_SURFACE_WAVE)
-          gi.light.dir = _RainSpecDir;
+          gi.light.dir += normalize(_RainSpecDir);
           _SpecColor *= ApplyWeather(_RainSpecColor);
         #endif
 
