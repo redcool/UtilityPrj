@@ -310,10 +310,7 @@ float3 RippleColor(float3 normal,float2 uv,
 		rippleColorTint = 1;
 	#endif
 	rippleColorTint = ApplyWeather(rippleColorTint);
-	return rippleColorTint+Luminance(ripple);
-	// not use.
-	// float3 normalDir =  UP_AXIS *normal* rippleIntensity * WeatherIntensity();
-	// return rippleColorTint + dot(ripple,normalDir);
+	return rippleColorTint+Luminance(ripple) * rippleIntensity *10; // max value is 10
 }
 
 float4 SurfaceWaveFrag(v2f_surface i,float4 col,float3 noiseNormal,float edge,out float3 envColor){

@@ -8,11 +8,20 @@ using UnityEditor;
 using UnityEngine;
 using System.Linq;
 using ConfigTool = PowerVFX.ConfigTool;
+using UnityEngine.Rendering;
+
 public class WeatherInspector : ShaderGUI
 {
     public enum PresetBlendMode
     {
-        Default,Transparent,Additive
+        Geometry,Transparent,Additive,AlphaTest
+    }
+
+    public class PresetBlendModeInfo
+    {
+        public int srcMode = 1,dstMode = 0;
+        public int renderQueue = 2000;
+        public int zWrite = 1;
     }
     /// <summary>
     /// 全部的类别名
@@ -58,11 +67,16 @@ public class WeatherInspector : ShaderGUI
     protected bool showPresetBlendMode = true;
 
     bool isRunFirst = true;
+
+    /// <summary>
+    /// Preset Blend Mode
+    /// </summary>
     private PresetBlendMode presetBlendMode;
-    private Dictionary<PresetBlendMode, int[]> presetBlendModeDict = new Dictionary<PresetBlendMode, int[]>{
-        { PresetBlendMode.Default,new []{1,0 } },
-        {PresetBlendMode.Transparent,new []{ 5,10} },
-        {PresetBlendMode.Additive,new []{ 1,1} },
+    private Dictionary<PresetBlendMode, PresetBlendModeInfo> presetBlendModeDict = new Dictionary<PresetBlendMode, PresetBlendModeInfo>{
+        {PresetBlendMode.Geometry,new PresetBlendModeInfo{srcMode = 1,dstMode=0} },
+        {PresetBlendMode.Transparent, new PresetBlendModeInfo{ srcMode = (int)BlendMode.SrcAlpha,dstMode=(int)BlendMode.OneMinusSrcAlpha,renderQueue=3000,zWrite=0} },
+        {PresetBlendMode.Additive,new PresetBlendModeInfo{srcMode=1,dstMode=1,renderQueue=3000,zWrite=0 } },
+        {PresetBlendMode.AlphaTest,new PresetBlendModeInfo{srcMode = 1,dstMode=0,renderQueue = (int)RenderQueue.AlphaTest } }
     };
 
     public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
@@ -115,24 +129,23 @@ public class WeatherInspector : ShaderGUI
         }
         else // check default mode
         {
-            if (presetBlendMode == PresetBlendMode.Default)
+            if (presetBlendMode == PresetBlendMode.Geometry)
             {
-                SetAlphaMode(mat, PresetBlendMode.Default);
+                SetAlphaMode(mat, PresetBlendMode.Geometry);
             }
         }
     }
 
     private void SetAlphaMode(Material mat, PresetBlendMode presetBlendMode)
     {
-        var blendMode = presetBlendModeDict[presetBlendMode];
-        mat.SetFloat("_SrcBlend", blendMode[0]);
-        mat.SetFloat("_DstBlend", blendMode[1]);
+        var info = presetBlendModeDict[presetBlendMode];
+        mat.SetFloat("_SrcBlend", info.srcMode);
+        mat.SetFloat("_DstBlend", info.dstMode);
 
-        var isDefault = presetBlendMode == PresetBlendMode.Default;
         // update queue
-        mat.renderQueue = isDefault ? 2000 : 3000;
+        mat.renderQueue = info.renderQueue;
         // update zwrite
-        mat.SetFloat("_ZWrite", isDefault ? 1 : 0);
+        mat.SetFloat("_ZWrite", info.zWrite);
         mat.SetInt("_PresetBlendMode", (int)presetBlendMode);
     }
 

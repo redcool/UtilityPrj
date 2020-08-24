@@ -10,8 +10,6 @@ Shader "Unlit/Nature/Grass"
         _Color("Color",color) = (1,1,1,1)
         _ColorScale("ColorScale",range(0,3)) = 1
         _Cutoff ("Alpha cutoff", Range(0,1)) = 0.5
-
-        [Header(BakedColor)]
         _BakedColorMin("_BakedColorMin",range(0,1)) = 0.1
         _BakedColorScale("_BakedColorScale",range(1,10)) = 1
 
@@ -23,7 +21,7 @@ Shader "Unlit/Nature/Grass"
 
         [Header(Wind)]
         _WaveSpeed("WaveSpeed",float) = 1
-        _WaveIntensity("WaveIntensity",float) = 1
+        _GrassWaveIntensity("WaveIntensity",float) = 1
 
         [Header(Interactive)]
         _PushRadius("Radius",float) = 0.5
@@ -32,7 +30,53 @@ Shader "Unlit/Nature/Grass"
         // _GlobalWindDir("Global WindDir",vector)=(1,0,0,0)
         // _GlobalWindIntensity("Global WindIntensity",float)=1
         // _LightmapST("_LightmapST",Vector)=(0,0,0,0)
+    
+    [Header(WeatherController)]
+    //[KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
+    [Toggle(_FEATURE_NONE)]_DisableWeather("Disable Weather ?",int) = 1
 
+    [Header(Snow)]
+    // 积雪是否有方向?
+    [Toggle(DISABLE_SNOW_DIR)] _DisableSnowDir("Disable Snow Dir ?",float) = 0
+    _DefaultSnowRate("Default Snow Rate",float) = 1.5
+    //是否使用杂点扰动?
+    [Toggle(SNOW_NOISE_MAP_ON)]_SnowNoiseMapOn("SnowNoiseMapOn",float) = 0
+    [noscaleoffset]_SnowNoiseMap("SnowNoiseMap",2d) = "bump"{}
+    _NoiseDistortNormalIntensity("NoiseDistortNormalIntensity",range(0,1)) = 0
+    
+    _SnowDirection("Direction",vector) = (.1,1,0,0)
+    _SnowColor("Snow Color",color) = (1,1,1,1)
+    _SnowAngleIntensity("SnowAngleIntensity",range(0.1,1)) = 1
+    _SnowTile("tile",vector) = (1,1,1,1)
+    _BorderWidth("BorderWidth",range(-0.2,0.4)) = 0.01
+    _ToneMapping("ToneMapping",range(0,1)) = 0
+    
+    [Space(20)]
+    [Header(SurfaceWave)]
+    _WaveColor("Color",color)=(1,1,1,1)
+    _Tile("Tile",vector) = (5,5,10,10)
+    _Direction("Direction",vector) = (0,1,0,-1)
+    [noscaleoffset]_WaveNoiseMap("WaveNoiseMap",2d) = "bump"{}
+    
+    [Header(WaterEdge)]
+    _WaveBorderWidth("WaveBorderWidth",range(0,1)) = 0.2
+    _DirAngle("DirAngle",range(0,1)) = 0.8
+    _WaveIntensity("WaveIntensity",range(0,1)) = 0.8
+
+    [Header(Env Reflection)]
+    _EnvTex("Env Tex",Cube) = ""{}
+    _EnvColor("Env Color",color) = (1,1,1,1)
+    _EnvNoiseMap("Env Noise Map",2d) = ""{}
+    _EnvIntensity("Env Intensity",float) = 1
+    _EnvTileOffset("Env Tile(xy),Offset(zw)",vector) = (1,1,0.1,0.1)		
+    
+    [Header(Ripple)]
+    [Toggle(RIPPLE_ON)]_RippleOn("RippleOn?",int)=0
+    _RippleTex("RippleTex",2d)=""{}
+    _RippleScale("RippleScale",range(1,100)) = 1
+    _RippleIntensity("RippleIntensity",range(0,1)) = 1
+    _RippleColorTint("RippleColorTint",color) = (0.8,0.8,0.8,1)
+    _RippleSpeed("RippleSpeed",range(0,2.4)) = 1
     }
 
     CGINCLUDE
@@ -49,7 +93,7 @@ Shader "Unlit/Nature/Grass"
         float3 normal:NORMAL;
         UNITY_VERTEX_INPUT_INSTANCE_ID
     };
-    float _WaveIntensity;
+    float _GrassWaveIntensity;
     float _WaveSpeed;
 
     float3 _PlayerPos;
@@ -112,14 +156,18 @@ Shader "Unlit/Nature/Grass"
             //#pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile_fwdbase 
             #pragma multi_compile_instancing
-            #pragma multi_compile _ SPEC_ON
-				#define USING_FOG (defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2))
+            
+            #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
+            #pragma shader_feature SNOW_NOISE_MAP_ON
+            #pragma shader_feature RIPPLE_ON
+            #pragma multi_compile _ RAIN_REFLECTION
+
+            #define USING_FOG (defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2))
             #include "UnityCG.cginc"
             #include "Lighting.cginc"
             #include "AutoLight.cginc"
-            //#include "../GlobalControl.cginc"
-			#include "../FogLib.cginc"
-            #include "../CustomLight.cginc"
+            #include "../NatureLibMacro.cginc"
+            #include "../FogLib.cginc"
 
             struct v2f
             {
@@ -133,6 +181,7 @@ Shader "Unlit/Nature/Grass"
                 float3 worldPos:TEXCOORD7;
                 float3 ambient:TEXCOORD8;                
 				float2 fog : TEXCOORD9;
+                float4 normalUV:TEXCOORD10;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -161,8 +210,8 @@ Shader "Unlit/Nature/Grass"
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
 
-                //o.pos = UnityObjectToClipPos( WaveVertex(v,_WaveSpeed,_WaveIntensity) );
-                float4 worldPos = WaveVertex(v,_WaveSpeed,_WaveIntensity);
+                //o.pos = UnityObjectToClipPos( WaveVertex(v,_WaveSpeed,_GrassWaveIntensity) );
+                float4 worldPos = WaveVertex(v,_WaveSpeed,_GrassWaveIntensity);
                 o.pos = mul(UNITY_MATRIX_VP,worldPos);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 
@@ -180,7 +229,7 @@ Shader "Unlit/Nature/Grass"
                 float3 normal = UnityObjectToWorldNormal(v.normal);
                 float nl = dot(normal,light.dir) * 0.5 + 0.5;
                 o.diff = nl;
-                o.diff *= light.color;
+                o.diff *=  light.color;
 
                 // ambient light
                 o.ambient = 0;
@@ -197,6 +246,15 @@ Shader "Unlit/Nature/Grass"
                 o.worldPos = worldPos.xyz;
 				o.fog = GetHeightFog(o.worldPos);
                 UNITY_TRANSFER_FOG(o,o.pos);
+
+                #ifdef _FEATURE_SNOW 
+                SNOW_VERT_FUNCTION(v.vertex,v.normal,o.normal);
+                #endif
+                
+                #ifdef _FEATURE_SURFACE_WAVE
+                WATER_VERT_FUNCTION(v.uv,o.normalUV);
+                #endif
+
                 return o;
             }
 
@@ -205,27 +263,34 @@ Shader "Unlit/Nature/Grass"
                 UNITY_SETUP_INSTANCE_ID(i);
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
+                float4 tintColor = UNITY_ACCESS_INSTANCED_PROP(Props,_Color);
                 clip(col.a - _Cutoff);
-                col *= UNITY_ACCESS_INSTANCED_PROP(Props,_Color) * _ColorScale;
+                col *= tintColor * _ColorScale;
                 // ao 
                 fixed atten = LIGHT_ATTENUATION(i);
 //return atten;
+                //float diff = max(_BaseAO,smoothstep(0.2,0.4,i.diff));
                 float4 attenColor = lerp(0.2,1,atten);
                 col.rgb *= i.diff * attenColor + i.ambient;
 
                 #if defined(LIGHTMAP_ON)
                     half4 bakedColorTex = UNITY_SAMPLE_TEX2D(unity_Lightmap, i.lmap.xy);
                     half3 bakedColor = DecodeLightmap(bakedColorTex);
-                    // bakedColor = lerp(Luminance(bakedColor),bakedColor,1);
-// return float4(bakedColor,1) * col;
                     bakedColor = max(_BakedColorMin,bakedColor);
-                    // half gray = dot(float3(0.2,0.7,0.07),bakedColor);
-                    // return gray;
+// return float4(bakedColor,1);
                     col.rgb *= bakedColor * _BakedColorScale;
                 #endif
 
-                // apply fog
+                // weather code
+                #ifdef _FEATURE_SNOW
+                SNOW_FRAG_FUNCTION(i.uv,col,i.normal.xyz,i.worldPos);
+                #endif
 
+                #if defined(_FEATURE_SURFACE_WAVE)
+                WATER_FRAG_FUNCTION_INSTANCE(col,i.normalUV,i.normal,i.uv,i.worldPos,_MainTex,tintColor);
+                #endif
+
+                // apply fog
 				float3 lightDirection2 = normalize(_SunFogDir.xyz);
 				fixed3 viewDir = normalize(UnityWorldSpaceViewDir(  i.worldPos ));
 				float sunFog =saturate( dot(-viewDir,lightDirection2));
@@ -265,7 +330,7 @@ Shader "Unlit/Nature/Grass"
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
                 
-                o.pos = UnityWorldToClipPos( WaveVertex(v,_WaveSpeed,_WaveIntensity) );
+                o.pos = UnityWorldToClipPos( WaveVertex(v,_WaveSpeed,_GrassWaveIntensity) );
                 o.uv = v.uv;
                 return o;
             }
@@ -324,7 +389,7 @@ Shader "Unlit/Nature/Grass"
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
 
-                float3 worldPos = WaveVertex(v,_WaveSpeed,_WaveIntensity);
+                float3 worldPos = WaveVertex(v,_WaveSpeed,_GrassWaveIntensity);
                 o.pos = UnityWorldToClipPos(worldPos);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 
