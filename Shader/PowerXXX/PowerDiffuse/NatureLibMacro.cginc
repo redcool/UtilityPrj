@@ -42,6 +42,7 @@
 	v2f_surface v2fSurface = {uv,worldPos.xyz,normal};\
 	half4 surfaceColor = SurfaceWaveFrag(v2fSurface,noiseCol,noiseNormal,edge);\
 	mainColor.rgb = surfaceColor.rgb;
+	
 //使用涟漪效果(WMSJ_zulongcheng_sea2.shader用)
 #define WATER_RIPPLE_FUNCTION(mainColor,uv,worldPos,normal)\
 	float3 noiseNormal=float3(0,1,0);\
@@ -52,7 +53,11 @@
 	half4 surfaceColor = SurfaceWaveFrag(v2fSurface,mainColor,noiseNormal,edge);\
 	mainColor.rgb = surfaceColor.rgb;
 
-//通用流水,根据条件,使用平面流水或涟漪.
+/**
+	通用流水,根据条件,使用平面流水或涟漪.
+	输出 envColor
+
+*/
 #define WATER_FRAG_TERRAIN(mainColor,normalUV,worldPos,worldNormal,mainUV,controlMap,uv_Splat0,uv_Splat1,uv_Splat2,uv_Splat3, _Splat0,_Splat1,_Splat2,_Splat3)\
     float3 noiseNormal;\
     float2 noiseUV;\

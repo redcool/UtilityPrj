@@ -310,7 +310,7 @@ float3 RippleColor(float3 normal,float2 uv,
 		rippleColorTint = 1;
 	#endif
 	rippleColorTint = ApplyWeather(rippleColorTint);
-	return rippleColorTint+Luminance(ripple) * rippleIntensity *10; // max value is 10
+	return rippleColorTint+Luminance(ripple) * rippleIntensity*10; // max value is 10.
 }
 
 float4 SurfaceWaveFrag(v2f_surface i,float4 col,float3 noiseNormal,float edge,out float3 envColor){
@@ -318,21 +318,18 @@ float4 SurfaceWaveFrag(v2f_surface i,float4 col,float3 noiseNormal,float edge,ou
 	#if defined(LEVEL_HIGH_PLUS)
 		envColor = CalcEnvReflection(i.uv,i.worldPos,i.normal);
 	#endif
+	
 	//--------- use rain ripple.
 	#if defined(RIPPLE_ON)
 		#if defined(LEVEL_HIGH_PLUS)
-		float3 rippleColor = RippleColor(i.normal,i.uv ,_RippleTex,_RippleScale,_RippleSpeed,_RippleIntensity,_RippleColorTint);
+			float3 rippleColor = RippleColor(i.normal,i.uv ,_RippleTex,_RippleScale,_RippleSpeed,_RippleIntensity,_RippleColorTint);
+			col.rgb *= rippleColor;
 		#else
-		float3 rippleColor = ApplyWeather(_RippleColorTint);
+			col.rgb *= ApplyWeather(_RippleColorTint.rgb);
 		#endif
-		//brighting a little more.
-		//float nl = saturate(dot(UP_AXIS,i.normal));
-		float3 blendColor = col.rgb * rippleColor;
-		//col.rgb = lerp(col.rgb,blendColor,nl);
-		col.rgb = blendColor;
-		return col;
+	#else
+		col.rgb *= ApplyWeather(_WaveColor.rgb);
 	#endif
-	col.rgb *= ApplyWeather(_WaveColor.rgb);//雨天
 	return col;
 }
 
@@ -342,7 +339,10 @@ float4 SurfaceWaveFrag(v2f_surface i,float4 col,float3 noiseNormal,float edge){
 	mainColor.rgb += envColor.rgb;
 	return mainColor;
 }
-
+/**
+	RIPPLE_ON未开时,用新uv重采样4texture,实现平面流水效果
+	其余返回 defaultColor
+*/
 fixed4 SampleSplatsInRain(float4 splat_control,float2 uv0,float2 uv1,float2 uv2,float2 uv3,
 	sampler2D _Splat0,sampler2D _Splat1,sampler2D _Splat2,sampler2D _Splat3,float4 defaultColor){
 
@@ -357,24 +357,23 @@ float SplatIntensity(float4 splatControl,float4 layerIntensity){
 	return control.r + control.g + control.b + control.a;
 }
 /**
-	地形,分层控制涟漪的强度. 
+	地形,分层控制涟漪的强度.
+	对LEVEL_HIGH_PLUS有效
 */
 float4 TintTerrainColorByLayers(float4 originalCol,float4 finalCol,float3 envColor,float4 splat_control,
 float4 waveLayerIntensity,float4 envSplatLayerIntensity,float4 tintColor){
-	float4 c = originalCol;
-	// #if defined(RIPPLE_ON)
-	float rippleIntensity = SplatIntensity(splat_control,waveLayerIntensity);
-	half4 rippleColor = (finalCol - originalCol);
-	c += (rippleColor * rippleIntensity);
-	// #endif
-
+	float4 col = originalCol;
 	#if defined(LEVEL_HIGH_PLUS)
+		//每层流水(涟漪)强度控制
+		float layerIntensity = SplatIntensity(splat_control,waveLayerIntensity);
+		half4 layerColor = (originalCol - finalCol);
+		col += (layerColor * layerIntensity);
 		//每层环境反射的强度
-		c.rgb += envColor * SplatIntensity(splat_control,envSplatLayerIntensity); 
+		col.rgb += envColor * SplatIntensity(splat_control,envSplatLayerIntensity); 
 	#endif
 
-	c.rgb *= ApplyWeather(tintColor);
-	return c;
+	col.rgb *= ApplyWeather(tintColor);
+	return col;
 }
 
 #endif// end SURFACE_WAVE
