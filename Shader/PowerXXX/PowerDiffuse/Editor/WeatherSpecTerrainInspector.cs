@@ -20,7 +20,7 @@ public class WeatherSpecTerrainInspector : WeatherInspector
                     "_Splat1","_BumpSplat1","_NormalRange1","_ShininessL1","_GlossIntensity1",
                     "_Splat2","_BumpSplat2","_NormalRange2","_ShininessL2","_GlossIntensity2",
                     "_Splat3","_BumpSplat3","_NormalRange3","_ShininessL3","_GlossIntensity3",
-                    "_Tiling3","_Control","_MainTex"
+                    "_Tiling3","_Control","_DisableWeather",
                 },
                 new List<string> {"_SpecDir","_SpecColor","_CustomLightOn","_LightDir","_LightColor"},
                 new List<string>{

@@ -48,7 +48,7 @@ Shader "PowerDiffuse/Blend4Textures" {
     [Header(ControlMap)]
     // _Tiling3("_Tiling4 x/y", Vector)=(1,1,0,0)
     _Control ("Control (RGBA)", 2D) = "white" {}
-    _MainTex ("Never Used", 2D) = "white" {}
+    // _MainTex ("Never Used", 2D) = "white" {}
     
     [Header(WeatherController)]
     [Toggle(_FEATURE_NONE)]_DisableWeather("Disable Weather ?",int) = 1
