@@ -147,6 +147,18 @@ public class WeatherInspector : ShaderGUI
         // update zwrite
         mat.SetFloat("_ZWrite", info.zWrite);
         mat.SetInt("_PresetBlendMode", (int)presetBlendMode);
+
+        // alphatest
+        var isAlphaTest = presetBlendMode == PresetBlendMode.AlphaTest;
+        mat.SetInt("_AlphaTestOn",isAlphaTest? 1 : 0);
+        if(isAlphaTest)
+        {
+            mat.EnableKeyword("ALPHA_TEST_ON");
+        }
+        else
+        {
+            mat.DisableKeyword("ALPHA_TEST_ON");
+        }
     }
 
     protected virtual void OnInit(Material mat, MaterialProperty[] properties)
