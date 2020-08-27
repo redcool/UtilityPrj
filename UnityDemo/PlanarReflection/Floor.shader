@@ -44,8 +44,10 @@
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 UNITY_TRANSFER_FOG(o,o.vertex);
-                o.screenPos = ComputeGrabScreenPos(o.vertex);
-                COMPUTE_EYEDEPTH(o.screenPos.z);
+                
+                float4 sc = o.vertex;
+                sc.x *=  -1;
+                o.screenPos = ComputeScreenPos(sc);
                 return o;
             }
 
@@ -53,11 +55,6 @@
             {
                 float4 reflectionTex = tex2Dproj(_ReflectionTex,i.screenPos);
                 return reflectionTex;
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, col);
-                return col;
             }
             ENDCG
         }

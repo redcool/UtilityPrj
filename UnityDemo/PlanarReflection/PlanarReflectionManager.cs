@@ -45,24 +45,26 @@ public class PlanarReflectionManager : MonoBehaviour
         reflectionCam.targetTexture = reflectionRT;
 
         var camForward = mainCam.transform.forward;
-        //var camUp = mainCam.transform.up;
+        var camUp = mainCam.transform.up;
         var camPos = mainCam.transform.position;
 
         var camForwardPlaneSpace = reflectionPlane.InverseTransformDirection(camForward);
-        //var camUpPlaneSpace = reflectionPlane.InverseTransformDirection(camUp);
+        var camUpPlaneSpace = reflectionPlane.InverseTransformDirection(camUp);
         var camPosPlaneSpace = reflectionPlane.InverseTransformPoint(camPos);
 
         camForwardPlaneSpace.y *= -1;
-        //camUpPlaneSpace.y *= -1;
+        camUpPlaneSpace.y *= -1;
         camPosPlaneSpace.y *= -1;
 
         camForward = reflectionPlane.TransformDirection(camForwardPlaneSpace);
-        //camUp = reflectionPlane.TransformDirection(camUpPlaneSpace);
-        camPos= reflectionPlane.TransformPoint(camPosPlaneSpace);
+        camUp = reflectionPlane.TransformDirection(camUpPlaneSpace);
+        camPos = reflectionPlane.TransformPoint(camPosPlaneSpace);
 
 
-        reflectionCam.transform.forward = camForward;
+        //reflectionCam.transform.up = camUp;
         reflectionCam.transform.position = camPos;
+        //reflectionCam.transform.forward = camForward;
+        reflectionCam.transform.LookAt(camPos + camForward, camUp);
 
         reflectionCam.Render();
 
