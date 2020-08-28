@@ -51,12 +51,9 @@ Shader "PowerDiffuse/Blend4Textures" {
     // _MainTex ("Never Used", 2D) = "white" {}
     
     [Header(WeatherController)]
+    //[KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
     [Toggle(_FEATURE_NONE)]_DisableWeather("Disable Weather ?",int) = 1
-    //commonly, script control them.
-    [KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
-    _WeatherIntensity("_WeatherIntensity",range(0,1)) = 1
-    [Toggle(RAIN_REFLECTION)]_RainReflection("_RainReflection",int) = 0
-
+    
     [Header(Snow)] 
     // 积雪是否有方向?
     [Toggle(DISABLE_SNOW_DIR)] _DisableSnowDir("Disable Snow Dir ?",float) = 0
@@ -143,7 +140,7 @@ Shader "PowerDiffuse/Blend4Textures" {
       #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
       // #pragma shader_feature SNOW_NOISE_MAP_ON
       // #pragma shader_feature DISABLE_SNOW_DIR
-      #pragma shader_feature RIPPLE_ON
+      #pragma multi_compile _ RIPPLE_ON
       #pragma multi_compile _ RAIN_REFLECTION
 	    // #pragma multi_compile _ NORMAL_MAP_ON
       // #pragma multi_compile _ BLINN_ON
@@ -151,35 +148,9 @@ Shader "PowerDiffuse/Blend4Textures" {
       #define NORMAL_MAP_ON
       #define BLINN_ON
       #define FOG_ON
-	  //#if !defined(NORMAL_MAP_ON)
-	//  #else
-	 // #endif
+      
       #include "HLSLSupport.cginc"
-	    // #include "Assets/Game/GameRes/Shader/PWIM_CG.cginc"
       #include "UnityShaderVariables.cginc"
-	    //#include "Assets/Game/GameRes/Shader/PWIM_CG.cginc"
-      // Surface shader code generated based on:
-      // writes to per-pixel normal: no
-      // writes to emission: no
-      // needs world space reflection vector: no
-      // needs world space normal vector: no
-      // needs screen space position: no
-      // needs world space position: no
-      // needs view direction: no
-      // needs world space view direction: no
-      // needs world space position for lighting: no
-      // needs world space view direction for lighting: YES
-      // needs world space view direction for lightmaps: no
-      // needs vertex color: no
-      // needs VFACE: no
-      // passes tangent-to-world matrix to pixel shader: no
-      // reads from normal: no
-      // 4 texcoords actually used
-      //   float2 _Control
-      //   float2 _Splat0
-      //   float2 _Splat1
-      //   float2 _Splat2
-      //#define UNITY_PASS_FORWARDBASE
       #include "UnityCG.cginc"
       #include "Lighting.cginc"
       #include "AutoLight.cginc"
@@ -187,9 +158,9 @@ Shader "PowerDiffuse/Blend4Textures" {
 
       #define TERRAIN_WEATHER
 
-      #include "../NatureLibMacro.cginc"
-      #include "../FogLib.cginc"
-      #include "../CustomLight.cginc"
+      #include "../../NatureLibMacro.cginc"
+      #include "../../FogLib.cginc"
+      #include "../../CustomLight.cginc"
 
       #define INTERNAL_DATA
       #define WorldReflectionVector(data,normal) data.worldRefl
@@ -201,9 +172,6 @@ Shader "PowerDiffuse/Blend4Textures" {
       // Original surface shader snippet:
       #ifdef DUMMY_PREPROCESSOR_TO_WORK_AROUND_HLSL_COMPILER_LINE_HANDLING
       #endif
-
-      //#pragma surface surf T4MBlinnPhong
-      //#pragma exclude_renderers xbox360 ps3
 
       sampler2D _Control;
       sampler2D _Splat0,_Splat1,_Splat2,_Splat3;
@@ -239,7 +207,7 @@ Shader "PowerDiffuse/Blend4Textures" {
         float2 uv_Splat3 : TEXCOORD4;
 
         float3 worldPos:TEXCOORD5;
-        float3 wn:TEXCOORD6;
+        float3 wn:TEXCOORD6; //顶点法线,计算反射
         
         #ifdef _FEATURE_SURFACE_WAVE
           float4 normalUV:TEXCOORD7;
@@ -257,7 +225,7 @@ Shader "PowerDiffuse/Blend4Textures" {
           float3 n3 = splat_control.b * UnpackScaleNormal(tex2D(_BumpSplat2, IN.uv_Splat2),_NormalRange2);
           float3 n4 = splat_control.a * UnpackScaleNormal(tex2D(_BumpSplat3, IN.uv_Splat3),_NormalRange3);
           o.Normal = normalize(n1 + n2+n3+n4);
-          IN.wn = o.Normal;
+          // IN.wn = o.Normal;
           // o.Normal = length(o.Normal)<0.001f? float3(0,0,0.1):o.Normal;
         #endif
 
@@ -307,7 +275,7 @@ Shader "PowerDiffuse/Blend4Textures" {
         fixed4 tSpace1 : TEXCOORD2;
         fixed4 tSpace2 : TEXCOORD3;
         fixed3 vlight : TEXCOORD4; // ambient/SH/vertexlights
-        SHADOW_COORDS(5)
+        UNITY_SHADOW_COORDS(5)
         UNITY_FOG_COORDS(6)
         float4 lmap : TEXCOORD7;
 
@@ -328,7 +296,7 @@ Shader "PowerDiffuse/Blend4Textures" {
         o.pos = UnityObjectToClipPos (v.vertex);
         o.uv = v.texcoord;
 
-        //传递,切线空间变换阵
+
         float3 worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
         fixed3 worldNormal = UnityObjectToWorldNormal(v.normal);
         fixed3 worldTangent = UnityObjectToWorldDir(v.tangent.xyz);
@@ -408,8 +376,6 @@ Shader "PowerDiffuse/Blend4Textures" {
         #endif
         // call surface function
         surf (surfIN, o);
-// return float4(o.Normal,1);
-        // 使用 surf里的法线
         #if defined(NORMAL_MAP_ON)
         fixed3 worldN;
         worldN.x = dot(IN.tSpace0.xyz, o.Normal);
@@ -417,8 +383,6 @@ Shader "PowerDiffuse/Blend4Textures" {
         worldN.z = dot(IN.tSpace2.xyz, o.Normal);
         o.Normal = worldN;
         #endif
-		// return float4(o.Normal,1);
-    // o.Normal = worldNormal;
         // compute lighting & shadowing factor
         UNITY_LIGHT_ATTENUATION(atten, IN, worldPos)
 
@@ -446,9 +410,9 @@ Shader "PowerDiffuse/Blend4Textures" {
         CalcGI(o, giInput,bakedColor, gi,/*out*/atten);
         // return float4(gi.indirect.diffuse,1);
         // return atten;
-        // realtime lighting: call lighting function
+
         #if defined(_FEATURE_SURFACE_WAVE)
-          gi.light.dir += normalize(_RainSpecDir);
+          gi.light.dir = normalize(gi.light.dir + _RainSpecDir.xyz);
           _SpecColor *= ApplyWeather(_RainSpecColor);
         #endif
 
