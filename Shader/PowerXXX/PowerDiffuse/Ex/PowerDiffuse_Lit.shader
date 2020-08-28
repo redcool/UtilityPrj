@@ -77,9 +77,12 @@ Shader "PowerDiffuse/Lit" {
     [Toggle(DISABLE_SNOW_DIR)] _DisableSnowDir("Disable Snow Dir ?",float) = 0
     _DefaultSnowRate("Default Snow Rate",float) = 1.5
     //是否使用杂点扰动?
-    [Toggle(SNOW_NOISE_MAP_ON)]_SnowNoiseMapOn("SnowNoiseMapOn",float) = 0
+    // [Toggle(SNOW_NOISE_MAP_ON)]_SnowNoiseMapOn("SnowNoiseMapOn",float) = 0
     [noscaleoffset]_SnowNoiseMap("SnowNoiseMap",2d) = "bump"{}
     _NoiseDistortNormalIntensity("NoiseDistortNormalIntensity",range(0,1)) = 0
+
+    // _Distance("_Distance",float) = 0
+    // _DistanceAttenWidth("_DistanceAttenWidth",float) = 1
     
     _SnowDirection("Direction",vector) = (.1,1,0,0)
     _SnowColor("Snow Color",color) = (1,1,1,1)

@@ -178,11 +178,11 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 
 	// normal 
 	float3 n = worldNormal;
-#ifdef SNOW_NOISE_MAP_ON
+// #ifdef SNOW_NOISE_MAP_ON
 	float3 noise = UnpackNormal(tex2D(_SnowNoiseMap, noiseUV));
 	n = worldNormal + noise * _NoiseDistortNormalIntensity;
 	n = normalize(n);
-#endif
+// #endif
 
 #if !defined(DISABLE_SNOW_DIR)
 	// dot
