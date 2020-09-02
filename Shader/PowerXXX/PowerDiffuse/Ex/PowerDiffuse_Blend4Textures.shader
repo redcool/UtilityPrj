@@ -425,8 +425,8 @@ Shader "PowerDiffuse/Blend4Textures" {
 				float3 sunFogColor  = lerp(_HeightFogColor,_sunFogColor,pow(sunFog,2));
 				unity_FogColor.rgb = lerp(sunFogColor, unity_FogColor.rgb, IN.fog.y*IN.fog.y);
 				c.rgb= lerp(c.rgb  ,unity_FogColor.rgb, IN.fog.x);
-        UNITY_APPLY_FOG(IN.fogCoord, c); // apply fog
         #endif
+        UNITY_APPLY_FOG(IN.fogCoord, c); // apply fog
 
 		    c.rgb *= DayIntensity(true);
         UNITY_OPAQUE_ALPHA(c.a);

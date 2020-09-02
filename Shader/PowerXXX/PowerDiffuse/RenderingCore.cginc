@@ -230,8 +230,8 @@ fixed4 frag_surf (v2f_surf IN) : SV_Target {
     float3 sunFogColor  = lerp(_HeightFogColor,_sunFogColor,pow(sunFog,2));
     unity_FogColor.rgb = lerp(sunFogColor, unity_FogColor.rgb, IN.fog.y * IN.fog.y);
     c.rgb= lerp(c.rgb ,unity_FogColor.rgb, IN.fog.x);
-    UNITY_APPLY_FOG(IN.fogCoord, c );
     #endif
+    UNITY_APPLY_FOG(IN.fogCoord, c );
 
     c.rgb *= DayIntensity(true);
     c.a = o.Alpha;
