@@ -77,12 +77,9 @@ Shader "PowerDiffuse/Lit" {
     [Toggle(DISABLE_SNOW_DIR)] _DisableSnowDir("Disable Snow Dir ?",float) = 0
     _DefaultSnowRate("Default Snow Rate",float) = 1.5
     //是否使用杂点扰动?
-    // [Toggle(SNOW_NOISE_MAP_ON)]_SnowNoiseMapOn("SnowNoiseMapOn",float) = 0
+    [Toggle(SNOW_NOISE_MAP_ON)]_SnowNoiseMapOn("SnowNoiseMapOn",float) = 0
     [noscaleoffset]_SnowNoiseMap("SnowNoiseMap",2d) = "bump"{}
     _NoiseDistortNormalIntensity("NoiseDistortNormalIntensity",range(0,1)) = 0
-
-    // _Distance("_Distance",float) = 0
-    // _DistanceAttenWidth("_DistanceAttenWidth",float) = 1
     
     _SnowDirection("Direction",vector) = (.1,1,0,0)
     _SnowColor("Snow Color",color) = (1,1,1,1)
@@ -149,10 +146,10 @@ Shader "PowerDiffuse/Lit" {
 
       #pragma target 3.0
       #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
-      #pragma shader_feature  RIPPLE_ON
-      #pragma multi_compile _ PLANTS
+      // #pragma multi_compile  RIPPLE_ON
+      // #pragma multi_compile _ PLANTS
       // #pragma shader_feature PLANTS_OFF
-      #pragma multi_compile _ RAIN_REFLECTION
+      // #pragma multi_compile _ RAIN_REFLECTION
 /*      
       */
       // #pragma shader_feature SNOW_NOISE_MAP_ON
@@ -165,7 +162,6 @@ Shader "PowerDiffuse/Lit" {
       // #pragma multi_compile _ FOG_ON
       #define NORMAL_MAP_ON
       #define BLINN_ON
-      #define FOG_ON
 
       #include "HLSLSupport.cginc"
       #include "UnityShaderVariables.cginc"
@@ -193,7 +189,7 @@ Shader "PowerDiffuse/Lit" {
       #pragma vertex vert_surf_add
       #pragma fragment frag_surf_add
       #pragma target 3.0
-      #pragma multi_compile _ PLANTS
+      // #pragma multi_compile _ PLANTS
       // #pragma multi_compile_instancing
       // #pragma multi_compile_fog
       // #pragma multi_compile _ ALPHA_TEST_ON
@@ -249,7 +245,7 @@ Shader "PowerDiffuse/Lit" {
       // #pragma shader_feature DISABLE_SNOW_DIR
       // #pragma shader_feature _HEIGHT_SNOW
       // #pragma shader_feature RIPPLE_ON
-      #pragma multi_compile _ PLANTS
+      // #pragma multi_compile _ PLANTS
       // #pragma multi_compile _ PLANTS_OFF
       //#pragma shader_feature EXPAND_BILLBOARD
       // #pragma multi_compile _ RAIN_REFLECTION

@@ -7,7 +7,10 @@
 */
 #define PI 3.1415
 #define UP_AXIS float3(0,1,0)
-
+bool _PlantsOn;
+bool _Plants_Off;
+bool _RippleOn;
+bool _RainReflectionOn;
 /**
 	通用方法
 */
@@ -85,7 +88,7 @@ float3 ComputeRipple(sampler2D rippleTex,float2 uv, float t)
 /**
 	植物风力
 */
-#ifdef PLANTS
+// #ifdef PLANTS
 #include "TerrainEngine.cginc"
 float4 _Wave;
 float4 _AttenField;
@@ -125,7 +128,7 @@ float4 ClampVertexWave(appdata_full v, float4 wave, float yDist, float xzDist) {
 	float4 vertex = lerp(worldPos,wavePos,atten);
 	return mul(unity_WorldToObject, vertex);
 }
-#endif // end PLANTS
+// #endif // end PLANTS
 
 
 /**
@@ -178,11 +181,11 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 
 	// normal 
 	float3 n = worldNormal;
-// #ifdef SNOW_NOISE_MAP_ON
+#ifdef SNOW_NOISE_MAP_ON
 	float3 noise = UnpackNormal(tex2D(_SnowNoiseMap, noiseUV));
 	n = worldNormal + noise * _NoiseDistortNormalIntensity;
 	n = normalize(n);
-// #endif
+#endif
 
 #if !defined(DISABLE_SNOW_DIR)
 	// dot
@@ -245,7 +248,6 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 	float _WaveIntensity;
 
 	//--- ripple
-	int _RippleOn;
 	sampler2D _RippleTex;
 	float _RippleScale; // uv tiling
 	float _RippleIntensity;
@@ -261,15 +263,17 @@ struct v2f_surface{
 void SurfaceWaveVertex(float2 uv ,out float4 normalUV){
 	normalUV = 0;
 
-	#if !defined(RIPPLE_ON)
+	// #if !defined(RIPPLE_ON)
+	if(!_RippleOn)
 		normalUV = uv.xyxy * _Tile + frac(_Time.xxxx* _Direction);
-	#endif
+	// #endif
 }
 
 float4 SampleTexInRain(sampler2D tex,float2 uv,float4 defaultColor){
-	#if !defined(RIPPLE_ON)
+	// #if !defined(RIPPLE_ON)
+	if(!_RippleOn)
 		return tex2D(tex,uv);
-	#endif
+	// #endif
 	return defaultColor;
 }
 
@@ -280,7 +284,8 @@ void NoiseUVNormal(float4 mainColor,float4 normalUV,float3 worldNormal,
 	noiseNormal = 0;
 	edge = 0;
 
-	#if !defined(RIPPLE_ON) && defined(LEVEL_HIGH_PLUS)
+	// #if !defined(RIPPLE_ON) && defined(LEVEL_HIGH_PLUS)
+	if(!_RippleOn && _RainReflectionOn){
 		noiseNormal = UnpackNormal(tex2D(_WaveNoiseMap,normalUV.xy));
 		noiseNormal += UnpackNormal(tex2D(_WaveNoiseMap,normalUV.zw));
 
@@ -289,7 +294,8 @@ void NoiseUVNormal(float4 mainColor,float4 normalUV,float3 worldNormal,
 		edge *= dirEdge * _WaveIntensity * WeatherIntensity();
 
 		noiseUV = noiseNormal.xy * 0.02 * edge;
-	#endif
+	}
+	// #endif
 }
 
 float3 CalcEnvReflection(float2 uv,float3 worldPos,float3 normal){
@@ -315,21 +321,32 @@ float3 RippleColor(float3 normal,float2 uv,
 
 float4 SurfaceWaveFrag(v2f_surface i,float4 col,float3 noiseNormal,float edge,out float3 envColor){
 	envColor = (float3)0;
-	#if defined(LEVEL_HIGH_PLUS)
+	// #if defined(LEVEL_HIGH_PLUS)
+	if(_RainReflectionOn)
 		envColor = CalcEnvReflection(i.uv,i.worldPos,i.normal);
-	#endif
+	// #endif
 	
 	//--------- use rain ripple.
-	#if defined(RIPPLE_ON)
-		#if defined(LEVEL_HIGH_PLUS)
+	// #if defined(RIPPLE_ON)
+	// 	#if defined(LEVEL_HIGH_PLUS)
+	// 		float3 rippleColor = RippleColor(i.normal,i.uv ,_RippleTex,_RippleScale,_RippleSpeed,_RippleIntensity,_RippleColorTint);
+	// 		col.rgb *= rippleColor;
+	// 	#else
+	// 		col.rgb *= ApplyWeather(_RippleColorTint.rgb);
+	// 	#endif
+	// #else
+	// 	col.rgb *= ApplyWeather(_WaveColor.rgb);
+	// #endif
+	if(_RippleOn){
+		if(_RainReflectionOn){
 			float3 rippleColor = RippleColor(i.normal,i.uv ,_RippleTex,_RippleScale,_RippleSpeed,_RippleIntensity,_RippleColorTint);
 			col.rgb *= rippleColor;
-		#else
+		}else{
 			col.rgb *= ApplyWeather(_RippleColorTint.rgb);
-		#endif
-	#else
+		}
+	}else{
 		col.rgb *= ApplyWeather(_WaveColor.rgb);
-	#endif
+	}
 	return col;
 }
 
@@ -346,9 +363,10 @@ float4 SurfaceWaveFrag(v2f_surface i,float4 col,float3 noiseNormal,float edge){
 fixed4 SampleSplatsInRain(float4 splat_control,float2 uv0,float2 uv1,float2 uv2,float2 uv3,
 	sampler2D _Splat0,sampler2D _Splat1,sampler2D _Splat2,sampler2D _Splat3,float4 defaultColor){
 
-	#if !defined(RIPPLE_ON)
+	// #if !defined(RIPPLE_ON)
+	if(! _RippleOn)
 		return SampleSplats(splat_control,uv0,uv1,uv2,uv3,_Splat0,_Splat1,_Splat2,_Splat3);
-	#endif
+	// #endif
 	return defaultColor;
 }
 
@@ -363,14 +381,16 @@ float SplatIntensity(float4 splatControl,float4 layerIntensity){
 float4 TintTerrainColorByLayers(float4 originalCol,float4 finalCol,float3 envColor,float4 splat_control,
 float4 waveLayerIntensity,float4 envSplatLayerIntensity,float4 tintColor){
 	float4 col = originalCol;
-	#if defined(LEVEL_HIGH_PLUS)
+	// #if defined(LEVEL_HIGH_PLUS)
+	if(_RainReflectionOn){
 		//每层流水(涟漪)强度控制
 		float layerIntensity = SplatIntensity(splat_control,waveLayerIntensity);
 		half4 layerColor = (originalCol - finalCol);
 		col += (layerColor * layerIntensity);
 		//每层环境反射的强度
 		col.rgb += envColor * SplatIntensity(splat_control,envSplatLayerIntensity); 
-	#endif
+	}
+	// #endif
 
 	col.rgb *= ApplyWeather(tintColor);
 	return col;

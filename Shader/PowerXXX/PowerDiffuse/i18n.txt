@@ -17,7 +17,7 @@ _NoiseDistortNormalIntensity=杂点强度
 _SnowDirection=积雪方向
 _SnowColor=积雪颜色
 _SnowAngleIntensity=积雪倾斜程度
-_SnowTile=积雪平铺
+_SnowTile=继续平铺
 _BorderWidth=积雪边宽度
 _ToneMapping=颜色色调
 

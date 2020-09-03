@@ -154,13 +154,14 @@ Shader "Unlit/Nature/Grass"
             // make fog work
             #pragma multi_compile_fog
             //#pragma multi_compile _ LIGHTMAP_ON
-            #pragma multi_compile_fwdbase 
+            #pragma multi_compile_fwdbase nodynlightmap nodirlightmap
+            #pragma skip_variants DIRECTIONAL_COOKIE POINT_COOKIE SPOT VERTEXLIGHT_ON 
             #pragma multi_compile_instancing
             
             #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
-            #pragma shader_feature SNOW_NOISE_MAP_ON
-            #pragma shader_feature RIPPLE_ON
-            #pragma multi_compile _ RAIN_REFLECTION
+            // #pragma shader_feature SNOW_NOISE_MAP_ON
+            // #pragma shader_feature RIPPLE_ON
+            // #pragma multi_compile _ RAIN_REFLECTION
 
             #define USING_FOG (defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2))
             #include "UnityCG.cginc"
@@ -196,7 +197,6 @@ Shader "Unlit/Nature/Grass"
             float _BakedColorScale;
 
             int _SpecMaskR;
-			uniform half3 _SunFogDir;
             UNITY_INSTANCING_BUFFER_START(Props)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _Color)
 				//UNITY_DEFINE_INSTANCED_PROP(float4,_PlayerPos)
@@ -291,12 +291,8 @@ Shader "Unlit/Nature/Grass"
                 #endif
 
                 // apply fog
-				float3 lightDirection2 = normalize(_SunFogDir.xyz);
-				fixed3 viewDir = normalize(UnityWorldSpaceViewDir(  i.worldPos ));
-				float sunFog =saturate( dot(-viewDir,lightDirection2));
-				float3 sunFogColor  = lerp(_HeightFogColor,_sunFogColor,pow(sunFog,2));
-				unity_FogColor.rgb = lerp(sunFogColor, unity_FogColor.rgb, i.fog.y*i.fog.y);
-				col.rgb = lerp(col .rgb,unity_FogColor.rgb, i.fog.x);
+                fixed3 viewDir = normalize(UnityWorldSpaceViewDir(i.worldPos ));
+				BlendFog(viewDir,i.fog,/*inout*/col.rgb);
                 UNITY_APPLY_FOG(i.fogCoord, col);
  
                 return col;
@@ -355,8 +351,10 @@ Shader "Unlit/Nature/Grass"
             #pragma target 3.0
             #pragma vertex vert
             #pragma fragment frag
-            #pragma multi_compile_fwdadd 
-            #pragma multi_compile_fwdadd_fullshadows
+            #pragma skip_variants INSTANCING_ON
+            #pragma multi_compile_fwdadd nodynlightmap nodirlightmap
+            #pragma skip_variants POINT_COOKIE DIRECTIONAL_COOKIE
+            // #pragma multi_compile_fwdadd_fullshadows
             #include "UnityCG.cginc"
             #include "AutoLight.cginc"
 

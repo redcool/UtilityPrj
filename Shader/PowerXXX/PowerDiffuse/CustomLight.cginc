@@ -18,6 +18,8 @@ float _ShadowEdge;
 float _ShadowStrength;
 float _LightingType;  //[sh,bakedColor]
 
+bool _BlinnOn;
+
 UnityLight GetLight(){
     float3 dir = _WorldSpaceLightPos0;
     float3 color = _LightColor0;
@@ -75,11 +77,13 @@ float4 LightingBlinn(SurfaceOutput s,float3 halfDir,UnityGI gi,float shadowAtten
         c.rgb += s.Albedo * gi.indirect.diffuse * diffPart;
     #endif
     
-    #ifdef BLINN_ON
-    float nh = saturate(dot(normalize(s.Normal),halfDir));
-    float3 specular = min(MAX_SPECULAR,pow(nh,s.Specular * 128)) * s.Gloss  * specColor * shadowAtten;
-    c.rgb += specular;
-    #endif
+    // #ifdef BLINN_ON
+    if(_BlinnOn){
+        float nh = saturate(dot(normalize(s.Normal),halfDir));
+        float3 specular = min(MAX_SPECULAR,pow(nh,s.Specular * 128)) * s.Gloss  * specColor * shadowAtten;
+        c.rgb += specular;
+    }
+    // #endif
 
     return c;
 }

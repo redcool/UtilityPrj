@@ -18,6 +18,8 @@ float _HeightFogNear;
 float _HeightFogFar;
 float4 _sunFogColor;
 float4 _HeightFogColor;
+float3 _SunFogDir;
+bool _FogOn;
 
 float2 GetHeightFog(float3 worldPos){
     float3 viewPos = UnityWorldToViewPos(worldPos.xyzx);
@@ -27,6 +29,17 @@ float2 GetHeightFog(float3 worldPos){
     fog.x = hightFogFactor * pow(height,4);
     fog.y = height;
     return fog; 
+}
+
+void BlendFog(float3 viewDir,float2 fogCoord,inout float3 mainColor){
+    // #if defined(FOG_ON)
+    if(_FogOn){
+        float nl =saturate( dot(-viewDir,normalize(_SunFogDir)));
+        float3 sunFogColor  = lerp(_HeightFogColor,_sunFogColor,pow(nl,2));
+        unity_FogColor.rgb = lerp(sunFogColor, unity_FogColor.rgb, fogCoord.y * fogCoord.y);
+        mainColor = lerp(mainColor ,unity_FogColor.rgb, fogCoord.x);
+    }
+    // #endif
 }
 
 #endif  // FOG_LIB_CGINC

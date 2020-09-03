@@ -27,8 +27,9 @@ float _Cutoff;
 int _PresetBlendMode; // data save
 
 //------------------ keyword variables, reduce global keywords
-int _AlphaTestOn;
-int _Plants_Off;
+bool _AlphaTestOn;
+bool _NormalMapOn;
+
 
 struct Input {
     float2 uv_MainTex;
@@ -44,11 +45,11 @@ void vert(inout appdata_full v, out Input o) {
     UNITY_INITIALIZE_OUTPUT(Input, o);
 
     // apply wind
-    #if CAN_VERTEX_WAVE
-    if(!_Plants_Off)
+    // #if CAN_VERTEX_WAVE
+    if(_PlantsOn && !_Plants_Off)
         v.vertex = ClampVertexWave(v, _Wave, _AttenField.y,_AttenField.x);
     //v.vertex = Squash(v.vertex);
-    #endif
+    // #endif
 
     #ifdef _FEATURE_SNOW 
     SNOW_VERT_FUNCTION(v.vertex,v.normal,o.wn);
@@ -74,9 +75,11 @@ void surf (Input IN, inout SurfaceOutput o) {
     o.Albedo = ApplyThunder(c.rgb);
     o.Alpha = c.a;
 
-    #if defined(NORMAL_MAP_ON)
-    o.Normal = UnpackScaleNormal(tex2D(_BumpMap, IN.uv_BumpMap),_NormalMapScale);
-    #endif
+    // #if defined(NORMAL_MAP_ON)
+    if(_NormalMapOn){
+        o.Normal = UnpackScaleNormal(tex2D(_BumpMap, IN.uv_BumpMap),_NormalMapScale);
+    }
+    // #endif
 
     o.Specular = _SpecIntensity;
     o.Gloss = _Gloss;
@@ -185,13 +188,15 @@ fixed4 frag_surf (v2f_surf IN) : SV_Target {
     UNITY_LIGHT_ATTENUATION(atten, IN, worldPos)
     fixed4 c = 0;
 
-    #if defined(NORMAL_MAP_ON)
+    // #if defined(NORMAL_MAP_ON)
+    if(_NormalMapOn){
         fixed3 worldN;
         worldN.x = dot(IN.tSpace0.xyz, o.Normal);
         worldN.y = dot(IN.tSpace1.xyz, o.Normal);
         worldN.z = dot(IN.tSpace2.xyz, o.Normal);
         o.Normal = worldN ;
-    #endif
+    }
+    // #endif
 // return float4(o.Normal,1);
     half3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
     half3 halfDir = normalize(light.dir + viewDir);
@@ -224,13 +229,7 @@ fixed4 frag_surf (v2f_surf IN) : SV_Target {
     c.rgb += o.Emission;
 
     // apply fog
-    #if defined(FOG_ON)
-    float3 lightDirection = normalize(light.dir.xyz);
-    float sunFog =saturate( dot(-viewDir,lightDirection));
-    float3 sunFogColor  = lerp(_HeightFogColor,_sunFogColor,pow(sunFog,2));
-    unity_FogColor.rgb = lerp(sunFogColor, unity_FogColor.rgb, IN.fog.y * IN.fog.y);
-    c.rgb= lerp(c.rgb ,unity_FogColor.rgb, IN.fog.x);
-    #endif
+    BlendFog(viewDir,IN.fog,/*inout*/c.rgb);
     UNITY_APPLY_FOG(IN.fogCoord, c );
 
     c.rgb *= DayIntensity(true);
@@ -244,11 +243,11 @@ void vert_add(inout appdata_full v, out Input o) {
     UNITY_INITIALIZE_OUTPUT(Input, o);
 
     // apply wind
-    #if CAN_VERTEX_WAVE
-    if(!_Plants_Off)
+    // #if CAN_VERTEX_WAVE
+    if(_PlantsOn && !_Plants_Off)
         v.vertex = ClampVertexWave(v, _Wave, _AttenField.y,_AttenField.x);
     //v.vertex = Squash(v.vertex);
-    #endif
+    // #endif
 }
 void surf_add (Input IN, inout SurfaceOutput o) {
     fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
@@ -356,10 +355,10 @@ struct v2f_shadow{
 v2f_shadow vert_shadow(appdata_full v){
     v2f_shadow o = (v2f_shadow)0;
     // apply wind
-    #if CAN_VERTEX_WAVE
-        if(!_Plants_Off)
-            v.vertex = ClampVertexWave(v, _Wave, _AttenField.y,_AttenField.x);
-    #endif
+    // #if CAN_VERTEX_WAVE
+    if(_PlantsOn && !_Plants_Off)
+        v.vertex = ClampVertexWave(v, _Wave, _AttenField.y,_AttenField.x);
+    // #endif
     o.pos = UnityObjectToClipPos(v.vertex);
     o.uv = v.texcoord;
     return o;
