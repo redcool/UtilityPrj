@@ -104,7 +104,7 @@
 
           // 2 tint splats color
           float4 tintColor = _WaveColor;
-          #if defined(RIPPLE_ON)
+          #if defined(_RippleOn)
             tintColor = _RippleColorTint;
           #endif
           c = TintTerrainColorByLayers(originalCol,c,envColor,splat_control,_WaveLayerIntensity,_EnvLayerIntensity,tintColor);
