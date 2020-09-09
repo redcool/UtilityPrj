@@ -17,6 +17,8 @@ Properties {
     _Scale("Scale",float) = 1
     _Speed("Speed",float) = 1
     _Distribution("_Distribution",vector) = (0.2,0.4,1,1)
+    _CloudIntensity("_CloudIntensity",float) = 1
+    _CloudDir("_CloudDir",vector) = (1,1,1,1)
 }
 
 SubShader {
@@ -40,9 +42,12 @@ SubShader {
         uniform half _SunSizeConvergence;
         uniform half3 _SkyTint;
         uniform half _AtmosphereThickness;
+        //cloud
         float _Scale,_Speed;
         sampler3D _NoiseTex;
-        float4 _Distribution;
+        float2 _Distribution;
+        float3 _CloudDir;
+        float _CloudIntensity;
 
     #if defined(UNITY_COLORSPACE_GAMMA)
         #define GAMMA 2
@@ -182,7 +187,8 @@ SubShader {
         v2f vert (appdata_t v)
         {
             v2f OUT;
-            OUT.localPos = v.vertex + v.normal*_Scale;
+            OUT.localPos = v.vertex;
+
             UNITY_SETUP_INSTANCE_ID(v);
             UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);
             OUT.pos = UnityObjectToClipPos(v.vertex);
@@ -367,11 +373,13 @@ SubShader {
         #endif
         }
 
-        half Cloud(float3 v){
-            float4 col = tex3D(_NoiseTex,v + _Time.x * _Speed);
-            col.x = smoothstep(_Distribution.x,_Distribution.y,1 - col.x) * _Distribution.z;
+        half Cloud(float3 localPos){
+            float4 noise = tex3D(_NoiseTex,localPos * _Scale + _CloudDir * _Time.x * _Speed);
+            float pl = saturate(dot(1-noise.xyz,_WorldSpaceLightPos0.xyz) *0.5+0.5);
+            // pl = smoothstep(0,0.5,pl);
+            float cloud = smoothstep(_Distribution.x,_Distribution.y,1 - noise.x) * _CloudIntensity;
 
-            return col.x * saturate(v.y);
+            return saturate(cloud * saturate(localPos.y) * pl);
         }
 
         half4 frag (v2f IN) : SV_Target
@@ -406,6 +414,7 @@ SubShader {
         #endif
             float up = saturate(dot(float3(0,1,0),_WorldSpaceLightPos0.xyz));
             col += Cloud(IN.localPos) * lerp(IN.skyColor,1,up);
+
             return half4(col,1.0);
 
         }
