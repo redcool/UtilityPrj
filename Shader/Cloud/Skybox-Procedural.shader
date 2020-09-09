@@ -370,6 +370,7 @@ SubShader {
         half Cloud(float3 v){
             float4 col = tex3D(_NoiseTex,v + _Time.x * _Speed);
             col.x = smoothstep(_Distribution.x,_Distribution.y,1 - col.x) * _Distribution.z;
+
             return col.x * saturate(v.y);
         }
 
@@ -403,7 +404,8 @@ SubShader {
         #if defined(UNITY_COLORSPACE_GAMMA) && !SKYBOX_COLOR_IN_TARGET_COLOR_SPACE
             col = LINEAR_2_OUTPUT(col);
         #endif
-            col += Cloud(IN.localPos);
+            float up = saturate(dot(float3(0,1,0),_WorldSpaceLightPos0.xyz));
+            col += Cloud(IN.localPos) * lerp(IN.skyColor,1,up);
             return half4(col,1.0);
 
         }
