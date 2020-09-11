@@ -197,6 +197,7 @@ Shader "Unlit/Nature/Grass"
             float _BakedColorScale;
 
             int _SpecMaskR;
+            bool _DrawInstanced;
             UNITY_INSTANCING_BUFFER_START(Props)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _Color)
 				//UNITY_DEFINE_INSTANCED_PROP(float4,_PlayerPos)
@@ -216,9 +217,11 @@ Shader "Unlit/Nature/Grass"
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 
                 #if defined(LIGHTMAP_ON)
-                    // float4 lightmapST = UNITY_ACCESS_INSTANCED_PROP(Props,_LightmapST);
-                    // lightmapST = length(lightmapST) ==0? unity_LightmapST : lightmapST;
-                    o.lmap.xy = v.uv1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
+                    float4 lightmapST = unity_LightmapST;
+                    if(_DrawInstanced){
+                        lightmapST = UNITY_ACCESS_INSTANCED_PROP(Props,_LightmapST);
+                    }
+                    o.lmap.xy = v.uv1.xy * lightmapST.xy + lightmapST.zw;
                 #endif
 
                 TRANSFER_VERTEX_TO_FRAGMENT(o)
