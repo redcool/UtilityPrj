@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#define ZHU_XIAN
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
@@ -91,6 +92,12 @@ public class DrawChildrenMeshRendererInstanced : MonoBehaviour
 
     Renderer[] renders;
 
+    public static List<DrawChildrenMeshRendererInstanced> InstanceList { private set; get; }
+    private void Awake()
+    {
+        if (!InstanceList.Contains(this))
+            InstanceList.Add(this);
+    }
 
     // Use this for initialization
     void Start()
