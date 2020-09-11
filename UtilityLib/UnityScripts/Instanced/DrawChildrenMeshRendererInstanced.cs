@@ -92,11 +92,13 @@ public class DrawChildrenMeshRendererInstanced : MonoBehaviour
 
     Renderer[] renders;
 
-    public static List<DrawChildrenMeshRendererInstanced> InstanceList { private set; get; }
+    public static event System.Action<DrawChildrenMeshRendererInstanced> OnInit;
     private void Awake()
     {
-        if (!InstanceList.Contains(this))
-            InstanceList.Add(this);
+        if(OnInit != null)
+        {
+            OnInit(this);
+        }
     }
 
     // Use this for initialization
@@ -129,6 +131,22 @@ public class DrawChildrenMeshRendererInstanced : MonoBehaviour
 
         //destroy 
         DestroyGameObjects();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (forceRefresh)
+        {
+            forceRefresh = false;
+            CullInstances(culledRatio);
+        }
+        DrawGroupList();
+    }
+
+    private void OnDestroy()
+    {
+        OnInit = null;
     }
 
     private void DestroyGameObjects()
@@ -213,17 +231,7 @@ public class DrawChildrenMeshRendererInstanced : MonoBehaviour
         return info;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        if (forceRefresh)
-        {
-            forceRefresh = false;
 
-            CullInstances(culledRatio);
-        }
-        DrawGroupList();
-    }
 
     /// <summary>
     /// shuffle originalList,keep maxCount
