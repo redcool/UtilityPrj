@@ -8,8 +8,14 @@
     using UnityEngine;
     public static class TerrainTools
     {
-
-
+        public static void CopyFromTerrain(MeshRenderer mr, Terrain terrain)
+        {
+            mr.sharedMaterial = terrain.materialTemplate;
+            mr.lightmapIndex = terrain.lightmapIndex;
+            mr.lightmapScaleOffset = terrain.lightmapScaleOffset;
+            mr.realtimeLightmapIndex = terrain.realtimeLightmapIndex;
+            mr.realtimeLightmapScaleOffset = mr.realtimeLightmapScaleOffset;
+        }
 #if UNITY_2018_3_OR_NEWER
         public static void ExtractAlphaMapToPNG(Terrain terrain, string path)
         {
@@ -154,18 +160,18 @@
             return mesh;
         }
 
-        public static void GenerateWhole(Terrain terrain, Material mat, int resScale = 1)
+        public static void GenerateWhole(Terrain terrain,Transform paretTr, int resScale = 1)
         {
             var td = terrain.terrainData;
             var hw = td.heightmapResolution;
             var hh = td.heightmapResolution;
+            
             var resolution = td.heightmapResolution - 1;
 
             var meshScale = td.heightmapScale * resScale;
             meshScale.y = 1;
 
             var uvScale = new Vector2(1f / resolution * resScale, 1f / resolution * resScale);
-
             hh = (hh - 1) / resScale + 1;
             hw = (hw - 1) / resScale + 1;
             resolution /= resScale;
@@ -182,9 +188,8 @@
                 for (int x = 0; x < hw; x++)
                 {
                     var y = td.GetHeight(x * resScale, z * resScale);
-                    var pos = Vector3.Scale(new Vector3(x, y, z), meshScale);
 
-                    verts[vertexIndex] = pos;
+                    verts[vertexIndex] = Vector3.Scale(new Vector3(x, y, z), meshScale);
                     uvs[vertexIndex] = Vector2.Scale(new Vector2(x, z), uvScale);
                     vertexIndex++;
 
@@ -220,39 +225,14 @@
             mesh.RecalculateNormals();
             mesh.RecalculateTangents();
 
-            var go = new GameObject("TerrainMesh");
+            var go = new GameObject("Terrain Mesh");
+            go.transform.SetParent(paretTr, false);
             go.AddComponent<MeshFilter>().mesh = mesh;
-            go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+            var mr = go.AddComponent<MeshRenderer>();
+            CopyFromTerrain(mr, terrain);
         }
 
-        public static void WriteObj(Mesh mesh,string filename)
-        {
-            var sw = new StreamWriter(filename);
-            sw.WriteLine("# Untiy Terrain OBJ File");
-            Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-            // vertices
-            for (int i = 0; i < mesh.vertexCount; i++)
-            {
-                var v = mesh.vertices[i];
-                //var sb = new StringBuilder("v ", 20);
-                sw.WriteLine($"v {v.x} {v.y} {v.z}");
-            }
-            // uvs
-            for (int i = 0; i < mesh.uv.Length; i++)
-            {
-                var uv = mesh.uv[i];
-                sw.WriteLine($"vt {uv.x} {uv.y}");
-            }
-            // indices
-            for (int i = 0; i < mesh.triangles.Length; i+=3)
-            {
-                var a = mesh.triangles[i] + 1;
-                var b = mesh.triangles[i + 1] + 1;
-                var c = mesh.triangles[i + 2] + 1;
-                sw.WriteLine($"f {a}/{a} {b}/{b} {c}/{c}");
-            }
-            sw.Close();
-        }
+
 #endif
 
     }

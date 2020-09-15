@@ -1,16 +1,15 @@
-﻿#if UNITY_EDITOR
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using System;
 using System.Collections;
 using System.IO;
 using System.Text;
 
+enum SaveFormat { Triangles, Quads }
+enum SaveResolution { Full = 0, Half, Quarter, Eighth, Sixteenth }
 
 class ExportTerrain : EditorWindow
 {
-enum SaveFormat { Triangles, Quads }
-enum SaveResolution { Full = 0, Half, Quarter, Eighth, Sixteenth }
     SaveFormat saveFormat = SaveFormat.Triangles;
     SaveResolution saveResolution = SaveResolution.Half;
 
@@ -25,19 +24,18 @@ enum SaveResolution { Full = 0, Half, Quarter, Eighth, Sixteenth }
     [MenuItem("Terrain/Export To Obj...")]
     static void Init()
     {
-        terrain = null;
-        Terrain terrainObject = Selection.activeObject as Terrain;
-        if (!terrainObject)
-        {
-            terrainObject = Terrain.activeTerrain;
-        }
-        if (terrainObject)
-        {
-            terrain = terrainObject.terrainData;
-            terrainPos = terrainObject.transform.position;
-        }
-
         EditorWindow.GetWindow<ExportTerrain>().Show();
+    }
+
+    private void OnSelectionChange()
+    {
+        var go = Selection.activeGameObject;
+        if (go)
+        {
+            var terrainGo = go.GetComponent<Terrain>();
+            terrain = terrainGo.terrainData;
+            terrainPos = terrainGo.transform.position;
+        }
     }
 
     void OnGUI()
@@ -50,6 +48,10 @@ enum SaveResolution { Full = 0, Half, Quarter, Eighth, Sixteenth }
                 EditorWindow.GetWindow<ExportTerrain>().Close();
             }
             return;
+        }
+        else
+        {
+            GUILayout.Box("Terrain: "+terrain.name);
         }
         saveFormat = (SaveFormat)EditorGUILayout.EnumPopup("Export Format", saveFormat);
 
@@ -64,8 +66,8 @@ enum SaveResolution { Full = 0, Half, Quarter, Eighth, Sixteenth }
     void Export()
     {
         string fileName = EditorUtility.SaveFilePanel("Export .obj file", "", "Terrain", "obj");
-        int w = terrain.heightmapResolution;
-        int h = terrain.heightmapResolution;
+        int w = terrain.heightmapWidth;
+        int h = terrain.heightmapHeight;
         Vector3 meshScale = terrain.size;
         int tRes = (int)Mathf.Pow(2, (int)saveResolution);
         meshScale = new Vector3(meshScale.x / (w - 1) * tRes, meshScale.y, meshScale.z / (h - 1) * tRes);
@@ -89,21 +91,16 @@ enum SaveResolution { Full = 0, Half, Quarter, Eighth, Sixteenth }
         }
 
         // Build vertices and UVs
-        var vertexIndex = 0;
         for (int y = 0; y < h; y++)
         {
             for (int x = 0; x < w; x++)
             {
-                tVertices[vertexIndex] = Vector3.Scale(meshScale, new Vector3(x, tData[x * tRes, y * tRes], y)) + terrainPos;
-                tUV[vertexIndex] = Vector2.Scale(new Vector2(x * tRes, y * tRes), uvScale);
-
-                vertexIndex++;
+                tVertices[y * w + x] = Vector3.Scale(meshScale, new Vector3(-y, tData[x * tRes, y * tRes], x)) + terrainPos;
+                tUV[y * w + x] = Vector2.Scale(new Vector2(x * tRes, y * tRes), uvScale);
             }
         }
 
         int index = 0;
-
-
         if (saveFormat == SaveFormat.Triangles)
         {
             // Build triangle indices: 3 indices into vertex array for each triangle
@@ -111,30 +108,14 @@ enum SaveResolution { Full = 0, Half, Quarter, Eighth, Sixteenth }
             {
                 for (int x = 0; x < w - 1; x++)
                 {
-                    /**
-                     c d
-                     a b
-                     */
-                    int a = y * w + x;
-                    int b = a + 1;
-                    int c = (y + 1) * w + x;
-                    int d = c + 1;
-                    tPolys[index++] = a;
-                    tPolys[index++] = c;
-                    tPolys[index++] = d;
-
-                    tPolys[index++] = a;
-                    tPolys[index++] = d;
-                    tPolys[index++] = b;
-
                     // For each grid cell output two triangles
-                    //tPolys[index++] = (y * w) + x; //a
-                    //tPolys[index++] = ((y + 1) * w) + x; //c
-                    //tPolys[index++] = (y * w) + x + 1; //b
+                    tPolys[index++] = (y * w) + x;
+                    tPolys[index++] = ((y + 1) * w) + x;
+                    tPolys[index++] = (y * w) + x + 1;
 
-                    //tPolys[index++] = ((y + 1) * w) + x;
-                    //tPolys[index++] = ((y + 1) * w) + x + 1; //d
-                    //tPolys[index++] = (y * w) + x + 1;
+                    tPolys[index++] = ((y + 1) * w) + x;
+                    tPolys[index++] = ((y + 1) * w) + x + 1;
+                    tPolys[index++] = (y * w) + x + 1;
                 }
             }
         }
@@ -145,24 +126,11 @@ enum SaveResolution { Full = 0, Half, Quarter, Eighth, Sixteenth }
             {
                 for (int x = 0; x < w - 1; x++)
                 {
-                    /**
-                     c d
-                     a b
-                     */
-                    int a = y * w + x;
-                    int b = a + 1;
-                    int c = (y + 1) * w + x;
-                    int d = c + 1;
-                    tPolys[index++] = a;
-                    tPolys[index++] = c;
-                    tPolys[index++] = d;
-                    tPolys[index++] = b;
-
                     // For each grid cell output one quad
-                    //tPolys[index++] = (y * w) + x;
-                    //tPolys[index++] = ((y + 1) * w) + x;
-                    //tPolys[index++] = ((y + 1) * w) + x + 1;
-                    //tPolys[index++] = (y * w) + x + 1;
+                    tPolys[index++] = (y * w) + x;
+                    tPolys[index++] = ((y + 1) * w) + x;
+                    tPolys[index++] = ((y + 1) * w) + x + 1;
+                    tPolys[index++] = (y * w) + x + 1;
                 }
             }
         }
@@ -247,4 +215,3 @@ enum SaveResolution { Full = 0, Half, Quarter, Eighth, Sixteenth }
         }
     }
 }
-#endif

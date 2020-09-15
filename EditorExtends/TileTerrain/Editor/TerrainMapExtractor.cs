@@ -9,7 +9,7 @@ public class TerrainMapExtractor
 {
     const string PATH_FORMAT = "Assets/TileTerrain/{0}_blend.png";
 
-    [MenuItem("MyEditors/Terrain/Command/ExtractAlphaMap")]
+    [MenuItem(TileTerrainWindow.ROOT_PATH+"/ExtractAlphaMap")]
     static void ExtractBlendMap()
     {
         var t = Terrain.activeTerrain;
