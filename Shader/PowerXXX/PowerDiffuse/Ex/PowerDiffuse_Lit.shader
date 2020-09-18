@@ -25,6 +25,7 @@ Shader "PowerDiffuse/Lit" {
     [Header(NormalMap)]
     _BumpMap ("Normalmap", 2D) = "bump" {}
     _NormalMapScale("_NormalMapScale",range(0.001,5)) = 1
+    // [Toggle]_UseVertexNormal("UseVertexNormal",int) = 0
 
     [Header(CullMode)]
     [Enum(UnityEngine.Rendering.CullMode)]_Cull("Cull Mode",float) = 2
@@ -56,11 +57,8 @@ Shader "PowerDiffuse/Lit" {
     _Gloss("_Gloss",range(0.01,5))= 0.5
 
     [Header(WeatherController)]
+    //[KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
     [Toggle(_FEATURE_NONE)]_DisableWeather("Disable Weather ?",int) = 1
-    //commonly, script control them.
-    [KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
-    _WeatherIntensity("_WeatherIntensity",range(0,1)) = 1
-    [Toggle(RAIN_REFLECTION)]_RainReflection("_RainReflection",int) = 0
 
     [Header(Wind)]
     //[Toggle(PLANTS_OFF)]_PlantsOff("禁用风力",float) = 0
@@ -72,16 +70,23 @@ Shader "PowerDiffuse/Lit" {
     _WorldPos("_WorldPos",vector)=(0,0,0,0)
     _WorldScale("_WorldScale",vector)=(1,1,1,1)
 
-    [Header(Snow)]
+    [Header(Snow Dir)]
     // 积雪是否有方向?
-    [Toggle(DISABLE_SNOW_DIR)] _DisableSnowDir("Disable Snow Dir ?",float) = 0
+    [Toggle(DISABLE_SNOW_DIR)] _DisableSnowDir("Disable Snow Dir ?",int) = 0
+    _SnowDirection("Direction",vector) = (.1,1,0,0)
     _DefaultSnowRate("Default Snow Rate",float) = 1.5
     //是否使用杂点扰动?
-    [Toggle(SNOW_NOISE_MAP_ON)]_SnowNoiseMapOn("SnowNoiseMapOn",float) = 0
+    [Header(Snow Distortion)]
+    [Toggle(SNOW_NOISE_MAP_ON)]_SnowNoiseMapOn("SnowNoiseMapOn",int) = 0
     [noscaleoffset]_SnowNoiseMap("SnowNoiseMap",2d) = "bump"{}
     _NoiseDistortNormalIntensity("NoiseDistortNormalIntensity",range(0,1)) = 0
+
+    // [Header(Snow Height)]
+    // [Toggle()]_HeightSnowOn("_HeightSnowOn",int) = 0
+    // _Distance("_Distance",float) = 0
+    // _DistanceAttenWidth("_DistanceAttenWidth",float) = 1
     
-    _SnowDirection("Direction",vector) = (.1,1,0,0)
+    [Header(Snow Details)]
     _SnowColor("Snow Color",color) = (1,1,1,1)
     _SnowAngleIntensity("SnowAngleIntensity",range(0.1,1)) = 1
     _SnowTile("tile",vector) = (1,1,1,1)
@@ -146,7 +151,7 @@ Shader "PowerDiffuse/Lit" {
 
       #pragma target 3.0
       #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
-      // #pragma multi_compile  RIPPLE_ON
+      // #pragma shader_feature  RIPPLE_ON
       // #pragma multi_compile _ PLANTS
       // #pragma shader_feature PLANTS_OFF
       // #pragma multi_compile _ RAIN_REFLECTION
@@ -160,8 +165,9 @@ Shader "PowerDiffuse/Lit" {
       // #pragma multi_compile _ NORMAL_MAP_ON
       // #pragma multi_compile _ BLINN_ON
       // #pragma multi_compile _ FOG_ON
-      #define NORMAL_MAP_ON
-      #define BLINN_ON
+      // #define NORMAL_MAP_ON
+      // #define BLINN_ON
+      // #define FOG_ON
 
       #include "HLSLSupport.cginc"
       #include "UnityShaderVariables.cginc"
@@ -170,10 +176,10 @@ Shader "PowerDiffuse/Lit" {
       #include "Lighting.cginc"
       #include "AutoLight.cginc"
       // #include "UnityStandardUtils.cginc"
-      #include "../FogLib.cginc"
-      #include "../NatureLibMacro.cginc"
-      #include "../CustomLight.cginc"
-      #include "../RenderingCore.cginc"
+      #include "../../FogLib.cginc"
+      #include "../../NatureLibMacro.cginc"
+      #include "../../CustomLight.cginc"
+      #include "../../RenderingCore.cginc"
 
       ENDCG
 
@@ -191,7 +197,7 @@ Shader "PowerDiffuse/Lit" {
       #pragma target 3.0
       // #pragma multi_compile _ PLANTS
       // #pragma multi_compile_instancing
-      // #pragma multi_compile_fog
+      #pragma multi_compile_fog
       // #pragma multi_compile _ ALPHA_TEST_ON
       // #pragma multi_compile _ NORMAL_MAP_ON
 
@@ -209,10 +215,10 @@ Shader "PowerDiffuse/Lit" {
       #include "AutoLight.cginc"
 
       //#define SNOW
-      #include "../NatureLibMacro.cginc"
-      #include "../CustomLight.cginc"
-      #include "../FogLib.cginc"
-      #include "../RenderingCore.cginc"
+      #include "../../NatureLibMacro.cginc"
+      #include "../../CustomLight.cginc"
+      #include "../../FogLib.cginc"
+      #include "../../RenderingCore.cginc"
       
       #endif
 
@@ -261,10 +267,10 @@ Shader "PowerDiffuse/Lit" {
       #include "Lighting.cginc"
       #include "AutoLight.cginc"
       #include "UnityStandardUtils.cginc"
-      #include "../FogLib.cginc"
-      #include "../NatureLibMacro.cginc"
-      #include "../CustomLight.cginc"
-      #include "../RenderingCore.cginc"
+      #include "../../FogLib.cginc"
+      #include "../../NatureLibMacro.cginc"
+      #include "../../CustomLight.cginc"
+      #include "../../RenderingCore.cginc"
 
       ENDCG
 

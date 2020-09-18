@@ -154,11 +154,15 @@ float4 _SnowRimColor;
 float _BorderWidth;
 float _ToneMapping; //reinhard mapping factor
 float _DefaultSnowRate = 1.5;
-//-------
-#ifdef _HEIGHT_SNOW
+
+//------- snow switches
+bool _HeightSnowOn;
+bool _DisableSnowDir;
+bool _SnowNoiseMapOn;
+
+//-------- height snow
 float _Distance;
 float _DistanceAttenWidth;
-#endif
 
 //vertex : compute final position
 void SnowDir(float3 vertex, float3 normal, out float3 pos, out float3 worldNormal) {
@@ -179,23 +183,21 @@ void SnowDir(float3 vertex, float3 normal, out float3 pos, out float3 worldNorma
 float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPos, float height) {
 	float2 noiseUV = worldPos.xz * _SnowTile;
 
+	float snowRate = _DefaultSnowRate;
 	// normal 
 	float3 n = worldNormal;
-#ifdef SNOW_NOISE_MAP_ON
-	float3 noise = UnpackNormal(tex2D(_SnowNoiseMap, noiseUV));
-	n = worldNormal + noise * _NoiseDistortNormalIntensity;
-	n = normalize(n);
-#endif
+	float3 noise = (float3)0;
+	if(_SnowNoiseMapOn){
+		noise = UnpackNormal(tex2D(_SnowNoiseMap, noiseUV)) * _NoiseDistortNormalIntensity;
+		n = worldNormal + noise;
+		n = normalize(n);
+	}
 
-#if !defined(DISABLE_SNOW_DIR)
-	// dot
-	float3 snowDir = normalize(_SnowDirection.xyz);
-	float snowDot = saturate(dot(n, snowDir));
-	float snowRate = smoothstep(snowDot, 0.1, 1 - _SnowAngleIntensity) * snowDot * 2;
-#else
-	float snowRate = _DefaultSnowRate;
-#endif
-
+	if(!_DisableSnowDir){
+		float3 snowDir = normalize(_SnowDirection.xyz);
+		float snowDot = saturate(dot(n, snowDir));
+		snowRate *= smoothstep(snowDot, 0.1, 1 - _SnowAngleIntensity) * snowDot * 2;
+	}
 	// mask
 	float borderRate = lerp(-0.2,_BorderWidth,WeatherIntensity());
 	float edge = 1 - Edge(mainColor.rgb,borderRate);
@@ -203,12 +205,12 @@ float4 SnowColor(float2 uv, float4 mainColor, float3 worldNormal, float3 worldPo
 	// final color
 	float4 snowColor = lerp(mainColor,_SnowColor,snowRate * edge);
 
-#ifdef _HEIGHT_SNOW
-	float yDist = (height - _Distance) * _DistanceAttenWidth + _DistanceAttenWidth;
-	float yRate = lerp(0, 1, saturate(yDist));
-	float4 heightSnowCol = lerp(0, _SnowColor, yRate) * edge * WeatherIntensity();
-	snowColor = max(snowColor,heightSnowCol);
-#endif
+	// if(_HeightSnowOn){
+	// 	float yDist = (height - _Distance) * _DistanceAttenWidth + _DistanceAttenWidth;
+	// 	float yRate = lerp(0, 1, saturate(yDist));
+	// 	float4 heightSnowCol = lerp(0, _SnowColor, yRate) * edge * WeatherIntensity();
+	// 	snowColor = max(snowColor,heightSnowCol);
+	// }
 	fixed mapping = _ToneMapping * snowColor + 1;//lerp(0,snowColor,_ToneMapping) + 1;
 	return float4(snowColor.rgb/mapping,mainColor.a);
 }

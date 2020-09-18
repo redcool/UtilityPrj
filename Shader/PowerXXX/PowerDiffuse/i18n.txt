@@ -10,14 +10,14 @@ _DaytimeOn=开启昼夜?
 
 _DisableSnowDir=禁用方向雪积累
 _DefaultSnowRate=默认积雪比例
-_SnowNoiseMapOn=开启积雪杂点图
+_SnowNoiseMapOn=开启积雪杂点图(需要方向雪)
 _SnowNoiseMap=积雪杂点图
 _NoiseDistortNormalIntensity=杂点强度
 
 _SnowDirection=积雪方向
 _SnowColor=积雪颜色
 _SnowAngleIntensity=积雪倾斜程度
-_SnowTile=继续平铺
+_SnowTile=积雪平铺
 _BorderWidth=积雪边宽度
 _ToneMapping=颜色色调
 
