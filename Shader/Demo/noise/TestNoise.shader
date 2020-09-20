@@ -63,12 +63,15 @@ Shader "Unlit/TestNoise"
                 float3 h = normalize(l+v);
                 float3 n = normalize(i.n+noise.xyz);
                 float nh = dot(n,h);
-                float nl = (dot(n,l)*0.5+0.5);
+                float nl = dot(n,l);
+                float snl = saturate(nl);
+                float wnl = nl * 0.5 + 0.5;
                 // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                fixed4 ramp = tex2D(_RampMap, float2(nl,nh));
+                fixed4 col = tex2D(_MainTex, i.uv) * snl;
+                fixed4 ramp = tex2D(_RampMap, float2(snl,nh)) * nl;
 
-                col.rgb *= ramp.rgb;
+                // col.rgb += ramp.rgb;
+                col.rgb = lerp(col.rgb,col.rgb + ramp.rgb,1);
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
