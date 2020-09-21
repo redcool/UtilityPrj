@@ -1,8 +1,7 @@
 ﻿//puppet_master
 //2018.4.20
 //后处理方式实现GodRay
-//skj
-Shader "GodRay/PostEffect" {
+Shader "Hidden/PostEffects/GodRay" {
  
 	Properties{
 		_MainTex("Base (RGB)", 2D) = "white" {}

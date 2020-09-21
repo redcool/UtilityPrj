@@ -5,8 +5,20 @@ using UnityEngine.Rendering;
 [ExecuteAlways]
 public class GodRayCommand : MonoBehaviour
 {
-    public Shader shader;
+    [Header("Basic")]
+    public CameraEvent cameraEvent = CameraEvent.AfterForwardOpaque;
+    //光源位置
+    public Transform lightTransform;
+    [Header("DownSample")]
+    //Blur迭代次数
+    [Range(1, 3)]
+    public int blurIteration = 2;
+    //降低分辨率倍率
+    [Range(1, 5)]
+    public int downSample = 2;
 
+    Shader shader;
+    [Header("Shader Params")]
     //高亮部分提取阈值
     public float intensityThreshold = 0.5f;
     //体积光颜色
@@ -17,22 +29,14 @@ public class GodRayCommand : MonoBehaviour
     //径向模糊uv采样偏移值
     [Range(0.0f, 10.0f)]
     public float samplerScale = 1;
-    //Blur迭代次数
-    [Range(1, 3)]
-    public int blurIteration = 2;
-    //降低分辨率倍率
-    [Range(0, 3)]
-    public int downSample = 1;
-    //光源位置
-    public Transform lightTransform;
+
     //产生体积光的范围
     [Range(0.0f, 10f)]
     public float lightRadius = 2.0f;
     //提取高亮结果Pow倍率，适当降低颜色过亮的情况
     [Range(1.0f, 10f)]
     public float lightPowFactor = 3.0f;
-//public float min = 0;
-    //public float max = 1;
+
     private Camera cam = null;
     
     CommandBuffer godRayBuffer;
@@ -44,6 +48,7 @@ public class GodRayCommand : MonoBehaviour
         {
             if (!mat)
             {
+                shader = Shader.Find("Hidden/PostEffects/GodRay");
                 mat = new Material(shader);
                 mat.hideFlags = HideFlags.HideAndDontSave;
             }
@@ -93,12 +98,12 @@ public class GodRayCommand : MonoBehaviour
         //4 compose
         godRayBuffer.Blit(copyScreenId, BuiltinRenderTextureType.CameraTarget, CurrentMaterial, 2);
 
-        cam.AddCommandBuffer(CameraEvent.AfterForwardOpaque, godRayBuffer);
+        cam.AddCommandBuffer(cameraEvent, godRayBuffer);
     }
     void OnDestroy()
     {
         if (cam && godRayBuffer != null)
-            cam.RemoveCommandBuffer(CameraEvent.AfterForwardOpaque, godRayBuffer);
+            cam.RemoveCommandBuffer(cameraEvent, godRayBuffer);
     }
     private void OnPreRender()
     {
