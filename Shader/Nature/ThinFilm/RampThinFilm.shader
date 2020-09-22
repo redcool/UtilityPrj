@@ -1,6 +1,6 @@
 ﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 
-Shader "Unlit/SimpleThinFilm"
+Shader "Unlit/RampThinFilm"
 {
     Properties
     {
@@ -8,7 +8,41 @@ Shader "Unlit/SimpleThinFilm"
 
         _RampMap("RampMap",2d) = ""{}
         _NoiseMap("NoiseMap",2d) = ""{}
+        _NoiseScale("_NoiseScale",float) = 10
+        _Tiling("_Tiling",float) = 1
     }
+
+    CGINCLUDE
+        sampler2D _RampMap;
+        sampler2D _NoiseMap;
+        float _NoiseScale;
+        float _Tiling;
+
+        struct ThinFilmInfo{
+            sampler2D rampMap;
+            sampler2D noiseMap;
+            float2 uv;
+            float uvScale;
+            float3 normal;
+            float3 lightDir;
+            float3 viewDir;
+            float tiling;
+        };
+
+        float4 RampThinFilm(ThinFilmInfo info){
+            fixed4 noise = tex2D(info.noiseMap,info.uv * info.uvScale);
+            float3 n = normalize(info.normal + noise);
+            float3 l = info.lightDir;
+
+            float h = normalize(l + info.viewDir);
+            float nl = dot(n,l);
+            // float wnl = nl * 0.5 + 0.5;
+            float snl = saturate(nl);
+            float nh = (dot(n,h));
+            return tex2D(info.rampMap,float2( (nh+noise.x) * info.tiling,nl));
+        }
+    ENDCG
+
     SubShader
     {
         Tags { "RenderType"="Opaque" }
@@ -41,10 +75,6 @@ Shader "Unlit/SimpleThinFilm"
             sampler2D _MainTex;
             float4 _MainTex_ST;
 
-            sampler2D _RampMap;
-            sampler2D _NoiseMap;
-
-
             v2f vert (appdata v)
             {
                 v2f o;
@@ -57,23 +87,19 @@ Shader "Unlit/SimpleThinFilm"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float4 noise = tex2D(_NoiseMap,float2(i.uv));
-                float3 n = normalize(i.n + noise);
+                float3 n = normalize(i.n);
                 float3 l = _WorldSpaceLightPos0.xyz;
                 float3 v = UnityWorldSpaceViewDir(i.worldPos);
-                float3 h = normalize(l+v);
-
                 float nl = saturate(dot(n,l));
-                float nv = saturate(dot(n,v));
-                float nh = dot(n,h);
 
-                float4 ramp = tex2D(_RampMap,float2(nh*10,nl));
+                ThinFilmInfo info = {_RampMap,_NoiseMap,i.uv,_NoiseScale,n,l,v,_Tiling};
 
-                // return ramp;
+                float3 thinFilm = RampThinFilm(info);
 
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
-                return col * nl*0.3 + ramp;
+                col.rgb = col.rgb * nl*0.3 + thinFilm;
+                return col;
             }
             ENDCG
         }
