@@ -1,6 +1,32 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.Rendering;
+using UnityEditor;
+
+#if UNITY_EDITOR
+[CustomEditor(typeof(GodRayCommand))]
+public class GodRayCommandEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        var inst = target as GodRayCommand;
+        EditorGUILayout.HelpBox("Any parameters after change,need Reload or next Play", MessageType.Info);
+
+        EditorGUILayout.BeginVertical("Box");
+        base.OnInspectorGUI();
+        EditorGUILayout.EndVertical();
+
+        EditorGUILayout.BeginVertical("Box");
+        if(GUILayout.Button("Reload"))
+        {
+            inst.OnDestroy();
+            inst.Start();
+        }
+        EditorGUILayout.EndVertical();
+
+    }
+}
+#endif
 
 [ExecuteAlways]
 public class GodRayCommand : MonoBehaviour
@@ -37,6 +63,11 @@ public class GodRayCommand : MonoBehaviour
     [Range(1.0f, 10f)]
     public float lightPowFactor = 3.0f;
 
+#if UNITY_EDITOR
+    [Header("Debug")]
+    public bool isShowBrightnessScreen;
+    public bool isShowBlurScreen;
+#endif
     private Camera cam = null;
     
     CommandBuffer godRayBuffer;
@@ -56,10 +87,11 @@ public class GodRayCommand : MonoBehaviour
         }
     }
 
-    void Start()
+    public void Start()
     {
         cam = GetComponent<Camera>();
         godRayBuffer = new CommandBuffer();
+        cam.AddCommandBuffer(cameraEvent, godRayBuffer);
         godRayBuffer.name = "GodRay Buffer";
 
         //1 copy screen
@@ -73,6 +105,13 @@ public class GodRayCommand : MonoBehaviour
         godRayBuffer.GetTemporaryRT(temp1, rtWidth, rtHeight, 0, FilterMode.Bilinear);
         godRayBuffer.Blit(copyScreenId, temp1, CurrentMaterial, 0);
 
+#if UNITY_EDITOR
+        if (isShowBrightnessScreen)
+        {
+            godRayBuffer.Blit(temp1, BuiltinRenderTextureType.CameraTarget);
+            return;
+        }
+#endif
 
         //3 get blur,temp1 <--> temp2
         var temp2 = Shader.PropertyToID("_DownSampeleTex2");
@@ -93,14 +132,19 @@ public class GodRayCommand : MonoBehaviour
 
         //godRayBuffer.SetGlobalColor("");
         godRayBuffer.SetGlobalTexture("_BlurTex", temp1);
-        //godRayBuffer.Blit(temp1, BuiltinRenderTextureType.CameraTarget);
-
+#if UNITY_EDITOR
+        if (isShowBlurScreen)
+        {
+            godRayBuffer.Blit(temp1, BuiltinRenderTextureType.CameraTarget);
+            return;
+        }
+#endif
         //4 compose
         godRayBuffer.Blit(copyScreenId, BuiltinRenderTextureType.CameraTarget, CurrentMaterial, 2);
 
-        cam.AddCommandBuffer(cameraEvent, godRayBuffer);
+        
     }
-    void OnDestroy()
+    public void OnDestroy()
     {
         if (cam && godRayBuffer != null)
             cam.RemoveCommandBuffer(cameraEvent, godRayBuffer);
@@ -117,10 +161,10 @@ public class GodRayCommand : MonoBehaviour
         CurrentMaterial.SetFloat("_LightFactor", lightFactor);
     }
 
-    private void OnGUI()
-    {
-        Vector3 viewPortLightPos = lightTransform == null ? new Vector3(.5f, .5f, 0) : cam.WorldToViewportPoint(lightTransform.position);
-        GUILayout.Box(viewPortLightPos.ToString());
-    }
+    //private void OnGUI()
+    //{
+    //    Vector3 viewPortLightPos = lightTransform == null ? new Vector3(.5f, .5f, 0) : cam.WorldToViewportPoint(lightTransform.position);
+    //    GUILayout.Box(viewPortLightPos.ToString());
+    //}
 
 }
