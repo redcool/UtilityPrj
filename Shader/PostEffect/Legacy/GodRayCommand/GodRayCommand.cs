@@ -16,6 +16,11 @@ public class GodRayCommandEditor : Editor
         base.OnInspectorGUI();
         EditorGUILayout.EndVertical();
 
+        var lightPos = inst.lightTransform == null ? new Vector3(.5f, .5f, 0) : inst.cam.WorldToViewportPoint(inst.lightTransform.position);
+        EditorGUILayout.BeginVertical("Box");
+        GUILayout.Box("Light Pos:"+lightPos);
+        EditorGUILayout.EndVertical();
+
         EditorGUILayout.BeginVertical("Box");
         if(GUILayout.Button("Reload"))
         {
@@ -68,7 +73,7 @@ public class GodRayCommand : MonoBehaviour
     public bool isShowBrightnessScreen;
     public bool isShowBlurScreen;
 #endif
-    private Camera cam = null;
+    public Camera cam = null;
     
     CommandBuffer godRayBuffer;
 
