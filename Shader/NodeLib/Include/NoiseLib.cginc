@@ -18,3 +18,12 @@
                 float t = lerp(tl,tr,lv.x);
                 return lerp(b,t,lv.y);
             }
+
+            float smoothNoise2(float2 uv){
+                float c = smoothNoise(uv * 4);
+                c += smoothNoise(uv * 8) * 0.5;
+                c += smoothNoise(uv * 16) * 0.25;
+                c += smoothNoise(uv * 32) * 0.125;
+                c += smoothNoise(uv * 64) * 0.0625;
+                return c/2;
+            }
