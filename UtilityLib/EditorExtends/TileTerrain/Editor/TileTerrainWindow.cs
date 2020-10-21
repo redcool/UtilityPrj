@@ -34,7 +34,7 @@ public class TileTerrainWindow : EditorWindow
             terrainObjs = FindObjectsOfType<Terrain>();
         }
 
-        if (terrainObjs.Length > 0)
+        if (terrainObjs!= null && terrainObjs.Length > 0)
         {
             scrollPosition = GUILayout.BeginScrollView(scrollPosition, "Box", GUILayout.Height(200));
             var id = 0;
