@@ -45,16 +45,23 @@ float _Occlusion;
 sampler2D _HeightMap;
 float _Height;
 
+sampler2D _EmissionMap;
+float4 _EmissionColor;
+
 int _DetailUseUV2;
 sampler2D _DetailMaskMap;
 sampler2D _DetailAlbedoMap;
 sampler2D _DetailNormalMap;
 float _DetailNormalScale;
 
+//clear coat
 float4 _ClearCoatSpecColor;
 float _ClearCoatSmoothness;
 sampler2D _ClearCoatNormalMap;
 float _ClearCoatNormalScale;
+
+//skin
+sampler2D _SSSTex;
 
 v2f vert (appdata v)
 {
@@ -63,7 +70,7 @@ v2f vert (appdata v)
     o.uv.xy = TRANSFORM_TEX(v.texcoord.xy, _MainTex);
     o.uv.zw = v.texcoord2.xy;
 
-    UNITY_TRANSFER_FOG(o,o.pos);
+    UNITY_TRANSFER_FOG(o,o.vertex);
     float3 worldPos = mul(unity_ObjectToWorld,v.vertex);
     float3 n = UnityObjectToWorldNormal(v.normal);
     float3 t = UnityObjectToWorldDir(v.tangent.xyz);
@@ -75,7 +82,7 @@ v2f vert (appdata v)
     // UNITY_TRANSFER_LIGHTING(o , v.uv1);
     TRANSFER_SHADOW(o)
 
-    o.shlmap = VertexGI(float4(v.texcoord1.xy,v.texcoord2.xy),worldPos,n);
+    o.shlmap = VertexGI(float4(v.texcoord.xy,v.texcoord1.xy),worldPos,n);
 
     return o;
 }
@@ -108,6 +115,17 @@ float4 CalcAlbedo(float2 uv,float mask){
             albedo.rgb *= LerpWhiteTo (detailAlbedo * unity_ColorSpaceDouble.rgb, mask);
     #endif
     return albedo;
+}
+
+float3 CalcClearCoat(float2 uv,float3 lightDir,float3 viewDir,float3 normal,float3 worldPos,float atten,float4 shlmap,float occlusion,float oneMinusReflectivity,UnityGI gi){
+    float3 normalClearCoat = GetNormal(_ClearCoatNormalMap,uv,_ClearCoatNormalScale);
+    UnityGI giClearCoat = CalcGI(lightDir,viewDir,worldPos,normalClearCoat,atten,shlmap,_ClearCoatSmoothness,occlusion);
+    float4 colorClearCoat = PBS(0,_ClearCoatSpecColor,oneMinusReflectivity,_ClearCoatSmoothness,normal,viewDir,gi.light,giClearCoat.indirect);
+    return colorClearCoat.rgb;
+}
+
+float3 CaclEmission(float2 uv){
+    return tex2D(_EmissionMap,uv).rgb * _EmissionColor.rgb;
 }
 
 fixed4 frag (v2f i) : SV_Target
@@ -144,7 +162,7 @@ fixed4 frag (v2f i) : SV_Target
     float smoothness = metallicMap.a * _Smoothness;
 
     // calculate gi
-    UnityGI gi = CalcGI(l,v,worldPos,n,atten,i.shlmap,smoothness,occlusion);
+    UnityGI gi =  CalcGI(l,v,worldPos,n,atten,i.shlmap,smoothness,occlusion);
     // sample the texture
     float4 albedo = CalcAlbedo(uv.xy,mask);
 
@@ -155,17 +173,78 @@ fixed4 frag (v2f i) : SV_Target
     float outputAlpha;
     albedo.rgb = PreMultiplyAlpha(albedo.rgb,albedo.a,oneMinusReflectivity,outputAlpha);
 
-    float4 c = PBS(albedo.rgb,specColor,oneMinusReflectivity,_Smoothness,n,v,gi.light,gi.indirect);
-    c.a = outputAlpha;
+    float4 sssTex = (float4)0;
+#if defined(SKIN)
+    sssTex = tex2D(_SSSTex,uv);
+    sssTex.r *= _CurvatureScale;
+    sssTex.g = (1 - sssTex.g) * _ThicknessScale;
+    //return sssTex;
+#endif
 
-    #if defined(CLEAR_COAT)
-        float3 normalClearCoat = GetNormal(_ClearCoatNormalMap,uv,_ClearCoatNormalScale);
-        UnityGI giClearCoat = CalcGI(l,v,worldPos,normalClearCoat,atten,i.shlmap,_ClearCoatSmoothness,occlusion);
-        float4 colorClearCoat = PBS(0,_ClearCoatSpecColor,oneMinusReflectivity,_ClearCoatSmoothness,n,v,gi.light,giClearCoat.indirect);
-        c.rgb += colorClearCoat.rgb;
-    #endif
+    float4 c = PBS(albedo.rgb,specColor,oneMinusReflectivity,smoothness,n,v,gi.light,gi.indirect,sssTex);
+    c.a = outputAlpha;
+#if defined(SKIN)
+    c.rgb += CalcFastSSS(gi.light,n,v,sssTex.g);
+#endif
+
+#if defined(CLEAR_COAT)
+    c.rgb += CalcClearCoat(uv,l,v,n,worldPos,atten,i.shlmap,occlusion,oneMinusReflectivity,gi);
+#endif
+
+    c.rgb += CaclEmission(uv);
     // apply fog
     UNITY_APPLY_FOG(i.fogCoord, c);
+    return c;
+}
+
+float4 frag_add(v2f i):SV_Target{
+    float3 worldPos = float3(i.tSpace0.w,i.tSpace1.w,i.tSpace2.w);
+    float3x3 tangentSpace = {i.tSpace0.xyz,i.tSpace1.xyz,i.tSpace2.xyz};
+    
+    float3 v = normalize(UnityWorldSpaceViewDir(worldPos));
+    float3 l = normalize(UnityWorldSpaceLightDir(worldPos));
+
+    UNITY_LIGHT_ATTENUATION(atten,i,worldPos);
+
+    //parallax(height)
+    float height = tex2D(_HeightMap,i.uv).b;
+    float3 tangentView = normalize(mul(v,tangentSpace));
+    float2 offset = ParallaxOffset1Step(height,_Height,tangentView);
+    //float2 offset = float2(height*(_Height) * tangentView.xy);
+    float2 uv = i.uv.xy + offset;
+
+    //detail mask
+    float mask = tex2D(_DetailMaskMap,uv.xy).a;
+
+    //normal map
+    float3 n = CalcNormal(uv.xy,mask);
+    n = mul(tangentSpace,n);
+
+    //occlusion
+    float4 occlusionMap = tex2D(_OcclusionMap,uv);
+    float occlusion = occlusionMap.g * _Occlusion;
+
+    //metallic
+    float4 metallicMap = tex2D(_MetallicMap,uv);
+    float metallic = metallicMap.r * _Metallic;
+    float smoothness = metallicMap.a * _Smoothness;
+
+    // calculate gi
+    UnityGI gi = (UnityGI)0;
+    UnityLight directLight = {_LightColor0.rgb * atten,l,0};
+    gi.light = directLight;
+    // sample the texture
+    float4 albedo = CalcAlbedo(uv.xy,mask);
+
+    float3 specColor;
+    float oneMinusReflectivity;
+    albedo.rgb = DiffuseSpecularFromMetallic(albedo.rgb,metallic,specColor,oneMinusReflectivity);
+
+    float outputAlpha;
+    albedo.rgb = PreMultiplyAlpha(albedo.rgb,albedo.a,oneMinusReflectivity,outputAlpha);
+
+    float4 c = PBS(albedo.rgb,specColor,oneMinusReflectivity,smoothness,n,v,gi.light,gi.indirect,0);
+    c.a = outputAlpha;
     return c;
 }
 #endif //end of POWER_PBS_FORWARD_CGINC

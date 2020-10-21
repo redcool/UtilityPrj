@@ -9,6 +9,15 @@
 #define INV_PI 0.31830988618f
 #define DielectricSpec 0.04
 
+// #if defined(SKIN)
+float _CurvatureScale;
+float _ThicknessScale;
+sampler2D _SkinRampMap;
+float _SkinDistortion;
+float _SkinPower;
+float4 _SkinSubColor;
+// #endif
+
 float Pow4(float a){
     float a2 = a*a;
     return a2*a2;
@@ -71,11 +80,32 @@ float3 DiffuseSpecularFromMetallic(float3 albedo,float metallic,out float3 specC
     return albedo * oneMinusReflectivity;
 }
 
+float CalcDiffuseTerm(float nv,float nl,float lh,float a,
+    float4 sssTex,UnityLight light
+){
+    float diffuseTerm = DisneyDiffuse(nv,nl,lh,a) * nl;
+    #if defined(SKIN)
+        float curvature = sssTex.r;
+        float thickness = sssTex.g;
+        float2 brdfUV = float2(nl*0.5+0.5,curvature * dot(float3(0.2,0.7,0.07),light.color));
+        float3 skinRamp = tex2D(_SkinRampMap ,brdfUV);
+        return lerp(diffuseTerm,skinRamp,thickness);
+    #endif
+    return diffuseTerm;
+}
+
+float3 CalcFastSSS(UnityLight light,float3 normal,float3 viewDir,float thickness){
+    // faek sss
+    float3 h = normalize(light.dir + normal * _SkinDistortion);
+    float sss = pow(saturate(dot(viewDir,-h)),_SkinPower) * thickness;
+    return sss * _SkinSubColor.rgb;
+}
+
 float4 PBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,float smoothness,
     float3 normal,float3 viewDir,
-    UnityLight light,UnityIndirect gi
+    UnityLight light,UnityIndirect gi,
+    float4 sssTex
 ){
-    
     float a = 1- smoothness;
     float a2 = a * a;
     a2 = max(0.002,a2);
@@ -91,7 +121,7 @@ float4 PBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,float smo
     float lv = saturate(dot(l,v));
     float lh = saturate(dot(l,h));
     // -------------- diffuse part
-    float diffuseTerm = DisneyDiffuse(nv,nl,lh,a) * nl;
+    float diffuseTerm = CalcDiffuseTerm(nv,nl,lh,a,sssTex,light);
     float3 directDiffuse = light.color * diffuseTerm;
     float3 indirectDiffuse = gi.diffuse;
     float3 diffuse = (directDiffuse + indirectDiffuse) * diffColor;
@@ -118,6 +148,13 @@ float4 PBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,float smo
     float3 indirecSpecular = surfaceReduction * gi.specular * FresnelLerpFast(specColor,grazingTerm,nv);
     float3 specular = directSpecular + indirecSpecular;
     return float4(diffuse + specular,1);
+}
+
+float4 PBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,float smoothness,
+    float3 normal,float3 viewDir,
+    UnityLight light,UnityIndirect gi
+){
+    return PBS(diffColor,specColor,oneMinusReflectivity,smoothness,normal,viewDir,light,gi,0);
 }
 
 float4 VertexGI(float4 lmapUV/*xy:lmap,zw: realtime lightmap*/,float3 worldPos,float3 worldNormal){
