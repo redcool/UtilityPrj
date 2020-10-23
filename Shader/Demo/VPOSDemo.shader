@@ -5,6 +5,7 @@ Shader "Custom/VPOSDemo"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _Color("_Color",color) = (1,1,1,1)
         _clipIntensity("_clipIntensity",float) = 1
         _FresnalWidthMin("_FresnalWidthMin",range(0,1)) = 0
         _FresnalWidthMax("_FresnalWidthMax",range(0,1)) = 0.1
@@ -49,6 +50,7 @@ Shader "Custom/VPOSDemo"
             }
 
             sampler2D _MainTex;
+            float4 _Color;
             float _clipIntensity;
             float _FresnalWidthMin,_FresnalWidthMax;
 
@@ -62,11 +64,12 @@ Shader "Custom/VPOSDemo"
                 // return clipMask;
 
                 screenPos.xy = floor(screenPos.xy * 0.25) * 0.5;
-                float c = frac( (screenPos.x * screenPos.y) * _clipIntensity);
+                float c = frac( (screenPos.x + screenPos.y) * _clipIntensity);
+                float c2 = frac(screenPos.x * screenPos.y*0.5);
                 clip( -c + clipMask);
 
                 // normal sample
-                fixed4 col = tex2D(_MainTex, i.uv);
+                fixed4 col = tex2D(_MainTex, i.uv)  * c2 * _Color;
                 return col;
             }
             ENDCG
