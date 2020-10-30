@@ -26,7 +26,7 @@ Shader "Unlit/Diffuse"
 
 
     
-    // beckmann distribution
+    // beckmann distribution, D
     float beckMann(float nh,float r){
         const float e = 2.718;
         float r2 = r * r;
@@ -35,7 +35,8 @@ Shader "Unlit/Diffuse"
         float b = r2 * nh2 * nh2;
         return pow(e,a)/b;
     }
-
+	
+	// V
     float smithJoint(float nh,float nv,float nl,float vh){
         float invertVH = 1/vh;
         float g1 = 2*nh*nl*invertVH;
@@ -51,6 +52,12 @@ Shader "Unlit/Diffuse"
         float halfWidth = width * 0.5;
         return saturate(abs((progress - uv)/halfWidth));
     }
+	
+	float GGX_Silk(float nh,float rough){
+		float a2 = rough * rough;
+		float b = (nh * a2-nh*2)+1;
+		return a2/(b*b);
+	}
     ENDCG
 
     SubShader

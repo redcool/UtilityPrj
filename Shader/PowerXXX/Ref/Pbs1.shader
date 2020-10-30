@@ -34,7 +34,7 @@ Shader "Unlit/Pbs1"
             #include "AutoLight.cginc"
             #include "UnityCG.cginc"
             #include "UnityStandardUtils.cginc"
-            #include "UnityStandardBRDF1.cginc"
+            #include "UnityStandardBRDF.cginc"
 
             #define PI 3.1415
 
