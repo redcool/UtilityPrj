@@ -21,6 +21,8 @@
             #pragma hull hullFunc
             #pragma domain domainFunc
 
+            // #define TESS_EDGE
+
             // make fog work
             #pragma multi_compile_fog
 
@@ -61,9 +63,9 @@
             };
             float TessEdgeFactor(float3 p0,float3 p1){
                 #if defined(TESS_EDGE)
-                    float degeLength = distance(p0,p1);
+                    float edgeLength = distance(p0,p1);
                     float3 center = (p0+p1)*0.5;
-                    float viewDistance = distance(edgeCenter,_WorldSpaceCameraPos);
+                    float viewDistance = distance(center,_WorldSpaceCameraPos);
                     return edgeLength * _ScreenParams.y/(_TessellationEdgeLength * viewDistance);
                 #endif
                 return _TessellationUniform;
