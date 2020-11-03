@@ -11,9 +11,13 @@ public class DayTimeAnimationDriver : MonoBehaviour
     [Min(1)]
     public float secondsADay = 30;
 
+    public bool autoDaytime;
+
+    [Header("昼夜时间比例(0:夜,1:昼)")]
+    [Range(0,1)]public float timeRate;
+
     float elapsedSecs;
     [Header("Debug Info")]
-    [SerializeField]private float timeRate;
     [SerializeField]float hour;
 
     static List<DayTimeAnimationItem> animList = new List<DayTimeAnimationItem>();
@@ -35,7 +39,11 @@ public class DayTimeAnimationDriver : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        UpdateTimeRate();
+        if(autoDaytime)
+            UpdateTimeRate();
+        
+        timeRate -= Mathf.Floor(timeRate);
+
         hour = timeRate * 24;
 
         UpdateAnimations();
