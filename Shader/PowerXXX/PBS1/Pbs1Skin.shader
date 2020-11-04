@@ -36,6 +36,8 @@ Shader "Unlit/Pbs1 skin"
         _SpecIntensity("_SpecIntensity",float) = 1
 
         _FlowNormalMap("_FlowNormalMap",2d) = ""{}
+
+        _NormalDistriMap("_NormalDistriMap",2d)=""{}
     }
     SubShader
     {
@@ -64,6 +66,7 @@ Shader "Unlit/Pbs1 skin"
             #define PI 3.1415
             #define SKIN_DIFFUSE
             #define LIP_SPEC
+            #define BLEND_RAIN
 
             struct appdata
             {
@@ -117,6 +120,7 @@ Shader "Unlit/Pbs1 skin"
             float _SpecIntensity;
 
             sampler2D _FlowNormalMap;
+            sampler2D _NormalDistriMap;
 //------------ gi
             void VertexGI(inout v2f o,appdata v,float3 worldPos,float3 worldNormal){
                 #ifdef LIGHTMAP_ON
@@ -241,6 +245,13 @@ Shader "Unlit/Pbs1 skin"
                 return frac(sin(dot(uv,float2(100,789)))*56789);
             }
 
+            float PHBeckmann(float nh,float rough){
+                float a = acos(nh);
+                float ta = tan(a);
+                float val = 1/(rough*rough*pow(nh,4)) * exp(-ta*ta/rough*rough);
+                return val;
+            }
+
             half3 BRDF_PBS (half3 diffColor, half3 specColor, half oneMinusReflectivity, half smoothness,
                 float3 normal, float3 viewDir,
                 UnityLight light, UnityIndirect gi)
@@ -261,7 +272,7 @@ Shader "Unlit/Pbs1 skin"
                 float nv = abs(dot(normal,viewDir));
                 float lv = saturate(dot(light.dir,viewDir));
                 float lh = saturate(dot(light.dir,h));
-
+                
                 float V = SmithJoingGGX(nl,nv,rough);
                 float D = GGX(nh,rough2);
                 float3 F = FresnelTerm(specColor,lh);
@@ -286,9 +297,15 @@ Shader "Unlit/Pbs1 skin"
                 float3 tn = UnpackScaleNormal(tex2D(_NormalMap,TRANSFORM_TEX(i.uv.xy,_NormalMap)),_NormalMapIntensity);
                 float3 detailNormal = UnpackScaleNormal(tex2D(_DetailNormalMap,TRANSFORM_TEX(i.uv.xy,_DetailNormalMap)),_DetailNormalMapIntensity);
                 tn = lerp(tn,BlendNormals(tn,detailNormal),_NormalBlendIntensity);
+
+                // blend rain
+                float2 mainUVOffset = (float2)0;
+                #if defined(BLEND_RAIN)
                 float3 t1 = tex2D(_NormalMap,i.uv.xy);
                 float3 t2 = tex2D(_FlowNormalMap,i.uv.xy);
-                tn = normalize((t1+t2));
+                tn = normalize((tn+t2));
+                mainUVOffset = tn * 0.05;
+                #endif
                 // return tn.xyzx;
 
                 float3 n = normalize(float3(
@@ -312,7 +329,7 @@ Shader "Unlit/Pbs1 skin"
                 UnityGI gi = FragGI(light.dir,light.color,worldPos,atten,v,n,i.lightmapOrSH,rough,occlusion);
                 
                 // sample the texture
-                float4 diffColor = tex2D(_MainTex, i.uv.xy) * _MainTexIntensity * _Color;
+                float4 diffColor = tex2D(_MainTex, i.uv.xy + mainUVOffset) * _MainTexIntensity * _Color;
   
                 float3 specColor = 0;
                 // DiffuseSpecularColor(diffColor.rgb,specColor,metallic);
@@ -327,7 +344,7 @@ Shader "Unlit/Pbs1 skin"
 
                 float4 col = float4(0,0,0,1);
                 col.rgb = BRDF_PBS(diffColor,specColor,oneMinusReflectivition,smoothness,n,v,gi.light,gi.indirect);
-
+return col;
                 float sssMask = tex2D(_SSSThickMap,i.uv.xy);
                 float3 sss = FastSSS(light.dir,v) * sssMask * _BackSSSIntensity;
                 float3 sss2 = FastSSS(-light.dir,v) * sssMask * _FrontSSSIntensity;
