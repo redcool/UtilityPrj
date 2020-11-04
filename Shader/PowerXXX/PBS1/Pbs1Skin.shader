@@ -344,7 +344,7 @@ Shader "Unlit/Pbs1 skin"
 
                 float4 col = float4(0,0,0,1);
                 col.rgb = BRDF_PBS(diffColor,specColor,oneMinusReflectivition,smoothness,n,v,gi.light,gi.indirect);
-return col;
+
                 float sssMask = tex2D(_SSSThickMap,i.uv.xy);
                 float3 sss = FastSSS(light.dir,v) * sssMask * _BackSSSIntensity;
                 float3 sss2 = FastSSS(-light.dir,v) * sssMask * _FrontSSSIntensity;
