@@ -4,7 +4,7 @@
     法线图
     阴影
     高光,漫射
-
+    skin = rampDiffuse + vdf + diffuseProfile(frontSSS) + sss(backSSS)
 */
 Shader "Unlit/Pbs1 skin"
 {
@@ -15,29 +15,38 @@ Shader "Unlit/Pbs1 skin"
         _Color("_Color",color) = (1,1,1,1)
         _NormalMap("_NormalMap",2d) = "bump"{}
         _NormalMapIntensity("_NormalMapIntensity",float) = 1
+
+        _MetallicMaskMap("Metallic(R),Smoothness(G),Occlusion(B)",2d) = "white"{}
         _Metallic("_Metallic",range(0,1)) = 0.04
         _Smoothness("_Smoothness",range(0,1)) = 0.5
         _Occlusion("_Occlusion",range(0,1)) = 1
 
+        [Header(DetailNormalMap)]
         _DetailNormalMap("_DetailNormalMap",2d) = "bump"{}
         _DetailNormalMapIntensity("_DetailNormalMapIntensity",float) = 1
         _NormalBlendIntensity("_NormalBlendIntensity",range(0,1)) = 0
 
+        [Header(Emission)]
+        _EmissionMap("_EmissionMap",2d)=""{}
+        [hdr]_EmissionColor("_EmissionColor",color) =(0,0,0,0)
+
+        [Header(SkinDiffuse)]
         _SkinLUT("_SkinLUT(R)",2d) = ""{}
         _SkinIntensity("_SkinIntensity",range(0,1)) = 1
 
+        [Header(SkinSSS)]
         _SSSThickMap("_SSSThickMap(R)",2d) = ""{}
         _SSSColor("_SSSColor",color) = (1,1,1,1)
         _FrontSSSIntensity("_FrontSSSIntensity",range(0,1)) = 1
         _BackSSSIntensity("_BackSSSIntensity",range(0,1)) = 1
 
+        [Header(LipSpecular)]
         _LipSpecMap("_LipSpecMap",2d) = ""{}
         _LipSpecMask("_LipSpecMask(B)",2d) =""{}
-        _SpecIntensity("_SpecIntensity",float) = 1
+        _LipSpecIntensity("_LipSpecIntensity",float) = 1
 
+        [Header(FlowRT)]
         _FlowNormalMap("_FlowNormalMap",2d) = ""{}
-
-        _NormalDistriMap("_NormalDistriMap",2d)=""{}
     }
     SubShader
     {
@@ -103,9 +112,13 @@ Shader "Unlit/Pbs1 skin"
             float _DetailNormalMapIntensity;
             float _NormalBlendIntensity;
 
+            sampler2D _MetallicMaskMap;
             float _Smoothness;
             float _Metallic;
             float _Occlusion;
+
+            sampler2D _EmissionMap;
+            float4 _EmissionColor;
 // skin
             sampler2D _SkinLUT;
             float _SkinIntensity;
@@ -117,10 +130,10 @@ Shader "Unlit/Pbs1 skin"
             sampler2D _LipSpecMask;
             sampler2D _LipSpecMap;
             float4 _LipSpecMap_ST;
-            float _SpecIntensity;
+            float _LipSpecIntensity;
 
             sampler2D _FlowNormalMap;
-            sampler2D _NormalDistriMap;
+
 //------------ gi
             void VertexGI(inout v2f o,appdata v,float3 worldPos,float3 worldNormal){
                 #ifdef LIGHTMAP_ON
@@ -228,8 +241,8 @@ Shader "Unlit/Pbs1 skin"
             }
 
             float3 FastSSS(float3 lightDir,float3 viewDir){
-                float sss = saturate(-dot(lightDir,viewDir));
-                return sss * _SSSColor;
+                float lv = saturate(-dot(lightDir,viewDir));
+                return lv * _SSSColor;
             }
 
             inline float SkinDiffuse(float nl){
@@ -237,10 +250,21 @@ Shader "Unlit/Pbs1 skin"
             }
 
             inline float3 LipSpecColor(float2 uv,float3 specColor){
-                float3 lipSpec = tex2D(_LipSpecMap,TRANSFORM_TEX(uv,_LipSpecMap));
+                float3 lipSpec = tex2D(_LipSpecMap,TRANSFORM_TEX(uv,_LipSpecMap)) * _LipSpecIntensity;
                 float3 lipSpecMask = tex2D(_LipSpecMask,uv);
                 return lerp(specColor,lipSpec,lipSpecMask.x+lipSpecMask.y+lipSpecMask.z);
             }
+
+            inline float3 CalcSSS(float2 uv,float3 lightDir,float3 viewDir){
+                float sssMask = tex2D(_SSSThickMap,uv);
+                float3 sss = FastSSS(lightDir,viewDir) * sssMask * _BackSSSIntensity;
+                float3 diffuseProfile = FastSSS(-lightDir,viewDir) * sssMask * _FrontSSSIntensity;
+                
+                return diffuseProfile + sss;
+            }
+
+            // inline float3 Skin
+
             inline float N21(float2 uv){
                 return frac(sin(dot(uv,float2(100,789)))*56789);
             }
@@ -316,10 +340,11 @@ Shader "Unlit/Pbs1 skin"
                 float3 v = normalize(UnityWorldSpaceViewDir(worldPos));
 
                 // 
-                float smoothness = _Smoothness;
+                float4 metallicMask = tex2D(_MetallicMaskMap,i.uv.xy);
+                float metallic = _Metallic * metallicMask.r;
+                float smoothness = _Smoothness * metallicMask.g;
                 float rough = 1 - smoothness;
-                float metallic = _Metallic;
-                float occlusion = _Occlusion;
+                float occlusion = _Occlusion * metallicMask.b;
 
                 // shadow
                 UNITY_LIGHT_ATTENUATION(atten,i,worldPos);
@@ -345,11 +370,11 @@ Shader "Unlit/Pbs1 skin"
                 float4 col = float4(0,0,0,1);
                 col.rgb = BRDF_PBS(diffColor,specColor,oneMinusReflectivition,smoothness,n,v,gi.light,gi.indirect);
 
-                float sssMask = tex2D(_SSSThickMap,i.uv.xy);
-                float3 sss = FastSSS(light.dir,v) * sssMask * _BackSSSIntensity;
-                float3 sss2 = FastSSS(-light.dir,v) * sssMask * _FrontSSSIntensity;
+                // sss
+                col.rgb += CalcSSS(i.uv.xy,light.dir,v);
+                // emission
                 
-                col.rgb += sss2 + sss;
+                col.rgb += tex2D(_EmissionMap,i.uv.xy) * _EmissionColor * diffColor;
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
