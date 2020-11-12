@@ -52,15 +52,39 @@
 #define MAX_STEPS 100
 #define MAX_DIST 100.0
 #define SURF_DIST 0.01
+float smin(float a,float b,float k){
+    float h = clamp(0.5 + 0.5*(b-a)/k,0,1);
+    return lerp(b,a,h) - k*h*(1-h);
+}
 float GetDist(float3 p){
+    /*
     float3 sphere = float3(0,2,4);
     float radius = 1;
     float sphereDist = distance(sphere,p) - radius;
     float planeDist = p.y;
     // return saturate(planeDist * sphereDist);
     return min(planeDist,sphereDist);
+    */
+
+    float pd = p.y;
+    float sd1 = distance(p,float3(1,2,4)) - 1;
+    float sd2 = distance(p,float3(0,2,5)) - 1;
+    float sd = smin(sd1,sd2,.4);
+    float sd3 = distance(p,float3(-1,2.5,6))-1;
+    sd = smin(sd,sd3,.4);
+    return min(pd,sd);
 }
 
+
+float Raymarch(float3 ro,float3 rd){
+    float d0 = 0;
+    for(int i=0;i<MAX_STEPS;i++){
+        float3 p = ro + rd * d0;
+        d0 += GetDist(p);
+        if(d0 > MAX_DIST || d0 < SURF_DIST) break;
+    }
+    return d0;
+}
 float3 GetNormal(float3 p){
     float d = GetDist(p);
     float2 e = float2(0.01,0);
@@ -70,15 +94,6 @@ float3 GetNormal(float3 p){
         GetDist(p - e.yyx)
     );
     return normalize(n);
-}
-float Raymarch(float3 ro,float3 rd){
-    float d0 = 0;
-    for(int i=0;i<MAX_STEPS;i++){
-        float3 p = ro + rd * d0;
-        d0 += GetDist(p);
-        if(d0 > MAX_DIST || d0 < SURF_DIST) break;
-    }
-    return d0;
 }
 float GetLight(float3 p){
     float3 lightPos = float3(0,10,4) + float3(cos(_Time.y),0,sin(_Time.y));
