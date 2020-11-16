@@ -39,6 +39,7 @@ Shader "ZX/FX/PowerVFXShader"
 
 		[Header(Dissolve)]
 		[Toggle(DISSOLVE_ON)]_DissolveOn("Dissolve On?",int)=0
+		[Toggle]_DissolveRevert("_DissolveRevert",int) = 0
 		_DissolveTex("Dissolve Tex",2d)=""{}
 		[Toggle]_DissolveTexUseR("_DisolveTexUse R(uncheck use A)?",int)=0
 		
@@ -49,8 +50,9 @@ Shader "ZX/FX/PowerVFXShader"
 
 		[Header(DissolveEdge)]
 		[Toggle(DISSOLVE_EDGE_ON)]_DissolveEdgeOn("Dissolve Edge On?",int)=0
-		[HDR]_EdgeColor("EdgeColor",color) = (1,0,0,1)
 		_EdgeWidth("EdgeWidth",range(0,0.3)) = 0.1
+		[Toggle]_DissolveEdgeWidthBy_Custom1("_DissolveEdgeWidthBy_Custom1.w -> uv1.y",int) = 0
+		[HDR]_EdgeColor("EdgeColor",color) = (1,0,0,1)
 		_EdgeColorIntensity("EdgeColorIntensity",range(1,10)) = 1
 
 		[Header(Offset)]

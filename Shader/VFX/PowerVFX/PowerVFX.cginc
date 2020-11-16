@@ -27,12 +27,14 @@
     #endif
 
     #if defined(DISSOLVE_ON)
+        int _DissolveRevert;
         sampler2D _DissolveTex;
         int _DissolveByVertexColor;
         int _DissolveByCustomData;
         int _DissolveTexUseR;
         float4 _DissolveTex_ST;
         float _Cutoff;
+        int _DissolveEdgeWidthBy_Custom1;
         float _EdgeWidth;
         float4 _EdgeColor;
         float _EdgeColorIntensity;
@@ -72,8 +74,8 @@
         float4 vertex : POSITION;
         float3 normal:NORMAL;
         float4 color : COLOR;
-        half4 uv : TEXCOORD0; // xy:main uv,zw : particle's customData
-        half4 uv1:TEXCOORD1;
+        half4 uv : TEXCOORD0; // xy:main uv,zw : particle's customData(mainTex scroll)
+        half4 uv1:TEXCOORD1; //particle's customData(x:dissolve,y:dissolveEdgeWidth)
     };
 
     struct v2f
@@ -130,24 +132,25 @@
         #endif
     }
 
-    void ApplyDissolve(inout float4 mainColor,float2 dissolveUV,float4 color,float customData){
+    void ApplyDissolve(inout float4 mainColor,float2 dissolveUV,float4 color,float dissolveCDATA,float edgeWidthCDATA){
         #if defined(DISSOLVE_ON)
             half4 edgeColor = (half4)0;
 
             half4 dissolveTex = tex2D(_DissolveTex,dissolveUV.xy);
             half dissolve = lerp(dissolveTex.a,dissolveTex.r,_DissolveTexUseR);
-            half gray = 1 - dissolve;
+            half gray = _DissolveRevert > 0 ? dissolve : 1 - dissolve;
 
             // select cutoff
             half cutoff = _DissolveByVertexColor > 0 ? 1 - color.a : _Cutoff; // slider or vertex color
-            cutoff = _DissolveByCustomData >0 ? 1- customData :cutoff; // slider or particle's custom data
+            cutoff = _DissolveByCustomData >0 ? 1- dissolveCDATA :cutoff; // slider or particle's custom data
             cutoff = lerp(-0.1,1.01,cutoff);
 
             half a = gray - cutoff;
             clip(a);
 
             #if defined(DISSOLVE_EDGE_ON)
-                half edgeRate = cutoff + _EdgeWidth;
+                half edgeWidth = _DissolveEdgeWidthBy_Custom1 > 0? edgeWidthCDATA : _EdgeWidth;
+                half edgeRate = cutoff + edgeWidth;
                 half edge = step(gray,edgeRate);
                 edgeColor = edge * _EdgeColor * _EdgeColorIntensity;
 
@@ -227,7 +230,8 @@
             o.fresnal_customDataZ.x = 1 - dot(worldNormal,viewDir) ;
         #endif
 
-        o.fresnal_customDataZ.y = v.uv1.x;// particle customData.z
+        o.fresnal_customDataZ.y = v.uv1.x;// particle custom data (Custom1).z
+        o.fresnal_customDataZ.z = v.uv1.y; // particle custom data (Custom1).w
         return o;
     }
     fixed4 frag(v2f i) : SV_Target
@@ -237,6 +241,7 @@
         float4 mainUV = MainTexOffset(i.uv);
         float fresnal = i.fresnal_customDataZ.x;
         float dissolveCustomData = i.fresnal_customDataZ.y;
+        float dissolveEdgeWidth = i.fresnal_customDataZ.z;
 
         //use _ScreenColorTexture
         mainUV.xy = _MainTexUseScreenColor == 0 ? mainUV.xy : i.grabPos.xy/i.grabPos.w;
@@ -262,7 +267,7 @@
         //dissolve
         #if defined(DISSOLVE_ON)
             float2 dissolveUV = TRANSFORM_TEX(mainUV.zw,_DissolveTex);
-            ApplyDissolve(mainColor,dissolveUV,i.color,dissolveCustomData);
+            ApplyDissolve(mainColor,dissolveUV,i.color,dissolveCustomData,dissolveEdgeWidth);
         #endif
         #if defined(FRESNAL_ON)
         ApplyFresnal(mainColor,fresnal);

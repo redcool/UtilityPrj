@@ -34,15 +34,18 @@ _DistortionIntensity=强度
 _DistortTile=平铺(xy:1层,zw:2层)
 _DistortDir=方向(xy:1层,zw:2层)
 
-_DissolveOn=开启溶解
+_DissolveOn=开启溶解?
+_DissolveRevert=反向溶解?
 _DissolveTex=溶解图
 _DissolveTexUseR=使用溶解图R通道?
 _DissolveByVertexColor=溶解使用顶点颜色(A)
-_DissolveByCustomData=溶解使用CustomData.z->uv1.x
-_Cutoff=透明测试参考值
-_DissolveEdgeOn=开启溶解边
-_EdgeColor=边颜色
+_DissolveByCustomData=溶解使用CustomData.z->uv1.x?
+_Cutoff=镂空值
+
+_DissolveEdgeOn=开启溶解边?
+_DissolveEdgeWidthBy_Custom1=溶解边受(CustomData.w->uv1.有)控制?
 _EdgeWidth=边宽度
+_EdgeColor=边颜色
 _EdgeColorIntensity = 边强度
 
 _OffsetOn=开启流光
