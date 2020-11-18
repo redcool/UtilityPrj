@@ -120,13 +120,14 @@ fixed4 frag (v2f i) : SV_Target
     if(_AlphaTestOn)
         clip(alpha - 0.5);
 
-    float3 indirectSpecular = texCUBElod(_EnvCube,float4(i.uv,0,roughness*6)) * occlusion * _EnvIntensity;
-    float3 indrectDiffuse = albedo * _IndirectIntensity * occlusion;
+    float3 indirectSpecular = texCUBElod(_EnvCube,float4(r,roughness*6)) * occlusion * _EnvIntensity;
+    float3 indirectDiffuse = albedo * occlusion * _IndirectIntensity;
+    indirectDiffuse += ShadeSH9(float4(n,1));
 
     UnityLight light = GetLight();
     // UnityLight light = {_LightColor0.xyz,_WorldSpaceLightPos0.xyz,0};
     
-    UnityIndirect indirect = {indrectDiffuse,indirectSpecular};
+    UnityIndirect indirect = {indirectDiffuse,indirectSpecular};
 
     half oneMinusReflectivity;
     half3 specColor;

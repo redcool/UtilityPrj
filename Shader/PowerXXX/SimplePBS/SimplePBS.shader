@@ -15,19 +15,19 @@ Shader "Character/SimplePBS"
         _NormalMap("NormalMap",2d) = "bump"{}
         _NormalMapScale("_NormalMapScale",range(0,5)) = 1
 
-        _MetallicMap("_MetallicMap(R)",2d) = ""{}
+        _MetallicMap("_MetallicMap(R)",2d) = "white"{}
         _Metallic("_Metallic",range(0,1)) = 0.5
 
-        _SmoothnessMap("SmoothnessMap(G)",2d) = ""{}
+        _SmoothnessMap("SmoothnessMap(G)",2d) = "white"{}
         _Smoothness("Smoothness",range(0,1)) = 0
 
         _OcclusionMap("_OcclusionMap(B)",2d) = "white"{}
         _Occlusion("_Occlusion",range(0,1)) = 1
 
-        _EnvCube("_EnvCube",cube) = ""{}
+        _EnvCube("_EnvCube",cube) = "white"{}
         _EnvIntensity("_EnvIntensity",float) = 1
 
-        _EmissionMap("_EmissionMap",2d) = ""{}
+        _EmissionMap("_EmissionMap",2d) = "white"{}
         _Emission("_Emission",float) = 0
 
         _IndirectIntensity("_IndirectIntensity",float) = 0.5
@@ -46,6 +46,9 @@ Shader "Character/SimplePBS"
 
         [Header(DepthMode)]
         [Toggle]_ZWriteOn("_ZWriteOn?",int) = 1
+
+        [Header(CullMode)]
+        [Enum(UnityEngine.Rendering.CullMode)]_CullMode("_CullMode",int) = 2
     }
 
     SubShader
@@ -54,6 +57,7 @@ Shader "Character/SimplePBS"
         LOD 431
         Blend [_SrcMode][_DstMode]
         ZWrite [_ZWriteOn]
+        Cull[_CullMode]
 
         Pass
         {
@@ -76,6 +80,7 @@ Shader "Character/SimplePBS"
         LOD 421
         Blend [_SrcMode][_DstMode]
         ZWrite [_ZWriteOn]
+        Cull[_CullMode]
 
         Pass
         {
@@ -98,6 +103,7 @@ Shader "Character/SimplePBS"
         LOD 100
         Blend [_SrcMode][_DstMode]
         ZWrite [_ZWriteOn]
+        Cull[_CullMode]
 
         Pass
         {
@@ -113,5 +119,7 @@ Shader "Character/SimplePBS"
            
             ENDCG
         }
-    }    
+    }
+
+    FallBack "Transparent/Cutout/VertexLit"
 }
