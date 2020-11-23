@@ -22,6 +22,7 @@ _MainTexOffsetUseCustomData_XY=纹理滚动使用CustomData.xy->uv.zw
 _Color=主纹理颜色
 _ColorScale=主纹理颜色倍数
 _MainTexMask=主纹理遮罩
+_MainTexMaskOffsetStop=主纹理遮罩自动滚动停止
 _MainTexMaskUseR=遮罩使用R通道?
 
 

@@ -13,6 +13,7 @@
     int _DoubleEffectOn; //2层效果,
     sampler2D _MainTexMask;
     float4 _MainTexMask_ST;
+    int _MainTexMaskOffsetStop; //
     int _MainTexMaskUseR;
     int _MainTexUseScreenColor;
 
@@ -112,7 +113,8 @@
     }
 
     void ApplyMainTexMask(inout float4 mainColor,float2 uv){
-        float4 maskTex = tex2D(_MainTexMask,uv*_MainTexMask_ST.xy + _MainTexMask_ST.zw);// fp opearate mask uv.
+        float2 maskTexOffset = _MainTexMaskOffsetStop ? _MainTexMask_ST.zw : _MainTexMask_ST.zw * _Time.xx;
+        float4 maskTex = tex2D(_MainTexMask,uv*_MainTexMask_ST.xy + maskTexOffset);// fp opearate mask uv.
         float mask = _MainTexMaskUseR > 0 ? maskTex.r : maskTex.a;
         mainColor.a *= mask;
     }

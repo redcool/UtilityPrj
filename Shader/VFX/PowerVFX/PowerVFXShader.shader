@@ -10,6 +10,7 @@ Shader "ZX/FX/PowerVFXShader"
 		_ColorScale("ColorScale",range(1,3)) = 1
 		[Header(MaskTexMask)]
 		_MainTexMask("Main Texture Mask(R)", 2D) = "white" {}
+		[Toggle]_MainTexMaskOffsetStop("_MainTexMaskOffsetStop",int)=0
 		[Toggle]_MainTexMaskUseR("_MainTexMaskUseR",int) = 1
 		[Toggle]_MainTexUseScreenColor("_MainTexUseScreenColor",int) = 0
 

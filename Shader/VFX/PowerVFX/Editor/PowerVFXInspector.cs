@@ -26,7 +26,7 @@ namespace PowerVFX
         static string[] tabNames = new[] {"Settings", "Main", "Distortion", "Dissovle", "Offset", "Fresnal","EnvReflect","MatCap"};
         static List<string[]> propNameList = new List<string[]> {
             new []{ "_DoubleEffectOn", "_CullMode", "_ZWriteMode"},
-            new []{ "_MainTex", "_MainTexOffsetStop", "_MainTexOffsetUseCustomData_XY", "_Color","_ColorScale", "_MainTexMask","_MainTexMaskUseR" ,"_MainTexUseScreenColor"},
+            new []{ "_MainTex", "_MainTexOffsetStop", "_MainTexOffsetUseCustomData_XY", "_Color","_ColorScale", "_MainTexMask","_MainTexMaskOffsetStop","_MainTexMaskUseR" ,"_MainTexUseScreenColor"},
             new []{ "_DistortionOn", "_NoiseTex","_NoiseTex2", "_DistortionMaskTex", "_DistortionMaskUseR", "_DistortionIntensity", "_DistortTile", "_DistortDir",},
             new []{ "_DissolveOn","_DissolveRevert", "_DissolveTex", "_DissolveTexUseR", "_DissolveByVertexColor", "_DissolveByCustomData", "_Cutoff", "_DissolveEdgeOn","_DissolveEdgeWidthBy_Custom1", "_EdgeWidth", "_EdgeColor","_EdgeColorIntensity"},
             new []{ "_OffsetOn", "_OffsetTex", "_OffsetMaskTex", "_OffsetMaskTexUseR", "_OffsetTexColorTint", "_OffsetTexColorTint2", "_OffsetTile", "_OffsetDir", "_BlendIntensity", "_OffsetHeightMap", "_OffsetHeight"},
