@@ -42,6 +42,7 @@ Shader "ZX/FX/PowerVFXShader"
 		[Toggle(DISSOLVE_ON)]_DissolveOn("Dissolve On?",int)=0
 		[Toggle]_DissolveRevert("_DissolveRevert",int) = 0
 		_DissolveTex("Dissolve Tex",2d)=""{}
+		[Toggle]_DissolveTexOffsetStop("_DissolveTexOffsetStop ?",int) = 0
 		[Toggle]_DissolveTexUseR("_DisolveTexUse R(uncheck use A)?",int)=0
 		
 		[Header(DissolveType)]

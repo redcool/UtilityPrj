@@ -34,6 +34,7 @@
         int _DissolveByCustomData;
         int _DissolveTexUseR;
         float4 _DissolveTex_ST;
+        int _DissolveTexOffsetStop;
         float _Cutoff;
         int _DissolveEdgeWidthBy_Custom1;
         float _EdgeWidth;
@@ -268,7 +269,8 @@
 
         //dissolve
         #if defined(DISSOLVE_ON)
-            float2 dissolveUV = TRANSFORM_TEX(mainUV.zw,_DissolveTex);
+            float2 dissolveUVOffsetScale = lerp(_Time.xx,1,_DissolveTexOffsetStop);
+            float2 dissolveUV = mainUV.zw * _DissolveTex_ST.xy + _DissolveTex_ST.zw * dissolveUVOffsetScale;
             ApplyDissolve(mainColor,dissolveUV,i.color,dissolveCustomData,dissolveEdgeWidth);
         #endif
         #if defined(FRESNAL_ON)

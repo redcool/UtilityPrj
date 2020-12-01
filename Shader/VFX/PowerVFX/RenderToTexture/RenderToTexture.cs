@@ -26,12 +26,12 @@ public class RenderToTexture : MonoBehaviour
 
         blitColor = new CommandBuffer();
         blitColor.name = "blit color";
-        blitColor.Blit(screenRT, colorRT);
-        cam.AddCommandBuffer(CameraEvent.AfterSkybox, blitColor);
+        blitColor.Blit(BuiltinRenderTextureType.CurrentActive, colorRT);
+        cam.AddCommandBuffer(CameraEvent.AfterForwardOpaque, blitColor);
 
         blitDepth = new CommandBuffer();
         blitDepth.name = "blit depth";
-        blitDepth.Blit(screenRT.depth, depthRT.colorBuffer);
+        blitDepth.Blit(BuiltinRenderTextureType.Depth, depthRT.colorBuffer);
         cam.AddCommandBuffer(CameraEvent.AfterForwardOpaque, blitDepth);
 
         blitFrame = new CommandBuffer();
