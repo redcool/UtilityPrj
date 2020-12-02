@@ -13,7 +13,7 @@ public class TextureBlendSamplerWindow : EditorWindow
     int outputTextureSize = 2048;
 
 
-    [MenuItem("MyEditors/TextureSampleBatcher/Open")]
+    [MenuItem("MyEditors/TextureBlendSamplerWindow/Open")]
     static void Open()
     {
         var win = GetWindow<TextureBlendSamplerWindow>();
