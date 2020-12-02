@@ -15,7 +15,9 @@
             if (string.IsNullOrEmpty(assetPath))
                 return "";
 
-            var dir = Path.GetDirectoryName(assetPath);
+            var dir = assetPath;
+            if(Path.HasExtension(dir))
+                dir = Path.GetDirectoryName(assetPath);
 
             var sb = new StringBuilder();
             sb.Append(dir);
@@ -23,6 +25,7 @@
                 sb.Append(item);
             return sb.ToString();
         }
+
         public static string GetAssetAbsPath(string assetPath)
         {
             return Application.dataPath + "/" + assetPath.Substring("Assets".Length);
@@ -52,5 +55,6 @@
                 Directory.CreateDirectory(dirPath);
             }
         }
+
     }
 }
