@@ -10,5 +10,8 @@ float SinLine(float2 uv){
 float Line(float2 uv){
     return smoothstep(0.001,0,abs(uv.x));
 }
-
+float SlideLine(float v,float progress){
+    float t = abs(v - progress);
+    return smoothstep(0.01,0.001,t);
+}
 #endif //SPLINE_LIB_CGINC
