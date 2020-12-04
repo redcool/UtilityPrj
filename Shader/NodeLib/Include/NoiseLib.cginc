@@ -27,3 +27,9 @@
                 c += smoothNoise(uv * 64) * 0.0625;
                 return c/2;
             }
+
+            float Hash21(float2 p){
+                p =frac(p * float2(123.34,456.21));
+                p += dot(p,p + 45.32);
+                return frac(p.x * p.y);
+            }
