@@ -7,6 +7,10 @@ using UnityEngine;
 /// </summary>
 public class DayTimeAnimationDriver : MonoBehaviour
 {
+    public enum UpdateMode
+    {
+        Frame1=1,Frame2=2,Frame4=4,Frame8=8,Frame16=16
+    }
     [Header("(游戏)一天是(现实中)多少秒?")]
     [Min(1)]
     public float secondsADay = 30;
@@ -16,9 +20,15 @@ public class DayTimeAnimationDriver : MonoBehaviour
     [Header("昼夜时间比例(0:夜,1:昼)")]
     [Range(0,1)]public float timeRate;
 
+    [Header("更新间隔")]
+    public UpdateMode updateMode = UpdateMode.Frame2;
+
     float elapsedSecs;
     [Header("Debug Info")]
     [SerializeField]float hour;
+    public static DayTimeAnimationDriver Instance;
+
+    int currentFrame;
 
     static List<DayTimeAnimationItem> animList = new List<DayTimeAnimationItem>();
     public static void Add(DayTimeAnimationItem item) {
@@ -35,7 +45,12 @@ public class DayTimeAnimationDriver : MonoBehaviour
         }
     }
 
-
+    void Awake(){
+        Instance = this;
+    }
+    void OnDestroy() {
+        Instance = null;
+    }
     // Update is called once per frame
     void Update()
     {
@@ -46,7 +61,17 @@ public class DayTimeAnimationDriver : MonoBehaviour
 
         hour = timeRate * 24;
 
-        UpdateAnimations();
+        if (CanUpdate())
+        {
+            UpdateAnimations();
+            currentFrame = 0;
+        }
+    }
+
+    bool CanUpdate()
+    {
+        var remain = ++currentFrame % (int)updateMode;
+        return remain == 0;
     }
 
     private void UpdateAnimations()
