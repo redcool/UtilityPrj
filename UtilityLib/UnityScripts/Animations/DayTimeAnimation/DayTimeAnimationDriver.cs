@@ -19,6 +19,7 @@ public class DayTimeAnimationDriver : MonoBehaviour
 
     [Header("昼夜时间比例(0:夜,1:昼)")]
     [Range(0,1)]public float timeRate;
+    float lastRate;
 
     [Header("更新间隔")]
     public UpdateMode updateMode = UpdateMode.Frame2;
@@ -64,14 +65,16 @@ public class DayTimeAnimationDriver : MonoBehaviour
         if (CanUpdate())
         {
             UpdateAnimations();
+            
             currentFrame = 0;
+            lastRate = timeRate;
         }
     }
 
     bool CanUpdate()
     {
         var remain = ++currentFrame % (int)updateMode;
-        return remain == 0;
+        return remain == 0 && timeRate != lastRate;
     }
 
     private void UpdateAnimations()
