@@ -29,6 +29,8 @@ public class DayTimeAnimationDriver : MonoBehaviour
     [SerializeField]float hour;
     public static DayTimeAnimationDriver Instance;
 
+    public static event Action OnAnimationUpdate;
+
     int currentFrame;
 
     static List<DayTimeAnimationItem> animList = new List<DayTimeAnimationItem>();
@@ -51,6 +53,7 @@ public class DayTimeAnimationDriver : MonoBehaviour
     }
     void OnDestroy() {
         Instance = null;
+        OnAnimationUpdate = null;
     }
     // Update is called once per frame
     void Update()
@@ -83,6 +86,11 @@ public class DayTimeAnimationDriver : MonoBehaviour
         {
             if(item.isActiveAndEnabled)
                 item.UpdateAnimation(timeRate);
+        }
+
+        if(OnAnimationUpdate != null)
+        {
+            OnAnimationUpdate();
         }
     }
 
