@@ -3,7 +3,8 @@
 
 #include "UnityCG.cginc"
 #include "UnityStandardutils.cginc"
-#include "UnityPBSLighting.cginc"
+// #include "UnityPBSLighting.cginc"
+#include "UnityStandardBRDF.cginc"
 #include "SimplePBSCore.cginc"
 
 struct appdata
@@ -97,6 +98,7 @@ float4 frag (v2f i) : SV_Target
     half oneMinusReflectivity;
     half3 specColor;
     albedo = DiffuseAndSpecularFromMetallic (albedo, metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
+// specColor *= albedo;
 
     half outputAlpha;
     albedo = AlphaPreMultiply (albedo, alpha, oneMinusReflectivity, /*out*/ outputAlpha);
@@ -111,7 +113,7 @@ float4 frag (v2f i) : SV_Target
         data.clothMask = tex2D(_ClothMaskMap,uv).r;
     }
 
-    half4 c = PBS (albedo, specColor, oneMinusReflectivity, smoothness, n, v, light, indirect,data);
+    half4 c = CalcPBS(albedo, specColor, oneMinusReflectivity, smoothness, n, v, light, indirect,data);
     c.a = outputAlpha;
 
     c.rgb += albedo * tex2D(_EmissionMap,uv).rgb * _Emission;

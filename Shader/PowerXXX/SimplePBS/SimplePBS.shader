@@ -106,6 +106,7 @@ Shader "Character/SimplePBS"
             #pragma multi_compile_fog
             #pragma target 3.0
             #define UNITY_BRDF_PBS BRDF1_Unity_PBS
+            #define PBS1
             #include "SimplePBSForward.cginc"
            
             ENDCG
@@ -129,6 +130,7 @@ Shader "Character/SimplePBS"
             #pragma multi_compile_fog
             #pragma target 3.0
             #define UNITY_BRDF_PBS BRDF2_Unity_PBS
+            #define PBS2
             #include "SimplePBSForward.cginc"
            
             ENDCG
@@ -152,6 +154,7 @@ Shader "Character/SimplePBS"
             #pragma multi_compile_fog
             #pragma target 3.0
             #define UNITY_BRDF_PBS BRDF3_Unity_PBS
+            #define PBS3
             #include "SimplePBSForward.cginc"
            
             ENDCG

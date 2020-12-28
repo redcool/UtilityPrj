@@ -3,6 +3,8 @@
 #if !defined (SIMPLE_PBS_CORE_CGINC)
 #define SIMPLE_PBS_CORE_CGINC
 
+#include "UnityLightingCommon.cginc"
+
 #define PI 3.1415926
 #define INV_PI 0.31830988618f
 #define DielectricSpec 0.04
@@ -156,7 +158,23 @@ inline UnityIndirect CalcGI(float3 albedo,float2 uv,float3 reflectDir,float3 nor
     return indirect;
 }
 
-float RoughnessToSpecPower(float a){
+inline float Pow4(float a){
+    float a2 = a*a;
+    return a2*a2;
+}
+inline float Pow5(float a){
+    float a2 = a*a;
+    return a2*a2*a;
+}
+
+inline float DisneyDiffuse(float nv,float nl,float lh,float roughness){
+    float fd90 = 0.5 + 2*roughness*lh*lh;
+    float lightScatter = 1 - (fd90 - 1) * Pow5(1 - nl);
+    float viewScatter = 1 - (fd90 - 1 ) * Pow5(1 - nv);
+    return lightScatter * viewScatter;
+}
+
+inline float RoughnessToSpecPower(float a){
     float a2 = a * a;
     float sq = max(1e-4f,a2 * a2);
     float n = 2.0/sq - 2;
@@ -164,37 +182,37 @@ float RoughnessToSpecPower(float a){
     return n;
 }
 
-float SmithJointGGXTerm(float nl,float nv,float a2){
+inline float SmithJointGGXTerm(float nl,float nv,float a2){
     float v = nv * (nv * (1-a2)+a2);
     float l = nl * (nl * (1-a2)+a2);
     return 0.5f/(v + l + 1e-5f);
 }
 
-float NDFBlinnPhongTerm(float nh,float a){
+inline float NDFBlinnPhongTerm(float nh,float a){
     float normTerm = (a + 2)* 0.5/PI;
     float specularTerm = pow(nh,a);
     return normTerm * specularTerm;
 }
 
-float D_GGXTerm(float nh,float a){
+inline float D_GGXTerm(float nh,float a){
     float a2 = a  * a;
     float d = (nh*a2-nh)*nh + 1;
     return INV_PI * a2 / (d*d + 1e-7f);
 }
 
-float3 FresnelTerm(float3 F0,float lh){
+inline float3 FresnelTerm(float3 F0,float lh){
     return F0 + (1-F0) * Pow5(1 - lh);
 }
-float3 FresnelLerp(float3 f0,float3 f90,float lh){
+inline float3 FresnelLerp(float3 f0,float3 f90,float lh){
     float t = Pow5(1-lh);
     return lerp(f0,f90,t);
 }
-float3 FresnelLerpFast(float3 F0,float3 F90,float lh){
+inline float3 FresnelLerpFast(float3 F0,float3 F90,float lh){
     float t = Pow4(1 - lh);
     return lerp(F0,F90,t);
 }
 
-float D_GGXAnisoNoPI(float TdotH, float BdotH, float NdotH, float roughnessT, float roughnessB)
+inline float D_GGXAnisoNoPI(float TdotH, float BdotH, float NdotH, float roughnessT, float roughnessB)
 {
     float a2 = roughnessT * roughnessB;
     float3 v = float3(roughnessB * TdotH, roughnessT * BdotH, a2 * NdotH);
@@ -213,7 +231,7 @@ float BankBRDF(float3 l,float3 v,float3 t,float ks,float power){
     return ks * pow(sqrt(1-lt2)*sqrt(1-vt2) - lt*vt,power);
 }
 
-float Cloth(float nv,float clothMask){
+inline float Cloth(float nv,float clothMask){
     float offset = smoothstep(_ClothSpecWidthMin,_ClothSpecWidthMax,nv);
     // float offsetMask = smoothstep(0.3,0.31,smoothness);
     return saturate(offset) * clothMask;
@@ -266,7 +284,7 @@ inline float4 PBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,fl
 
     float3 specularTerm = V * D * PI * nl;
     specularTerm = max(0,specularTerm);
-    specularTerm *= any(specColor)?1:0;
+    specularTerm *= any(specColor)? 1 : 0;
 
     float surfaceReduction =1 /(a2 * a2+1);
     float grazingTerm = saturate(smoothness + (1 - oneMinusReflectivity));
@@ -277,4 +295,13 @@ inline float4 PBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,fl
     return float4(diffuse + specular,1);
 }
 
+float4 CalcPBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,float smoothness,
+    float3 normal,float3 viewDir,
+    UnityLight light,UnityIndirect gi,PBSData data){
+        #if defined(PBS1)
+            return PBS(diffColor,specColor,oneMinusReflectivity,smoothness,normal,viewDir,light,gi,data);
+        #else
+            return UNITY_BRDF_PBS(diffColor,specColor,oneMinusReflectivity,smoothness,normal,viewDir,light,gi);
+        #endif
+}
 #endif // end of SIMPLE_PBS_CORE_CGINC
