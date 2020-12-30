@@ -3,10 +3,9 @@
 
 #define INTERNAL_DATA half3 internalSurfaceTtoW0; half3 internalSurfaceTtoW1; half3 internalSurfaceTtoW2;
 #define WorldReflectionVector(data,normal) reflect (data.worldRefl, half3(dot(data.internalSurfaceTtoW0,normal), dot(data.internalSurfaceTtoW1,normal), dot(data.internalSurfaceTtoW2,normal)))
-#define WorldNormalVector(data,normal) fixed3(dot(data.internalSurfaceTtoW0,normal), dot(data.internalSurfaceTtoW1,normal), dot(data.internalSurfaceTtoW2,normal))
+#define WorldNormalVector(data,normal) float3(dot(data.internalSurfaceTtoW0,normal), dot(data.internalSurfaceTtoW1,normal), dot(data.internalSurfaceTtoW2,normal))
 
 #define CAN_VERTEX_WAVE defined(PLANTS) //!defined(PLANTS_OFF)
-
 
 sampler2D _MainTex;
 float4 _MainTex_ST;
@@ -14,14 +13,17 @@ float4 _MainTex_TexelSize;
 half  _Gloss;
 half _SpecIntensity;
 
-fixed4 _Color;
+float4 _Color;
 sampler2D _BumpMap;
 float4 _BumpMap_ST;
 float _NormalMapScale;
 
+sampler2D _MaskMap;
+float _Occlusion;
+
 sampler2D _Illum;
 float4 _IllumColor;
-fixed _EmissionScale;
+float _EmissionScale;
 
 float _Cutoff;
 int _PresetBlendMode; // data save
@@ -29,7 +31,7 @@ int _PresetBlendMode; // data save
 //------------------ keyword variables, reduce global keywords
 bool _AlphaTestOn;
 bool _NormalMapOn;
-
+float _IndirectDiffuseIntensity;
 
 struct Input {
     float2 uv_MainTex;
@@ -61,7 +63,8 @@ void vert(inout appdata_full v, out Input o) {
 }
 
 void surf (Input IN, inout SurfaceOutput o) {
-    fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
+    float4 maskMap = tex2D(_MaskMap,IN.uv_MainTex);
+    float4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
 
     #ifdef _FEATURE_SNOW
     SNOW_FRAG_FUNCTION(IN.uv_MainTex,c,IN.wn.xyz,IN.worldPos);
@@ -71,7 +74,7 @@ void surf (Input IN, inout SurfaceOutput o) {
     WATER_FRAG_FUNCTION(c,IN.normalUV,IN.wn,IN.uv_MainTex,IN.worldPos);
     #endif
 
-    
+    c.rgb *= maskMap.b; // ao
     o.Albedo = ApplyThunder(c.rgb);
     o.Alpha = c.a;
 
@@ -82,9 +85,9 @@ void surf (Input IN, inout SurfaceOutput o) {
     // #endif
 
     o.Specular = _SpecIntensity;
-    o.Gloss = _Gloss;
+    o.Gloss = _Gloss *  c.a; // g : smoothness
 
-    o.Emission = ApplyThunder(c.rgb) * tex2D(_Illum, IN.uv_BumpMap).a * _EmissionScale * _IllumColor;
+    o.Emission = ApplyThunder(c.rgb) * tex2D(_Illum, IN.uv_MainTex).a * _EmissionScale * _IllumColor;
     o.Emission *= InverseDayIntensity(false);//emission Apply DayIntensity
     #if defined (UNITY_PASS_META)
     o.Emission *= _Emission.rrr;
@@ -104,7 +107,7 @@ struct v2f_surf {
     UNITY_FOG_COORDS(8)
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
-    float2 fog :TEXCOORD9;
+    FOG_COORDS(9)
 };
 
 
@@ -124,10 +127,10 @@ v2f_surf vert_surf (appdata_full v) {
     o.uv.xy = TRANSFORM_TEX(v.texcoord, _MainTex);
     o.uv.zw = TRANSFORM_TEX(v.texcoord, _BumpMap);
     float3 worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
-    fixed3 worldNormal = UnityObjectToWorldNormal(v.normal);
-    fixed3 worldTangent = UnityObjectToWorldDir(v.tangent.xyz);
-    fixed tangentSign = v.tangent.w * unity_WorldTransformParams.w;
-    fixed3 worldBinormal = cross(worldNormal, worldTangent) * tangentSign;
+    float3 worldNormal = UnityObjectToWorldNormal(v.normal);
+    float3 worldTangent = UnityObjectToWorldDir(v.tangent.xyz);
+    float tangentSign = v.tangent.w * unity_WorldTransformParams.w;
+    float3 worldBinormal = cross(worldNormal, worldTangent) * tangentSign;
     o.tSpace0 = float4(worldTangent.x, worldBinormal.x, worldNormal.x, worldPos.x);
     o.tSpace1 = float4(worldTangent.y, worldBinormal.y, worldNormal.y, worldPos.y);
     o.tSpace2 = float4(worldTangent.z, worldBinormal.z, worldNormal.z, worldPos.z);
@@ -154,7 +157,7 @@ v2f_surf vert_surf (appdata_full v) {
 }
 
 // fragment shader
-fixed4 frag_surf (v2f_surf IN) : SV_Target {
+float4 frag_surf (v2f_surf IN) : SV_Target {
     UNITY_SETUP_INSTANCE_ID(IN);
     float3 worldPos = float3(IN.tSpace0.w, IN.tSpace1.w, IN.tSpace2.w);
     float3 worldNormal = float3(IN.tSpace0.z,IN.tSpace1.z,IN.tSpace2.z);
@@ -172,10 +175,10 @@ fixed4 frag_surf (v2f_surf IN) : SV_Target {
     surfIN.worldPos = worldPos;
 
     UnityLight light = GetLight();
-    
     SurfaceOutput o = (SurfaceOutput)0;
     o.Normal = worldNormal;
 
+// return light.dir.xyzx;
     // call surface function
     surf (surfIN, o);
     // alpha test
@@ -183,58 +186,67 @@ fixed4 frag_surf (v2f_surf IN) : SV_Target {
     if(_AlphaTestOn){
         clip (o.Alpha - _Cutoff);
     }
-    // #endif
-    // compute lighting & shadowing factor
-    UNITY_LIGHT_ATTENUATION(atten, IN, worldPos)
-    fixed4 c = 0;
-
-    // #if defined(NORMAL_MAP_ON)
-    if(_NormalMapOn){
-        fixed3 worldN;
-        worldN.x = dot(IN.tSpace0.xyz, o.Normal);
-        worldN.y = dot(IN.tSpace1.xyz, o.Normal);
-        worldN.z = dot(IN.tSpace2.xyz, o.Normal);
-        o.Normal = worldN ;
-    }
-    // #endif
-// return float4(o.Normal,1);
-    half3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
-    half3 halfDir = normalize(light.dir + viewDir);
-
-    float4 lmap = (float4)0;
-    float3 sh = (float3)0;
-
-    #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
-    lmap = IN.lmap;
+    #if defined(LOW_SETTING)
+        return LightingOnlyLightmap(o,IN.lmap);
     #else
-        #if defined(UNITY_SHOULD_SAMPLE_SH)
-            sh = 0;
+        // #endif
+        // compute lighting & shadowing factor
+        UNITY_LIGHT_ATTENUATION(atten, IN, worldPos)
+        float4 c = 0;
+
+        // #if defined(NORMAL_MAP_ON)
+        if(_NormalMapOn){
+            float3 worldN;
+            worldN.x = dot(IN.tSpace0.xyz, o.Normal);
+            worldN.y = dot(IN.tSpace1.xyz, o.Normal);
+            worldN.z = dot(IN.tSpace2.xyz, o.Normal);
+            o.Normal = worldN ;
+        }
+        // #endif
+    // return float4(o.Normal,1);
+        half3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
+        half3 halfDir = normalize(light.dir + viewDir);
+
+        float4 lmap = (float4)0;
+        float3 sh = (float3)0;
+
+        #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+        lmap = IN.lmap;
+        #else
+            #if defined(UNITY_SHOULD_SAMPLE_SH)
+                sh = 0;
+            #endif
         #endif
+        UnityGI gi;
+        UnityGIInput giInput = SetupGIInput(light,worldPos,atten,lmap,sh,/*out*/gi);
+        CalcGI(o, giInput,/*inout*/gi,/*inout*/atten);
+        // gi.indirect.diffuse *= _IndirectDiffuseIntensity;
+
+
+        // //-------- testcase
+        // return float4(gi.indirect.diffuse,1);
+        // return float4(light.dir.xyzx);
+        // return float4(o.Normal.xyzx);
+        // return LightingSimpleLambert (o, gi);
+        // return atten;
+
+        // realtime lighting: call lighting function
+        float3 specColor = _SpecColor.rgb * smoothstep(0,0.9,o.Alpha);
+        c.rgb += LightingBlinn(o,halfDir,gi,atten,specColor);
+        c.rgb += o.Emission;
+// return IN.fog.y;
+        // apply fog
+        // IN.fog = GetHeightFog(worldPos);
+        BlendFog(viewDir,IN.fog,/*inout*/c.rgb);
+
+        // if(FOG_ON){
+        //     UNITY_APPLY_FOG(IN.fogCoord, c );
+        // }
+
+        c.rgb *= DayIntensity(true);
+        c.a = o.Alpha;
+        return clamp(c,0,2);
     #endif
-    UnityGI gi;
-    UnityGIInput giInput = SetupGIInput(light,worldPos,atten,lmap,sh,/*out*/gi);
-    CalcGI(o, giInput,/*inout*/gi,/*inout*/atten);
-
-    // //-------- testcase
-    // return float4(gi.indirect.diffuse,1);
-    // return float4(light.dir.xyzx);
-    // return float4(o.Normal.xyzx);
-    // return LightingSimpleLambert (o, gi);
-    // return atten;
-
-    // realtime lighting: call lighting function
-    float3 specColor = _SpecColor.rgb * smoothstep(0,0.9,o.Alpha);
-    c.rgb += LightingBlinn(o,halfDir,gi,atten,specColor);
-
-    c.rgb += o.Emission;
-
-    // apply fog
-    BlendFog(viewDir,IN.fog,/*inout*/c.rgb);
-    UNITY_APPLY_FOG(IN.fogCoord, c );
-
-    c.rgb *= DayIntensity(true);
-    c.a = o.Alpha;
-    return c;
 }
 
 
@@ -250,16 +262,18 @@ void vert_add(inout appdata_full v, out Input o) {
     // #endif
 }
 void surf_add (Input IN, inout SurfaceOutput o) {
-    fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
+    // float4 maskMap = tex2D(_MaskMap,IN.uv_MainTex);
+    float4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
     o.Albedo = c.rgb;
     o.Alpha = c.a;
 
-    #if defined(NORMAL_MAP_ON)
-    o.Normal = UnpackScaleNormal(tex2D(_BumpMap, IN.uv_BumpMap),_NormalMapScale);
-    #endif
+    // #if defined(NORMAL_MAP_ON)
+    if(_NormalMapOn)
+        o.Normal = UnpackScaleNormal(tex2D(_BumpMap, IN.uv_BumpMap),_NormalMapScale);
+    // #endif
 
     o.Specular = _SpecIntensity;
-    o.Gloss = _Gloss;
+    o.Gloss = c.a * _Gloss; // maskMap.g;
 
     o.Emission = c.rgb * tex2D(_Illum, IN.uv_BumpMap).a * _EmissionScale * _IllumColor;
 }
@@ -276,13 +290,13 @@ v2f_surf vert_surf_add (appdata_full v) {
     o.uv.xy = TRANSFORM_TEX(v.texcoord, _MainTex);
     o.uv.zw = TRANSFORM_TEX(v.texcoord, _BumpMap);
     float3 worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
-    fixed3 worldNormal = UnityObjectToWorldNormal(v.normal);
-    fixed3 worldTangent = UnityObjectToWorldDir(v.tangent.xyz);
-    fixed tangentSign = v.tangent.w * unity_WorldTransformParams.w;
-    fixed3 worldBinormal = cross(worldNormal, worldTangent) * tangentSign;
-    o.tSpace0 = fixed4(worldTangent.x, worldBinormal.x, worldNormal.x,worldPos.x);
-    o.tSpace1 = fixed4(worldTangent.y, worldBinormal.y, worldNormal.y,worldPos.y);
-    o.tSpace2 = fixed4(worldTangent.z, worldBinormal.z, worldNormal.z,worldPos.z);
+    float3 worldNormal = UnityObjectToWorldNormal(v.normal);
+    float3 worldTangent = UnityObjectToWorldDir(v.tangent.xyz);
+    float tangentSign = v.tangent.w * unity_WorldTransformParams.w;
+    float3 worldBinormal = cross(worldNormal, worldTangent) * tangentSign;
+    o.tSpace0 = float4(worldTangent.x, worldBinormal.x, worldNormal.x,worldPos.x);
+    o.tSpace1 = float4(worldTangent.y, worldBinormal.y, worldNormal.y,worldPos.y);
+    o.tSpace2 = float4(worldTangent.z, worldBinormal.z, worldNormal.z,worldPos.z);
 
     UNITY_TRANSFER_SHADOW(o,v.texcoord1.xy); // pass shadow coordinates to pixel shader
     UNITY_TRANSFER_FOG(o,o.pos); // pass fog coordinates to pixel shader
@@ -290,7 +304,7 @@ v2f_surf vert_surf_add (appdata_full v) {
 }
 
 // fragment shader
-fixed4 frag_surf_add (v2f_surf IN) : SV_Target {
+float4 frag_surf_add (v2f_surf IN) : SV_Target {
     UNITY_SETUP_INSTANCE_ID(IN);
     float3 worldPos = float3(IN.tSpace0.w,IN.tSpace1.w,IN.tSpace2.w);
     float3 worldNormal = float3(IN.tSpace0.z,IN.tSpace1.z,IN.tSpace2.z);
@@ -305,9 +319,9 @@ fixed4 frag_surf_add (v2f_surf IN) : SV_Target {
     surfIN.uv_BumpMap = IN.uv.zw;
     surfIN.wn = worldNormal;
     #ifndef USING_DIRECTIONAL_LIGHT
-        fixed3 lightDir = normalize(UnityWorldSpaceLightDir(worldPos));
+        float3 lightDir = normalize(UnityWorldSpaceLightDir(worldPos));
     #else
-        fixed3 lightDir = _WorldSpaceLightPos0.xyz;
+        float3 lightDir = _WorldSpaceLightPos0.xyz;
     #endif
     SurfaceOutput o = (SurfaceOutput)0;
     o.Normal = worldNormal;
@@ -322,14 +336,16 @@ fixed4 frag_surf_add (v2f_surf IN) : SV_Target {
     // #endif
 
     UNITY_LIGHT_ATTENUATION(atten, IN, worldPos)
-    fixed4 c = 0;
-    #if defined(NORMAL_MAP_ON)
-        fixed3 worldN;
+    float4 c = 0;
+    // #if defined(NORMAL_MAP_ON)
+    if(_NormalMapOn){
+        float3 worldN;
         worldN.x = dot(IN.tSpace0.xyz, o.Normal);
         worldN.y = dot(IN.tSpace1.xyz, o.Normal);
         worldN.z = dot(IN.tSpace2.xyz, o.Normal);
         o.Normal = worldN;
-    #endif
+    }
+    // #endif
 
     // Setup lighting environment
     UnityGI gi;
@@ -349,17 +365,19 @@ fixed4 frag_surf_add (v2f_surf IN) : SV_Target {
 
 //----------------- shadow caster
 struct v2f_shadow{
-    float4 pos:SV_POSITION;
+    // float4 pos:SV_POSITION;
+    V2F_SHADOW_CASTER;
     float2 uv:TEXCOORD;
 };
 v2f_shadow vert_shadow(appdata_full v){
     v2f_shadow o = (v2f_shadow)0;
     // apply wind
     // #if CAN_VERTEX_WAVE
-    if(_PlantsOn && !_Plants_Off)
-        v.vertex = ClampVertexWave(v, _Wave, _AttenField.y,_AttenField.x);
+        if(_PlantsOn && !_Plants_Off)
+            v.vertex = ClampVertexWave(v, _Wave, _AttenField.y,_AttenField.x);
     // #endif
-    o.pos = UnityObjectToClipPos(v.vertex);
+    // o.pos = UnityObjectToClipPos(v.vertex);
+    TRANSFER_SHADOW_CASTER_NORMALOFFSET(o);
     o.uv = v.texcoord;
     return o;
 }
@@ -368,7 +386,7 @@ float4 frag_shadow(v2f_shadow i):SV_Target{
     float4 tex = tex2D(_MainTex,i.uv);
     // #if defined(ALPHA_TEST_ON)
     if(_AlphaTestOn)
-    clip (tex.a - _Cutoff);
+        clip (tex.a - _Cutoff);
     // #endif
     return 0;
 }

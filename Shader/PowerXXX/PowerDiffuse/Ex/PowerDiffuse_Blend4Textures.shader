@@ -83,7 +83,7 @@ Shader "PowerDiffuse/Blend4Textures" {
     _SnowColor("Snow Color",color) = (1,1,1,1)
     _SnowAngleIntensity("SnowAngleIntensity",range(0.1,1)) = 1
     _SnowTile("tile",vector) = (1,1,1,1)
-    _BorderWidth("BorderWidth",range(-0.2,0.4)) = 0.01
+    _BorderWidth("BorderWidth",range(-0.2,0.4)) = -0.2
     _ToneMapping("ToneMapping",range(0,1)) = 0
     _SplatSnowIntensity("_SplatSnowIntensity",vector) = (1,1,1,1)
 
@@ -179,10 +179,10 @@ Shader "PowerDiffuse/Blend4Textures" {
 
       #define TERRAIN_WEATHER
 
-      #include "../NatureLibMacro.cginc"
-      #include "../FogLib.cginc"
-      #include "../CustomLight.cginc"
-      #include "../Blend4TexturesCore.cginc"
+      #include "../../NatureLibMacro.cginc"
+      #include "../../FogLib.cginc"
+      #include "../../CustomLight.cginc"
+      #include "../../Blend4TexturesCore.cginc"
 
       ENDCG
 
@@ -206,100 +206,17 @@ Shader "PowerDiffuse/Blend4Textures" {
       #include "UnityCG.cginc"
       #include "Lighting.cginc"
       #include "AutoLight.cginc"
-      #include "../Blend4TexturesAddPass.cginc"
+      #include "../../Blend4TexturesAddPass.cginc"
       ENDCG
 
     }
 
   }
 
-  SubShader {
-    Tags {
-      "SplatCount" = "4"
-      "RenderType" = "Opaque"
-      "Queue" = "Geometry-99"
-    }
-
-    // ------------------------------------------------------------
-    // Surface shader code generated out of a CGPROGRAM block:
-    
-
-    // ---- forward rendering base pass:
-    Pass {
-      Name "FORWARD"
-      Tags { "LightMode" = "ForwardBase" }
-      
-      CGPROGRAM
-      // compile directives
-      #pragma target 3.0
-      #pragma vertex vert_surf
-      #pragma fragment frag_surf
-      #pragma exclude_renderers xbox360 ps3
-      #pragma multi_compile_fog
-      #pragma multi_compile_fwdbase
-      #pragma instancing_options assumeuniformscaling nomatrices nolightprobe nolightmap forwardadd
-      #pragma multi_compile_instancing
-      #define USING_FOG (defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2))
-      // #pragma skip_variants POINT POINT_COOKIE SHADOWS_SCREEN VERTEXLIGHT_ON FOG_EXP FOG_EXP2 INSTANCING_ON
-      // #pragma skip_variants  DIRLIGHTMAP_COMBINED DYNAMICLIGHTMAP_ON  LIGHTMAP_SHADOW_MIXING SHADOWS_SCREEN SHADOWS_SHADOWMASK 
-    
-
-      #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
-      #pragma multi_compile _ LOW_SETTING
-      // #pragma shader_feature SNOW_NOISE_MAP_ON
-      // #pragma shader_feature DISABLE_SNOW_DIR
-      // #pragma multi_compile _ RIPPLE_ON
-      // #pragma multi_compile _ RAIN_REFLECTION
-	    // #pragma multi_compile _ NORMAL_MAP_ON
-      // #pragma multi_compile _ BLINN_ON
-      // #pragma multi_compile _ FOG_ON
-      // #define NORMAL_MAP_ON
-      // #define BLINN_ON
-      // #define FOG_ON
-      
-      #include "HLSLSupport.cginc"
-      #include "UnityShaderVariables.cginc"
-      #include "UnityCG.cginc"
-      #include "Lighting.cginc"
-      #include "AutoLight.cginc"
-      #include "UnityStandardUtils.cginc"
-
-      #define TERRAIN_WEATHER
-
-      #include "../NatureLibMacro.cginc"
-      #include "../FogLib.cginc"
-      #include "../CustomLight.cginc"
-      #include "../Blend4TexturesCore.cginc"
-
-      ENDCG
-
-    }
-
-    // ---- forward rendering additive lights pass:
-    	Pass {
-      		Name "FORWARD"
-      		Tags { "LightMode" = "ForwardAdd" }
-      		ZWrite Off Blend One One
-
-      CGPROGRAM
-      #pragma vertex vert_surf
-      #pragma fragment frag_surf
-      #pragma exclude_renderers xbox360 ps3
-      #pragma multi_compile_fog
-      #pragma multi_compile_fwdadd
-      #include "HLSLSupport.cginc"
-      #include "UnityShaderVariables.cginc"
-      // #define UNITY_PASS_FORWARDADD
-      #include "UnityCG.cginc"
-      #include "Lighting.cginc"
-      #include "AutoLight.cginc"
-      #include "../Blend4TexturesAddPass.cginc"
-      ENDCG
-
-    }
-
-  }
-
+  // Dependency "AddPassShader"    = "Hidden/TerrainEngine/Splatmap/Diffuse-AddPass"
+  Dependency "BaseMapShader"    = "Hidden/TerrainEngine/Splatmap/Diffuse-Base"
+  // Dependency "BaseMapGenShader" = "Hidden/TerrainEngine/Splatmap/Diffuse-BaseGen"
   CustomEditor "WeatherSpecTerrainInspector"
-  Fallback "Legacy Shaders/VertexLit"
+  // Fallback "Legacy Shaders/VertexLit"
+  FallBack "Diffuse"
 }

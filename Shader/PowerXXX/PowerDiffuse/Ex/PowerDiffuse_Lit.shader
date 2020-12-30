@@ -1,3 +1,5 @@
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
 // Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
 
 Shader "PowerDiffuse/Lit" {
@@ -16,16 +18,24 @@ Shader "PowerDiffuse/Lit" {
   Properties {
     _MainTex ("Base (RGB)", 2D) = "white" {}
     [hdr]_Color ("Main Color", Color) = (1,1,1,1)
-    // [Header(Test)]
+    
+    [Header(Performance)]
     // [Toggle(NORMAL_MAP_ON)]_NormalMapOn("NormalMapOn",int) = 1
     // [Toggle(BLINN_ON)]_BlinnOn("Blinn",int) = 1
+    //[Toggle]_FogOn("_FogOn",int) = 0
+    [Toggle]_DisableFog("_DisableFog",int) = 0
+    [Toggle(LOW_SETTING)]_LowSetting("_LowSetting?",int) = 0
 
     [HideInInspector]_PresetBlendMode("_PresetBlendMode",int) = 0
+    // _IndirectDiffuseIntensity("IndirectDiffuseIntensity",float) = 1
 
     [Header(NormalMap)]
     _BumpMap ("Normalmap", 2D) = "bump" {}
     _NormalMapScale("_NormalMapScale",range(0.001,5)) = 1
     // [Toggle]_UseVertexNormal("UseVertexNormal",int) = 0
+    [Header(Masks)] //[null,smoothness,oa]
+    _MaskMap("_MaskMap(Smoothness(G),AO(B))",2d) = "white"{}
+    _Occlusion("_Occlusion",range(0,2)) = 1
 
     [Header(CullMode)]
     [Enum(UnityEngine.Rendering.CullMode)]_Cull("Cull Mode",float) = 2
@@ -53,8 +63,8 @@ Shader "PowerDiffuse/Lit" {
 
     [Header(SpecularSettings)]
     _SpecColor("_SpecColor",Color)=(1,1,1,1)
-    _SpecIntensity("_SpecIntensity",range(0.1,1)) = 0.5
-    _Gloss("_Gloss",range(0.01,5))= 0.5
+    _SpecIntensity("_SpecIntensity",range(0.01,1)) = 0.5
+    _Gloss("_Gloss",range(0,5))= 0.5
 
     [Header(WeatherController)]
     //[KeywordEnum(None,Snow,Surface_Wave)]_Feature("Features",float) = 0
@@ -90,7 +100,7 @@ Shader "PowerDiffuse/Lit" {
     _SnowColor("Snow Color",color) = (1,1,1,1)
     _SnowAngleIntensity("SnowAngleIntensity",range(0.1,1)) = 1
     _SnowTile("tile",vector) = (1,1,1,1)
-    _BorderWidth("BorderWidth",range(-0.2,0.4)) = 0.01
+    _BorderWidth("BorderWidth",range(-0.2,0.4)) = -0.2
     _ToneMapping("ToneMapping",range(0,1)) = 0
     
     [Space(20)]
@@ -151,6 +161,8 @@ Shader "PowerDiffuse/Lit" {
 
       #pragma target 3.0
       #pragma multi_compile _FEATURE_NONE _FEATURE_SNOW _FEATURE_SURFACE_WAVE
+      #pragma multi_compile _ LOW_SETTING
+      
       // #pragma shader_feature  RIPPLE_ON
       // #pragma multi_compile _ PLANTS
       // #pragma shader_feature PLANTS_OFF
@@ -230,9 +242,9 @@ Shader "PowerDiffuse/Lit" {
 
     Pass {
       Tags { "LightMode" = "ShadowCaster" }
-      Blend [_SrcBlend][_DstBlend]
-      cull [_Cull]
-      zwrite[_ZWrite]
+      // Blend [_SrcBlend][_DstBlend]
+      // cull front
+      // zwrite on
 
       CGPROGRAM
       // compile directives

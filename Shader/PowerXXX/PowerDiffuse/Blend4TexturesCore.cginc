@@ -25,15 +25,15 @@ float4 _Color0,_Color1,_Color2,_Color3;
 // sampler2D _MainTex;
 // float4 _Color;
 
-fixed _ShininessL0;
-fixed _ShininessL1;
-fixed _ShininessL2;
-fixed _ShininessL3;
+float _ShininessL0;
+float _ShininessL1;
+float _ShininessL2;
+float _ShininessL3;
 float4 _Tiling3;
-fixed4 _SpecDir;
-fixed _GlossIntensity0,_GlossIntensity1;
-fixed _GlossIntensity2,_GlossIntensity3;
-fixed4 _SnowNoiseTile;
+float4 _SpecDir;
+float _GlossIntensity0,_GlossIntensity1;
+float _GlossIntensity2,_GlossIntensity3;
+float4 _SnowNoiseTile;
 float4 _SplatSnowIntensity;
 sampler2D _BumpSplat0, _BumpSplat1;
 sampler2D _BumpSplat2, _BumpSplat3;
@@ -68,7 +68,7 @@ float3 wn:TEXCOORD6; //顶点法线,计算反射
 };
 
 void surf (Input IN, inout SurfaceOutput o) {
-fixed4 splat_control = tex2D (_Control, IN.uv_Control);
+float4 splat_control = tex2D (_Control, IN.uv_Control);
 
 // #if defined(NORMAL_MAP_ON)
 if(_NormalMapOn){
@@ -82,19 +82,19 @@ if(_NormalMapOn){
 }
 // #endif
 
-fixed4 lay1 = tex2D (_Splat0, IN.uv_Splat0) * _Color0;
-fixed4 lay2 = tex2D (_Splat1, IN.uv_Splat1)* _Color1;
-fixed4 lay3 = tex2D (_Splat2, IN.uv_Splat2)* _Color2;
-fixed4 lay4 = tex2D (_Splat3, IN.uv_Splat3)* _Color3;
+float4 lay1 = tex2D (_Splat0, IN.uv_Splat0) * _Color0;
+float4 lay2 = tex2D (_Splat1, IN.uv_Splat1)* _Color1;
+float4 lay3 = tex2D (_Splat2, IN.uv_Splat2)* _Color2;
+float4 lay4 = tex2D (_Splat3, IN.uv_Splat3)* _Color3;
 
 half4 shininess = half4(_ShininessL0,_ShininessL1,_ShininessL2,_ShininessL3);
 half4 gloss = float4(_GlossIntensity0,_GlossIntensity1,_GlossIntensity2,_GlossIntensity3);
 
 #ifdef _FEATURE_SNOW
-    fixed4 c = (lay1 * splat_control.r * _SplatSnowIntensity.x + lay2 * splat_control.g * _SplatSnowIntensity.y + lay3 * splat_control.b * _SplatSnowIntensity.z + lay4 * splat_control.a * _SplatSnowIntensity.w);
+    float4 c = (lay1 * splat_control.r * _SplatSnowIntensity.x + lay2 * splat_control.g * _SplatSnowIntensity.y + lay3 * splat_control.b * _SplatSnowIntensity.z + lay4 * splat_control.a * _SplatSnowIntensity.w);
     SNOW_FRAG_FUNCTION(IN.uv_Control,c,IN.wn,IN.worldPos);
 #else
-    fixed4 c = (lay1 * splat_control.r + lay2 * splat_control.g + lay3 * splat_control.b + lay4 * splat_control.a);
+    float4 c = (lay1 * splat_control.r + lay2 * splat_control.g + lay3 * splat_control.b + lay4 * splat_control.a);
     #endif
 
 #ifdef _FEATURE_SURFACE_WAVE
@@ -126,16 +126,16 @@ o.Specular = saturate(dot(shininess,normalize(splat_control)));
 struct v2f_surf {
 float4 pos : SV_POSITION;
 float2 uv:TEXCOORD0;
-fixed4 tSpace0 : TEXCOORD1;
-fixed4 tSpace1 : TEXCOORD2;
-fixed4 tSpace2 : TEXCOORD3;
-fixed3 vlight : TEXCOORD4; // ambient/SH/vertexlights
-UNITY_SHADOW_COORDS(5)
-UNITY_FOG_COORDS(6)
-float4 lmap : TEXCOORD7;
+float4 tSpace0 : TEXCOORD1;
+float4 tSpace1 : TEXCOORD2;
+float4 tSpace2 : TEXCOORD3;
+float3 vlight : TEXCOORD4; // ambient/SH/vertexlights
+UNITY_LIGHTING_COORDS(5,6)
+UNITY_FOG_COORDS(7)
+float4 lmap : TEXCOORD8;
 
-float4 normalUV:TEXCOORD8;
-float2 fog :TEXCOORD9;
+float4 normalUV:TEXCOORD9;
+FOG_COORDS(10)
 UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -190,10 +190,10 @@ o.uv = v.texcoord;
 
 
 float3 worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
-fixed3 worldNormal = UnityObjectToWorldNormal(v.normal);
-fixed3 worldTangent = UnityObjectToWorldDir(v.tangent.xyz);
-fixed tangentSign = v.tangent.w * unity_WorldTransformParams.w;
-fixed3 worldBinormal = cross(worldNormal, worldTangent) * tangentSign;
+float3 worldNormal = UnityObjectToWorldNormal(v.normal);
+float3 worldTangent = UnityObjectToWorldDir(v.tangent.xyz);
+float tangentSign = v.tangent.w * unity_WorldTransformParams.w;
+float3 worldBinormal = cross(worldNormal, worldTangent) * tangentSign;
 o.tSpace0 = float4(worldTangent.x, worldBinormal.x, worldNormal.x, worldPos.x);
 o.tSpace1 = float4(worldTangent.y, worldBinormal.y, worldNormal.y, worldPos.y);
 o.tSpace2 = float4(worldTangent.z, worldBinormal.z, worldNormal.z, worldPos.z);
@@ -220,7 +220,8 @@ o.tSpace2 = float4(worldTangent.z, worldBinormal.z, worldNormal.z, worldPos.z);
 #endif // VERTEXLIGHT_ON
 
     //	HeightFog(v.vertex,o.worldPos.y,o.fog);
-TRANSFER_SHADOW(o); // pass shadow coordinates to pixel shader
+// TRANSFER_SHADOW(o); // pass shadow coordinates to pixel shader
+ UNITY_TRANSFER_LIGHTING(o,v.texcoord1.xy); // pass shadow and, possibly, light cookie coordinates to pixel shader
 
     o.fog = GetHeightFog(worldPos);
 UNITY_TRANSFER_FOG(o,o.pos); // pass fog coordinates to pixel shader
@@ -232,7 +233,8 @@ return o;
 }
 
 // fragment shader
-fixed4 frag_surf (v2f_surf IN) : SV_Target {
+float4 frag_surf (v2f_surf IN) : SV_Target {
+    // return IN.fog.x;
 // return float4(IN.uv.xy,0,0);
 // return UNITY_SAMPLE_TEX2D(unity_Lightmap,IN.lmap);
 // prepare and unpack data
@@ -277,7 +279,7 @@ surf (surfIN, o);
 #else
     // #if defined(NORMAL_MAP_ON)
     if(_NormalMapOn){
-        fixed3 worldN;
+        float3 worldN;
         worldN.x = dot(IN.tSpace0.xyz, o.Normal);
         worldN.y = dot(IN.tSpace1.xyz, o.Normal);
         worldN.z = dot(IN.tSpace2.xyz, o.Normal);
@@ -286,8 +288,8 @@ surf (surfIN, o);
     // #endif
     // compute lighting & shadowing factor
     UNITY_LIGHT_ATTENUATION(atten, IN, worldPos)
-
-    fixed4 c = 0;
+    
+    float4 c = 0;
 
     float4 lmap = (float4)0;
     float3 sh = (float3)0;
@@ -321,11 +323,14 @@ surf (surfIN, o);
     float3 specColor = _SpecColor.rgb * smoothstep(0,0.9,o.Alpha);
     c += LightingBlinn(o,halfDir,gi,atten,specColor);
 
+    if(_PixelFogOn){
+        IN.fog = GetHeightFog(worldPos);
+    }
     BlendFog(viewDir,IN.fog,/*inout*/c.rgb);
 
-    if(_FogOn){
-        UNITY_APPLY_FOG(IN.fogCoord, c); // apply fog
-    }
+    // if(_FogOn){
+    //     UNITY_APPLY_FOG(IN.fogCoord, c); // apply fog
+    // }
 
     c.rgb *= DayIntensity(true);
     UNITY_OPAQUE_ALPHA(c.a);
