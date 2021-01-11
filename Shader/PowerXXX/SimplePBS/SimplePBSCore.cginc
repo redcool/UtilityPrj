@@ -15,12 +15,11 @@ float4 _MainTex_ST;
 sampler2D _NormalMap;
 float _NormalMapScale;
 
-sampler2D _SmoothnessMap;
-float _Smoothness;
+sampler2D _MetallicSmoothnessOcclusionDetailMask;
+sampler2D _HeightClothSSSMask;
 
-sampler2D _MetallicMap;
+float _Smoothness;
 float _Metallic;
-sampler2D _OcclusionMap;
 float _Occlusion;
 
 int _DetailMapOn;
@@ -29,11 +28,10 @@ float _DetailMapIntensity;
 float4 _DetailMap_ST;
 sampler2D _DetailNormalMap;
 float _DetailNormalMapScale;
-sampler2D _DetailMapMask;
 
 samplerCUBE _EnvCube;
-sampler2D _EnvCubeMask;
 float _EnvIntensity;
+float3 _ReflectionOffsetDir;
 
 sampler2D _EmissionMap;
 float _Emission;
@@ -46,7 +44,6 @@ int _ClothOn;
 float _ClothSpecWidthMin;
 float _ClothSpecWidthMax;
 int _ClothMaskOn;
-sampler2D _ClothMaskMap;
 
 // -------------------------------------- main light
 #define MAX_SPECULAR 25
@@ -60,12 +57,10 @@ float3 _MainLightColor;
 
 int _SSSOn;
 float3 _BackSSSColor,_FrontSSSColor;
-sampler2D _SSSMask;
 float _FrontSSSIntensity,_BackSSSIntensity;
 
 // ----------------- parallel
 int _ParallalOn;
-sampler2D _HeightMap;
 float _Height;
 
 inline UnityLight GetLight(){
@@ -86,12 +81,11 @@ inline float FastSSS(float3 l,float3 v){
     return saturate(dot(l,v));
 }
 
-inline float3 CalcSSS(float2 uv,float3 l,float3 v){
-    float4 sssMask = tex2D(_SSSMask,uv);
+inline float3 CalcSSS(float2 uv,float3 l,float3 v,float frontSSSMask,float backSSSMask){
     float sss1 = FastSSS(l,v);
     float sss2 = FastSSS(-l,v);
-    float3 front = sss1 * _FrontSSSIntensity * sssMask.x * _FrontSSSColor;
-    float3 back = sss2 * _BackSSSIntensity * sssMask.y * _BackSSSColor;
+    float3 front = sss1 * _FrontSSSIntensity * frontSSSMask * _FrontSSSColor;
+    float3 back = sss2 * _BackSSSIntensity * backSSSMask * _BackSSSColor;
     return (front + back);
 }
 
@@ -120,19 +114,17 @@ inline half3 AlphaPreMultiply (half3 diffColor, half alpha, half oneMinusReflect
     return diffColor;
 }
 
-inline float2 Parallax(float2 uv,float3 viewTangentSpace){
+inline float2 Parallax(float2 uv,float height,float3 viewTangentSpace){
     if(_ParallalOn){
-        float h = tex2D(_HeightMap,uv).g;
-        uv += ParallaxOffset(h,_Height,viewTangentSpace);
+        uv += ParallaxOffset(height,_Height,viewTangentSpace);
     }
     return uv;
 }
 
 inline float3 CalcNormal(float2 uv,float detailMask){
-    float2 detailUV = uv * _DetailMap_ST.xy + _DetailMap_ST.zw;
-    float3 tn = UnpackScaleNormal(tex2D(_NormalMap,detailUV),_NormalMapScale);
+    float3 tn = UnpackScaleNormal(tex2D(_NormalMap,uv),_NormalMapScale);
     if(_DetailMapOn){
-        
+        float2 detailUV = uv * _DetailMap_ST.xy + _DetailMap_ST.zw;
         float3 dtn = UnpackScaleNormal(tex2D(_DetailNormalMap,detailUV),_DetailNormalMapScale);
         dtn = BlendNormals(tn,dtn);
         tn = lerp(tn,dtn,detailMask);
@@ -150,10 +142,9 @@ inline float4 CalcAlbedo(float2 uv,float detailMask){
 }
 
 inline UnityIndirect CalcGI(float3 albedo,float2 uv,float3 reflectDir,float3 normal,float occlusion,float roughness){
-    float indirectSpecularMask = tex2D(_EnvCubeMask,uv).b;
-    float3 indirectSpecular = GetIndirectSpecular(reflectDir,roughness) * occlusion * _EnvIntensity * indirectSpecularMask;
-    float3 indirectDiffuse = albedo * occlusion * _IndirectIntensity;
-    indirectDiffuse += ShadeSH9(float4(normal,1));
+    float3 indirectSpecular = GetIndirectSpecular(reflectDir,roughness) * occlusion * _EnvIntensity;
+    float3 indirectDiffuse = albedo * occlusion;
+    indirectDiffuse += ShadeSH9(float4(normal,1)) * _IndirectIntensity;
     UnityIndirect indirect = {indirectDiffuse,indirectSpecular};
     return indirect;
 }
@@ -231,10 +222,33 @@ float BankBRDF(float3 l,float3 v,float3 t,float ks,float power){
     return ks * pow(sqrt(1-lt2)*sqrt(1-vt2) - lt*vt,power);
 }
 
+
+float CharlieD(float roughness, float ndoth)
+{
+    float invR = 1. / roughness;
+    float cos2h = ndoth * ndoth;
+    float sin2h = 1. - cos2h;
+    return (2. + invR) * pow(sin2h, invR * .5) / (2. * PI);
+}
+
+float AshikhminV(float ndotv, float ndotl)
+{
+    return 1. / (4. * (ndotl + ndotv - ndotl * ndotv));
+}
+
 inline float Cloth(float nv,float clothMask){
     float offset = smoothstep(_ClothSpecWidthMin,_ClothSpecWidthMax,nv);
     // float offsetMask = smoothstep(0.3,0.31,smoothness);
     return saturate(offset) * clothMask;
+}
+
+/**
+    emission color : rgb
+    emission Mask : a
+*/
+float3 CalcEmission(float3 albedo,float2 uv){
+    float4 tex = tex2D(_EmissionMap,uv);
+    return albedo * tex.rgb * tex.a * _Emission;
 }
 
 struct PBSData{
@@ -281,6 +295,11 @@ inline float4 PBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,fl
     //float D = NDFBlinnPhongTerm(nh,RoughnessToSpecPower(a));
     float D = D_GGXTerm(nh,a2);
     float3 F = FresnelTerm(specColor,lh);
+
+    if(_ClothOn){
+        V = AshikhminV(nv,nl);
+        D = CharlieD(a2,nh);
+    }
 
     float3 specularTerm = V * D * PI * nl;
     specularTerm = max(0,specularTerm);

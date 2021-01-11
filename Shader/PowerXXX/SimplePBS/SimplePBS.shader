@@ -17,32 +17,28 @@ Shader "Character/SimplePBS"
         [noscaleoffset]_NormalMap("NormalMap",2d) = "bump"{}
         _NormalMapScale("_NormalMapScale",range(0,5)) = 1
 
-        [noscaleoffset]_MetallicMap("_MetallicMap(R)",2d) = "white"{}
+        [noscaleoffset]_MetallicSmoothnessOcclusionDetailMask("Metallic(R),Smoothness(G),Occlusion(B),DetailMap(A)",2d) = "white"{}
         _Metallic("_Metallic",range(0,1)) = 0.5
-
-        [noscaleoffset]_SmoothnessMap("SmoothnessMap(G)",2d) = "white"{}
         _Smoothness("Smoothness",range(0,1)) = 0
-
-        [noscaleoffset]_OcclusionMap("_OcclusionMap(B)",2d) = "white"{}
         _Occlusion("_Occlusion",range(0,1)) = 1
 
         [Space(10)][Header(DetailMap)]
         [Toggle]_DetailMapOn("_DetailMapOn",int) = 0
         _DetailMap("_DetailMap",2d) = "white"{}
         _DetailMapIntensity("_DetailMapIntensity",range(0,1)) = 1
-        [noscaleoffset]_DetailMapMask("_DetailMapMask(B)",2d) = "white"{}
         [noscaleoffset]_DetailNormalMap("_DetailNormalMap",2d) = "bump"{}
         _DetailNormalMapScale("_DetailNormalMapScale",range(0,5)) = 1
         
         [Space(10)][Header(IBL)]
         [noscaleoffset]_EnvCube("_EnvCube",cube) = "white"{}
         _EnvIntensity("_EnvIntensity",float) = 1
-        [noscaleoffset]_EnvCubeMask("_EnvCubeMask(B)",2d) = "white"{}
+        _ReflectionOffsetDir("_ReflectionOffsetDir",vector) = (0,0,0,0)
 
         [Space(10)][Header(Emission)]
-        [noscaleoffset]_EmissionMap("_EmissionMap",2d) = "white"{}
+        [noscaleoffset]_EmissionMap("_EmissionMap(RGB),EmissionMask(A)",2d) = "white"{}
         _Emission("_Emission",float) = 0
 
+        [Space(10)][Header(Indirect Diffuse)]
         _IndirectIntensity("_IndirectIntensity",float) = 0.5
 
         [Space(10)][Header(CustomLight)]
@@ -66,9 +62,12 @@ Shader "Character/SimplePBS"
         [Space(10)][Header(CullMode)]
         [Enum(UnityEngine.Rendering.CullMode)]_CullMode("_CullMode",int) = 2
 
+
+        [Header(Height Cloth FrontSSS BackSSS)]
+        _HeightClothSSSMask("_Height(R) , Cloth(G) , SSSMask(B,A)",2d) = "white"{} 
+
         [Space(10)][Header(SSS)]
         [Toggle]_SSSOn("_SSSOn",int) = 0
-        _SSSMask("_SSSMask(R:Front,G:Back)",2d) = ""{}
         _FrontSSSIntensity("_FrontSSSIntensity",range(0,1)) = 1
         _FrontSSSColor("_FrontSSSColor",color) = (1,0,0,0)
         _BackSSSIntensity("_BackSSSIntensity",range(0,1)) = 1
@@ -76,7 +75,7 @@ Shader "Character/SimplePBS"
 
         [Space(10)][Header(ParallelOffset)]
         [Toggle]_ParallalOn("_ParallalOn",int) = 0
-        [noscaleoffset]_HeightMap("_HeightMap",2d) = "white"{}
+
         _Height("_Height",range(0.005,0.08)) = 0
         
         [Space(10)][Header(Cloth)]
@@ -85,7 +84,27 @@ Shader "Character/SimplePBS"
         _ClothSpecWidthMax("_ClothSpecWidthMax",range(0.1,1)) =1
         
         [Toggle]_ClothMaskOn("_ClothMaskOn",int) = 0
-        _ClothMaskMap("_ClothMaskMap (R)",2d) = "white"{}
+
+        // [Space(10)][Header(Hair)]
+        // [Toggle]_HairOn("_HairOn",int) = 0
+        // [Header(Tangent Binormal Mask Map)]
+        // _TBMaskMap("_TBMaskMap(white:use binormal)",2d) = "white"{}
+
+        // [Header(Tangent Shift)]
+        // _ShiftTex("_ShiftTex(g:shift,b:mask)",2d) = ""{}
+
+        // [Header(Spec Shift1)]
+        // _Shift1("_Shift1",float) = 0
+        // _SpecPower1("_SpecPower1",range(0.01,1)) = 1
+        // _SpecColor1("_SpecColor1",color) = (1,1,1,1)
+        // _SpecIntensity1("_SpecIntensity1",range(0,1)) = 1
+        
+        // [Header(Spec Shift2)]
+        // // _Shift2On("_Shift2On",int) = 1
+        // _Shift2("_Shift2",float) = 0
+        // _SpecPower2("_SpecPower2",range(0.01,1)) = 1
+        // _SpecColor2("_SpecColor2",color) = (1,1,1,1)
+        // _SpecIntensity2("_SpecIntensity2",range(0,1)) = 1
     }
 
     SubShader

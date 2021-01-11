@@ -6,6 +6,7 @@
 // #include "UnityPBSLighting.cginc"
 #include "UnityStandardBRDF.cginc"
 #include "SimplePBSCore.cginc"
+#include "SimplePBSHair.cginc"
 
 struct appdata
 {
@@ -54,15 +55,24 @@ v2f vert (appdata v)
 
 float4 frag (v2f i) : SV_Target
 {
-    float2 uv = Parallax(i.uv,i.viewTangentSpace);
-    float3 worldPos = float3(i.tSpace0.w,i.tSpace1.w,i.tSpace2.w);
+    // heightClothSSSMask
+    float4 heightClothSSSMask = tex2D(_HeightClothSSSMask,i.uv);
+    float height = heightClothSSSMask.r;
+    float clothMask = heightClothSSSMask.g;
+    float frontSSS = heightClothSSSMask.b;
+    float backSSS = heightClothSSSMask.a;
 
-    //detail mask
-    float detailMask = 0;
-    if(_DetailMapOn){
-        detailMask = tex2D(_DetailMapMask,uv).b;
-        // return detailMask;
-    }
+    float2 uv = Parallax(i.uv,height,i.viewTangentSpace);
+
+    // metallicSmoothnessOcclusionDetailMask
+    float4 metallicSmoothnessOcclusionDetailMask = tex2D(_MetallicSmoothnessOcclusionDetailMask,uv);
+    float metallic = metallicSmoothnessOcclusionDetailMask.r * _Metallic;
+    float smoothness = metallicSmoothnessOcclusionDetailMask.g * _Smoothness;
+    float roughness = 1.0 - smoothness;
+    // roughness = roughness * roughness;
+    float occlusion = metallicSmoothnessOcclusionDetailMask.b * _Occlusion;
+    //detail metallicSmoothnessOcclusionDetailMask
+    float detailMask = metallicSmoothnessOcclusionDetailMask.a;
 
     float3 tn = CalcNormal(uv,detailMask);
     float3 n = normalize(float3(
@@ -70,16 +80,9 @@ float4 frag (v2f i) : SV_Target
         dot(i.tSpace1.xyz,tn),
         dot(i.tSpace2.xyz,tn)
     ));
+    float3 worldPos = float3(i.tSpace0.w,i.tSpace1.w,i.tSpace2.w);
     float3 v = normalize(UnityWorldSpaceViewDir(worldPos));
-    float3 r = reflect(-v,n);
-
-
-    float metallic = tex2D(_MetallicMap,uv).r * _Metallic;
-    float smoothness = tex2D(_SmoothnessMap,uv).g * _Smoothness;
-    float roughness = 1.0 - smoothness;
-    // roughness = roughness * roughness;
-
-    float occlusion = tex2D(_OcclusionMap,uv).b * _Occlusion;
+    float3 r = reflect(-v,n) + _ReflectionOffsetDir;
 
     float4 mainTex = CalcAlbedo(uv,detailMask * _DetailMapIntensity);
     float3 albedo = mainTex.rgb;
@@ -110,15 +113,18 @@ float4 frag (v2f i) : SV_Target
     data.clothMask = 1;
 
     if(_ClothMaskOn){
-        data.clothMask = tex2D(_ClothMaskMap,uv).r;
+        data.clothMask = clothMask;
     }
+    if(_HairOn){
 
+    }
     half4 c = CalcPBS(albedo, specColor, oneMinusReflectivity, smoothness, n, v, light, indirect,data);
     c.a = outputAlpha;
+    
+    c.rgb += CalcEmission(albedo,uv);
 
-    c.rgb += albedo * tex2D(_EmissionMap,uv).rgb * _Emission;
     if(_SSSOn){
-        c.rgb += CalcSSS(uv,light.dir,v);
+        c.rgb += CalcSSS(uv,light.dir,v,frontSSS,backSSS);
     }
     // apply fog
     UNITY_APPLY_FOG(i.fogCoord, c);
