@@ -17,17 +17,31 @@ Shader "Character/SimplePBS"
         [noscaleoffset]_NormalMap("NormalMap",2d) = "bump"{}
         _NormalMapScale("_NormalMapScale",range(0,5)) = 1
 
-        [noscaleoffset]_MetallicSmoothnessOcclusionDetailMask("Metallic(R),Smoothness(G),Occlusion(B),DetailMap(A)",2d) = "white"{}
+        [noscaleoffset]_MetallicSmoothnessOcclusion("Metallic(R),Smoothness(G),Occlusion(B)",2d) = "white"{}
         _Metallic("_Metallic",range(0,1)) = 0.5
         _Smoothness("Smoothness",range(0,1)) = 0
         _Occlusion("_Occlusion",range(0,1)) = 1
 
         [Space(10)][Header(DetailMap)]
         [Toggle]_DetailMapOn("_DetailMapOn",int) = 0
-        _DetailMap("_DetailMap",2d) = "white"{}
+        _DetailMap("_DetailMap(RGB),DetailMask(A)",2d) = "white"{}
         _DetailMapIntensity("_DetailMapIntensity",range(0,1)) = 1
         [noscaleoffset]_DetailNormalMap("_DetailNormalMap",2d) = "bump"{}
         _DetailNormalMapScale("_DetailNormalMapScale",range(0,5)) = 1
+
+		[Space(10)][Header(MouthDetailMap)]
+		[Toggle]_MouthDetailMapOn("_MouthDetailMapOn",int) = 0
+		_MouthDetailMap("_MouthDetailMap(rgb),MouthMask(A)",2d) = "white"{}
+		_MouthDetailMapIntensity("_MouthDetailMapIntensity",range(0,1)) = 1
+		[noscaleoffset]_MouthDetailNormalMap("_MouthDetailNormalMap",2d) = "bump"{}
+		_MouthDetailNormalMapScale("_MouthDetailNormalMapScale",range(0,5)) = 1
+
+		[Space(10)][Header(EyeDetailMap)]
+		[Toggle]_EyeDetailMapOn("_EyeDetailMapOn",int) = 0
+		_EyeDetailMap("_EyeDetailMap(RGB),EyeMask(A)",2d) = "white"{}
+		_EyeDetailMapIntensity("_EyeDetailMapIntensity",range(0,1)) = 1
+		[noscaleoffset]_EyeDetailNormalMap("_EyeDetailNormalMap",2d) = "bump"{}
+		_EyeDetailNormalMapScale("_EyeDetailNormalMapScale",range(0,5)) = 1
         
         [Space(10)][Header(IBL)]
         [noscaleoffset]_EnvCube("_EnvCube",cube) = "white"{}
@@ -85,26 +99,25 @@ Shader "Character/SimplePBS"
         
         [Toggle]_ClothMaskOn("_ClothMaskOn",int) = 0
 
-        // [Space(10)][Header(Hair)]
-        // [Toggle]_HairOn("_HairOn",int) = 0
-        // [Header(Tangent Binormal Mask Map)]
-        // _TBMaskMap("_TBMaskMap(white:use binormal)",2d) = "white"{}
+        [Space(10)][Header(Hair)]
+        [Toggle]_HairOn("_HairOn (SpecTerm Use StrandSpec)",int) = 0
+        [Header(Tangent Binormal Mask Map)]
+        _TBMaskMap("_TBMaskMap(R,white:use binormal)",2d) = "white"{}
 
-        // [Header(Tangent Shift)]
-        // _ShiftTex("_ShiftTex(g:shift,b:mask)",2d) = ""{}
+        [Header(Tangent Shift)]
+        _ShiftTex("_ShiftTex(g:shift,b:mask)",2d) = ""{}
 
-        // [Header(Spec Shift1)]
-        // _Shift1("_Shift1",float) = 0
-        // _SpecPower1("_SpecPower1",range(0.01,1)) = 1
-        // _SpecColor1("_SpecColor1",color) = (1,1,1,1)
-        // _SpecIntensity1("_SpecIntensity1",range(0,1)) = 1
+        [Header(Spec Shift1)]
+        _Shift1("_Shift1",float) = 0
+        _SpecPower1("_SpecPower1",range(0.01,1)) = 1
+        _SpecColor1("_SpecColor1",color) = (1,1,1,1)
+        _SpecIntensity1("_SpecIntensity1",float) = 10
         
-        // [Header(Spec Shift2)]
-        // // _Shift2On("_Shift2On",int) = 1
-        // _Shift2("_Shift2",float) = 0
-        // _SpecPower2("_SpecPower2",range(0.01,1)) = 1
-        // _SpecColor2("_SpecColor2",color) = (1,1,1,1)
-        // _SpecIntensity2("_SpecIntensity2",range(0,1)) = 1
+        [Header(Spec Shift2)]
+        _Shift2("_Shift2",float) = 0
+        _SpecPower2("_SpecPower2",range(0.01,1)) = 1
+        _SpecColor2("_SpecColor2",color) = (1,1,1,1)
+        _SpecIntensity2("_SpecIntensity2",float) = 10
     }
 
     SubShader

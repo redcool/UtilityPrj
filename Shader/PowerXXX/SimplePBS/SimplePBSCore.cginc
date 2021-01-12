@@ -15,7 +15,7 @@ float4 _MainTex_ST;
 sampler2D _NormalMap;
 float _NormalMapScale;
 
-sampler2D _MetallicSmoothnessOcclusionDetailMask;
+sampler2D _MetallicSmoothnessOcclusion;
 sampler2D _HeightClothSSSMask;
 
 float _Smoothness;
@@ -28,6 +28,20 @@ float _DetailMapIntensity;
 float4 _DetailMap_ST;
 sampler2D _DetailNormalMap;
 float _DetailNormalMapScale;
+//Mouth
+int _MouthDetailMapOn;
+sampler2D _MouthDetailMap;
+float _MouthDetailMapIntensity;
+float4 _MouthDetailMap_ST;
+sampler2D _MouthDetailNormalMap;
+float _MouthDetailNormalMapScale;
+//Eye
+int _EyeDetailMapOn;
+sampler2D _EyeDetailMap;
+float _EyeDetailMapIntensity;
+float4 _EyeDetailMap_ST;
+sampler2D _EyeDetailNormalMap;
+float _EyeDetailNormalMapScale;
 
 samplerCUBE _EnvCube;
 float _EnvIntensity;
@@ -120,24 +134,37 @@ inline float2 Parallax(float2 uv,float height,float3 viewTangentSpace){
     }
     return uv;
 }
-
-inline float3 CalcNormal(float2 uv,float detailMask){
-    float3 tn = UnpackScaleNormal(tex2D(_NormalMap,uv),_NormalMapScale);
-    if(_DetailMapOn){
-        float2 detailUV = uv * _DetailMap_ST.xy + _DetailMap_ST.zw;
-        float3 dtn = UnpackScaleNormal(tex2D(_DetailNormalMap,detailUV),_DetailNormalMapScale);
-        dtn = BlendNormals(tn,dtn);
-        tn = lerp(tn,dtn,detailMask);
-    }
-    return tn;
+inline float3 CalcDetailNormal(sampler2D tex, float2 uv, float scale, float3 tn, float mask, bool isOn) {
+	if (isOn) {
+		float3 dtn = UnpackScaleNormal(tex2D(tex, uv), scale);
+		dtn = BlendNormals(tn, dtn);
+		tn = lerp(tn, dtn, mask);
+	}
+	return tn;
 }
 
-inline float4 CalcAlbedo(float2 uv,float detailMask){
+inline float3 CalcNormal(float2 uv, float2 detailUV, float2 mouthDetailUV, float2 eyeDetailUV,float detailMask,float mouthMask,float eyeMask){
+    float3 tn = UnpackScaleNormal(tex2D(_NormalMap,uv),_NormalMapScale);
+	
+	tn = CalcDetailNormal(_DetailNormalMap, detailUV, _DetailNormalMapScale, tn, detailMask, _DetailMapOn);
+	tn = CalcDetailNormal(_MouthDetailNormalMap, mouthDetailUV, _MouthDetailNormalMapScale, tn, mouthMask, _MouthDetailMapOn);
+	tn = CalcDetailNormal(_EyeDetailNormalMap, eyeDetailUV, _EyeDetailNormalMapScale, tn, eyeMask, _EyeDetailMapOn);
+    return tn;
+}
+inline float3 CalcDetailAlbedo(sampler2D tex, float2 uv, float mask,bool isOn) {
+	float3 addColor = (float3)1;
+	if (isOn) {
+		float3 detailAlbedo = tex2D(tex, uv);
+		addColor = lerp(1, detailAlbedo * unity_ColorSpaceDouble.rgb, mask);
+	}
+	return addColor;
+}
+
+inline float4 CalcAlbedo(float2 uv, float2 detailUV, float2 mouthDetailUV, float2 eyeDetailUV, float detailMask, float mouthMask,float eyeMask) {
     float4 albedo = tex2D(_MainTex,uv) * _Color;
-    if(_DetailMapOn){
-        float3 detailAlbedo = tex2D(_DetailMap,uv);
-        albedo.rgb *= lerp(1,detailAlbedo * unity_ColorSpaceDouble.rgb,detailMask);
-    }
+	albedo.rgb *= CalcDetailAlbedo(_DetailMap,  detailUV, detailMask, _DetailMapOn);
+	albedo.rgb*= CalcDetailAlbedo(_MouthDetailMap, mouthDetailUV, mouthMask, _MouthDetailMapOn);
+	albedo.rgb *= CalcDetailAlbedo(_EyeDetailMap,  eyeDetailUV, eyeMask, _EyeDetailMapOn);
     return albedo;
 }
 
@@ -253,8 +280,11 @@ float3 CalcEmission(float3 albedo,float2 uv){
 
 struct PBSData{
     float3 tangent;
-    float3 bitangent;
+    float3 binormal;
     float clothMask;
+    bool isClothOn;
+    bool isHairOn;
+    float3 hairSpecColor;
 };
 
 inline float4 PBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,float smoothness,
@@ -270,7 +300,7 @@ inline float4 PBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,fl
     float3 v = normalize(viewDir);
     float3 h = normalize(l + v);
     float3 t = normalize(data.tangent);
-    float3 tb = normalize(data.bitangent);
+    float3 tb = normalize(data.binormal);
 
     float nh = saturate(dot(n,h));
     float nl = saturate(dot(n,l));
@@ -278,7 +308,7 @@ inline float4 PBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,fl
     float lv = saturate(dot(l,v));
     float lh = saturate(dot(l,h));
 
-    if(_ClothOn){
+    if(data.isClothOn){
         float offset = Cloth(nv,data.clothMask);
         nh += offset;
         a2 = offset;
@@ -291,17 +321,24 @@ inline float4 PBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,fl
     float3 diffuse = (directDiffuse + indirectDiffuse) * diffColor;
 
     // -------------- specular part
-    float V = SmithJointGGXTerm(nl,nv,a2);
-    //float D = NDFBlinnPhongTerm(nh,RoughnessToSpecPower(a));
-    float D = D_GGXTerm(nh,a2);
     float3 F = FresnelTerm(specColor,lh);
+    float3 specularTerm = (float3)0;
+    
+    if(data.isHairOn){
+        specularTerm = data.hairSpecColor *nl;
+    }else{
+        // pbs specularTerm
+        float V = SmithJointGGXTerm(nl,nv,a2);
+        //float D = NDFBlinnPhongTerm(nh,RoughnessToSpecPower(a));
+        float D = D_GGXTerm(nh,a2);
 
-    if(_ClothOn){
-        V = AshikhminV(nv,nl);
-        D = CharlieD(a2,nh);
+        if(data.isClothOn){
+            V = AshikhminV(nv,nl);
+            D = CharlieD(a2,nh);
+        }
+        specularTerm = V * D * PI * nl;
     }
 
-    float3 specularTerm = V * D * PI * nl;
     specularTerm = max(0,specularTerm);
     specularTerm *= any(specColor)? 1 : 0;
 

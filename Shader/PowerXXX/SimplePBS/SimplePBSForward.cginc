@@ -64,17 +64,33 @@ float4 frag (v2f i) : SV_Target
 
     float2 uv = Parallax(i.uv,height,i.viewTangentSpace);
 
-    // metallicSmoothnessOcclusionDetailMask
-    float4 metallicSmoothnessOcclusionDetailMask = tex2D(_MetallicSmoothnessOcclusionDetailMask,uv);
-    float metallic = metallicSmoothnessOcclusionDetailMask.r * _Metallic;
-    float smoothness = metallicSmoothnessOcclusionDetailMask.g * _Smoothness;
+    // metallicSmoothnessOcclusion
+    float4 metallicSmoothnessOcclusion = tex2D(_MetallicSmoothnessOcclusion ,uv);
+    float metallic = metallicSmoothnessOcclusion.r * _Metallic;
+    float smoothness = metallicSmoothnessOcclusion.g * _Smoothness;
     float roughness = 1.0 - smoothness;
     // roughness = roughness * roughness;
-    float occlusion = metallicSmoothnessOcclusionDetailMask.b * _Occlusion;
-    //detail metallicSmoothnessOcclusionDetailMask
-    float detailMask = metallicSmoothnessOcclusionDetailMask.a;
+    float occlusion = metallicSmoothnessOcclusion.b * _Occlusion;
+    
+	//detail skin mouth eye
+	float4 detailMap = tex2D(_DetailMap, uv);
+	float4 mouthDetailMap = tex2D(_MouthDetailMap, uv);
+	float4 eyeDetailMap = tex2D(_EyeDetailMap, uv);
+	float detailMask = detailMap.a;
+	float mouthMask = mouthDetailMap.a;
+	float eyeMask = eyeDetailMap.a;
+	//uv
+	float2 detailUV = uv;float2 mouthDetailUV = uv;float2 eyeDetailUV = uv;
+	if(_DetailMapOn)
+		 detailUV = uv * _DetailMap_ST.xy + _DetailMap_ST.zw;
+	if(_MouthDetailMapOn)
+		 mouthDetailUV = uv * _MouthDetailMap_ST.xy + _MouthDetailMap_ST.zw;
+	if(_EyeDetailMapOn)
+	     eyeDetailUV = uv * _EyeDetailMap_ST.xy + _EyeDetailMap_ST.zw;
 
-    float3 tn = CalcNormal(uv,detailMask);
+
+    float3 tn = CalcNormal(uv,detailUV,mouthDetailUV,eyeDetailUV ,detailMask,mouthMask,eyeMask);
+	
     float3 n = normalize(float3(
         dot(i.tSpace0.xyz,tn),
         dot(i.tSpace1.xyz,tn),
@@ -84,9 +100,14 @@ float4 frag (v2f i) : SV_Target
     float3 v = normalize(UnityWorldSpaceViewDir(worldPos));
     float3 r = reflect(-v,n) + _ReflectionOffsetDir;
 
-    float4 mainTex = CalcAlbedo(uv,detailMask * _DetailMapIntensity);
+    float3 tangent = normalize(float3(i.tSpace0.x,i.tSpace1.x,i.tSpace2.x));
+    float3 binormal = normalize(float3(i.tSpace0.y,i.tSpace1.y,i.tSpace2.y));
+
+    float4 mainTex = CalcAlbedo(uv, detailUV, mouthDetailUV, eyeDetailUV,detailMask * _DetailMapIntensity,mouthMask*_MouthDetailMapIntensity,eyeMask*_EyeDetailMapIntensity);
     float3 albedo = mainTex.rgb;
+	
     albedo.rgb *= occlusion;
+	
     float alpha = mainTex.a;
 
 
@@ -108,16 +129,20 @@ float4 frag (v2f i) : SV_Target
 
     // half4 c = UNITY_BRDF_PBS (albedo, specColor, oneMinusReflectivity, smoothness, n, v, light, indirect);
     PBSData data = (PBSData)0;
-    data.tangent = float3(i.tSpace0.x,i.tSpace1.x,i.tSpace2.x);
-    data.bitangent = float3(i.tSpace0.y,i.tSpace1.y,i.tSpace2.y);
+    data.tangent = tangent;
+    data.binormal = binormal;
     data.clothMask = 1;
+    data.isClothOn = _ClothOn;
+    data.isHairOn = _HairOn;
 
     if(_ClothMaskOn){
         data.clothMask = clothMask;
     }
-    if(_HairOn){
 
+    if(_HairOn){
+        data.hairSpecColor = CalcHairSpecColor(i.uv,tangent,n,binormal,light.dir,v);
     }
+
     half4 c = CalcPBS(albedo, specColor, oneMinusReflectivity, smoothness, n, v, light, indirect,data);
     c.a = outputAlpha;
     
