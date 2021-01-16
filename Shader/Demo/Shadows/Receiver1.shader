@@ -58,14 +58,14 @@ Shader "Unlit/Receiver1"
             {
                 float2 lightUV = mul(unity_WorldToLight,float4(i.worldPos,1)).xy;
                 float lightFade = tex2D(_LightTexture0,lightUV).x;
-                return lightFade;
+                // return lightFade;
 
 
                 float nl = saturate(dot(i.normal,_WorldSpaceLightPos0.xyz));
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
                 float atten = SHADOW_ATTENUATION(i);
-                return col * atten * nl * _LightColor0;
+                return col * atten * nl * _LightColor0 * lightFade;
             }
             ENDCG
         }
