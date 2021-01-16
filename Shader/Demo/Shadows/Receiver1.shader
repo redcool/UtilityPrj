@@ -34,11 +34,14 @@ Shader "Unlit/Receiver1"
                 SHADOW_COORDS(1)
                 float4 pos : SV_POSITION;
                 float3 normal:TEXCOORD2;
+                float3 worldPos:TEXCOORD3;
             };
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
             fixed4 _LightColor0;
+            float4x4 unity_WorldToLight;
+            sampler2D _LightTexture0;
 
             v2f vert (appdata v)
             {
@@ -47,11 +50,17 @@ Shader "Unlit/Receiver1"
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 TRANSFER_SHADOW(o);
                 o.normal= UnityObjectToWorldNormal(v.normal);
+                o.worldPos = mul(unity_ObjectToWorld,v.vertex);
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
+                float2 lightUV = mul(unity_WorldToLight,float4(i.worldPos,1)).xy;
+                float lightFade = tex2D(_LightTexture0,lightUV).x;
+                return lightFade;
+
+
                 float nl = saturate(dot(i.normal,_WorldSpaceLightPos0.xyz));
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
@@ -108,6 +117,8 @@ Shader "Unlit/Receiver1"
 
             fixed4 frag (v2f i) : SV_Target
             {
+
+
                 float nl = saturate(dot(i.normal,_WorldSpaceLightPos0.xyz));
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
