@@ -31,5 +31,8 @@
     float3 normal = normalize(float3(input.tSpace0.z,input.tSpace1.z,input.tSpace2.z));\
     float3 worldPos = normalize(float3(input.tSpace0.w,input.tSpace1.w,input.tSpace2.w))
 
+float3 TangentToWorld(float3 tSpace0,float3 tSpace1,float3 tSpace2,float3 tn){
+    return normalize(float3(dot(tSpace0,tn),dot(tSpace1,tn),dot(tSpace2,tn)));
+}
 
 #endif //TANGENT_LIB_CGINC
