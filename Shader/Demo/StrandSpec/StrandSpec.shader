@@ -39,7 +39,7 @@ Shader "Unlit/StrandSpec"
 
             #include "UnityCG.cginc"
             #include "UnityStandardUtils.cginc"
-            #include "TangentLib.cginc"
+            #include "../Lib/TangentLib.cginc"
             #include "StrandSpecLib.cginc"
             #pragma target 3.0
 
