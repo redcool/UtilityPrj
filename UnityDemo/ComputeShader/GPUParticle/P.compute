@@ -1,0 +1,23 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CalcParticles
+
+struct Particle{
+    float2 pos;
+    float2 velocity;
+};
+
+float2 mousePos;
+float deltaTime;
+
+RWStructuredBuffer<Particle> particles;
+
+[numthreads(1024,1,1)]
+void CalcParticles (uint3 id : SV_DispatchThreadID)
+{
+    Particle p = particles[id.x];
+    float2 v = mousePos - p.pos;
+    float d2 = v.x*v.x + v.y*v.y;
+    p.velocity += 5 * v / d2 * deltaTime;
+    p.pos += p.velocity * deltaTime;
+    particles[id.x] = p;
+}
