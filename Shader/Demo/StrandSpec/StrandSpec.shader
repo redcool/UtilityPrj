@@ -28,8 +28,10 @@ Shader "Unlit/StrandSpec"
 
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "RenderType"="Opaque" "LightMode"="ForwardBase"}
         LOD 100
+        // cull off
+        // blend srcAlpha oneMinusSrcAlpha
 
         Pass
         {
@@ -56,11 +58,11 @@ Shader "Unlit/StrandSpec"
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
 
-                // float4 tSpace0:TEXCOORD1;
-                // float4 tSpace1:TEXCOORD2;
-                // float4 tSpace2:TEXCOORD3;
+                float4 tSpace0:TEXCOORD1;
+                float4 tSpace1:TEXCOORD2;
+                float4 tSpace2:TEXCOORD3;
 
-                TANGENT_SPACE_DECLARE(1,2,3);
+                // TANGENT_SPACE_DECLARE(1,2,3);
             };
 
             sampler2D _MainTex;
@@ -83,9 +85,9 @@ Shader "Unlit/StrandSpec"
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 
                 // float3 p = mul(unity_ObjectToWorld,v.vertex);
-                // float3 n = normalize(UnityObjectToWorldNormal(v.normal));
-                // float3 t = normalize(UnityObjectToWorldDir(v.tangent.xyz));
-                // float3 b = normalize(cross(n,t) * v.tangent.w);
+                // fixed3 n = (UnityObjectToWorldNormal(v.normal));
+                // fixed3 t = (UnityObjectToWorldDir(v.tangent.xyz));
+                // fixed3 b = (cross(n,t) * v.tangent.w);
 
                 // o.tSpace0 = float4(t.x,b.x,n.x,p.x);
                 // o.tSpace1 = float4(t.y,b.y,n.y,p.y);
@@ -94,6 +96,24 @@ Shader "Unlit/StrandSpec"
                 return o;
             }
 
+            float3 CalcStrandSpec(float3 tangent,float3 normal,float3 binormal,float3 lightDir,float3 viewDir,float tangentShift,float tbMask,float2 specMask){
+                StrandSpecularData data = (StrandSpecularData)0;
+                data.tangent = tangent;
+                data.normal = normal;
+                data.binormal = binormal;
+                data.lightDir = lightDir;
+                data.viewDir = viewDir;
+                data.shift = tangentShift + _Shift1;
+                data.specPower = _SpecPower1 * 100;
+                data.tbMask = tbMask;
+                float spec1 = StrandSpecularColor(data);
+
+                data.specPower = _SpecPower2 * 100;
+                data.shift = tangentShift + _Shift2;
+                float spec2 = StrandSpecularColor(data);
+                float3 specColor = spec1 * _SpecIntensity1 * _SpecColor1 * specMask.x + spec2 * _SpecIntensity2 * _SpecColor2 * specMask.y;
+                return specColor;
+            }
             fixed4 frag (v2f i) : SV_Target
             {
                 TANGENT_SPACE_SPLIT(i);
@@ -110,32 +130,21 @@ Shader "Unlit/StrandSpec"
                 float3 l = normalize(UnityWorldSpaceLightDir(worldPos));
 
                 float4 shiftTex = tex2D(_ShiftTex,i.uv);
-                float shift = shiftTex.r;
+                float ao = shiftTex.r;
+                float shift = shiftTex.g;
                 float specMask = shiftTex.b;
 
-                // float3 t1 = ShiftTangent(b,n,shift + _Shift1);
-                // float3 spec1 = StrandSpecular(t1,v,l,_SpecPower1);
-
-                StrandSpecularData data = (StrandSpecularData)0;
-                data.tangent = tangent;
-                data.normal = normal;
-                data.binormal = binormal;
-                data.lightDir = l;
-                data.viewDir = v;
-                data.shift = shift + _Shift1;
-                data.specPower = _SpecPower1 * 128;
-                data.tbMask = tex2D(_TBMaskMap,i.uv);
-                float spec1 = StrandSpecularColor(data);
-
-                data.specPower = _SpecPower2 * 128;
-                data.shift = shift + _Shift2;
-                float spec2 = StrandSpecularColor(data);
-                float3 specColor = spec1 * _SpecIntensity1 * _SpecColor1 + spec2 * _SpecIntensity2 * _SpecColor2 * specMask;
-                // return specColor.xyzx;
-
+                float3 t1 = ShiftTangent(binormal,n,shift + _Shift1);
+                float3 spec1 = StrandSpecular(t1,v,l,_SpecPower1*100);
+                
+                float tbMask = tex2D(_TBMaskMap,i.uv);
+                float3 specColor = CalcStrandSpec(tangent,normal,binormal,l,v,shift,tbMask,float2(1,specMask));
+                
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
-                col.rgb += specColor;
+                col.rgb *= ao;
+                // clip(col.a - 0.5);
+                col.rgb += specColor ;
                 return col;
             }
             ENDCG
