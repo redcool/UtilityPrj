@@ -107,7 +107,7 @@ struct v2f_surf {
     UNITY_FOG_COORDS(8)
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
-    FOG_COORDS(9)
+    float2 fog :TEXCOORD9;
 };
 
 
@@ -187,7 +187,7 @@ float4 frag_surf (v2f_surf IN) : SV_Target {
         clip (o.Alpha - _Cutoff);
     }
     #if defined(LOW_SETTING)
-        return LightingOnlyLightmap(o,IN.lmap);
+        return LightingOnlyLightmap(o,IN.lmap,light);
     #else
         // #endif
         // compute lighting & shadowing factor
@@ -234,14 +234,10 @@ float4 frag_surf (v2f_surf IN) : SV_Target {
         float3 specColor = _SpecColor.rgb * smoothstep(0,0.9,o.Alpha);
         c.rgb += LightingBlinn(o,halfDir,gi,atten,specColor);
         c.rgb += o.Emission;
-// return IN.fog.y;
-        // apply fog
-        // IN.fog = GetHeightFog(worldPos);
-        BlendFog(viewDir,IN.fog,/*inout*/c.rgb);
 
-        // if(FOG_ON){
-        //     UNITY_APPLY_FOG(IN.fogCoord, c );
-        // }
+        #if defined(FOG_LINEAR)
+            BlendFinalFog(IN.fog,IN.fogCoord,viewDir,worldPos,/**/c);
+        #endif
 
         c.rgb *= DayIntensity(true);
         c.a = o.Alpha;

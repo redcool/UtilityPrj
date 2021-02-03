@@ -14,16 +14,27 @@ public class HeightFogSettingEditor : Editor
     }
 }
 #endif
-
+/// <summary>
+/// HeightFogSetting
+/// 可以有多个实例,需要通过enable来开关.
+/// </summary>
 [ExecuteInEditMode]
 public class HeightFogSetting : MonoBehaviour
 {
+    public enum FogMode
+    {
+        UnityFog,SphereFog
+    }
     public static HeightFogSetting Instance { private set; get; }
 
     /// <summary>
     /// 检测 fog是否开启
     /// </summary>
     public static event Func<bool> OnCheckFogOn;
+
+    [Header("Fog Mode")]
+    public FogMode fogMode;
+    FogMode lastFogMode = (FogMode)(-1);
 
     [Header("Height Fog")]
     public bool isHeightFogOn = true;
@@ -54,19 +65,17 @@ public class HeightFogSetting : MonoBehaviour
         heightFogFarId = Shader.PropertyToID("_HeightFogFar"),
         sunFogColorId = Shader.PropertyToID("_sunFogColor"),
         sunFogDirId = Shader.PropertyToID("_SunFogDir"),
-        heightFogColorId = Shader.PropertyToID("_HeightFogColor");
+        heightFogColorId = Shader.PropertyToID("_HeightFogColor"),
+        fogModeId = Shader.PropertyToID("_FogMode")
+        ;
 
     public const string
         IS_FOG_ON = "_FogOn",
         IS_HEIGHT_FOG_ON = "_HeightFogOn",
         IS_PIXEL_FOG_ON = "_PixelFogOn";
-    void Awake()
-    {
-        ApplyHeightFogSet();
-        Instance = this;
-    }
     private void OnEnable()
     {
+        Instance = this;
         if (OnCheckFogOn != null && !OnCheckFogOn())
         {
             enabled = false;
@@ -76,6 +85,8 @@ public class HeightFogSetting : MonoBehaviour
         Shader.SetGlobalInt(IS_FOG_ON, 1);
         Shader.SetGlobalInt(IS_HEIGHT_FOG_ON, 1);
         RenderSettings.fog = true;
+
+        ApplyHeightFogSet();
     }
 
     private void OnDisable()
@@ -105,7 +116,7 @@ public class HeightFogSetting : MonoBehaviour
 
         Shader.SetGlobalInt(IS_HEIGHT_FOG_ON, isHeightFogOn ? 1 : 0);
         Shader.SetGlobalInt(IS_FOG_ON, enabled ? 1 : 0);
-        Shader.SetGlobalInt(IS_PIXEL_FOG_ON, isPixelFog?1:0);
+        Shader.SetGlobalInt(IS_PIXEL_FOG_ON, isPixelFog ? 1 : 0);
 
         Shader.SetGlobalFloat(heightFogMinId, min);
         Shader.SetGlobalFloat(heightFogMaxId, max);
@@ -122,6 +133,18 @@ public class HeightFogSetting : MonoBehaviour
         RenderSettings.fogColor = gloabFogColor;
         RenderSettings.fogStartDistance = near;
         RenderSettings.fogEndDistance = far;
+
+        UpdateFogMode();
+    }
+
+    private void UpdateFogMode()
+    {
+        if (lastFogMode != fogMode)
+        {
+            Debug.Log(lastFogMode);
+            lastFogMode = fogMode;
+            Shader.SetGlobalInt(fogModeId, (int)fogMode);
+        }
     }
 
     public void UpdateFog(float start,float end,float heightMin,float heightMax,Color fogColor,Color heightFogColor,Color sunFogColor)

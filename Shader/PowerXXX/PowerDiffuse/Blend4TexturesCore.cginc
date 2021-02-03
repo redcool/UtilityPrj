@@ -11,6 +11,7 @@
 // Original surface shader snippet:
 #ifdef DUMMY_PREPROCESSOR_TO_WORK_AROUND_HLSL_COMPILER_LINE_HANDLING
 #endif
+SamplerState tex_linear_repeat;
 
 sampler2D _Control;
 sampler2D _Splat0,_Splat1,_Splat2,_Splat3;
@@ -22,7 +23,7 @@ float4 _Splat2_ST;
 float4 _Splat3_ST;
 float4 _Color0,_Color1,_Color2,_Color3;
 
-// sampler2D _MainTex;
+// Texture2D _MainTex;
 // float4 _Color;
 
 float _ShininessL0;
@@ -35,8 +36,8 @@ float _GlossIntensity0,_GlossIntensity1;
 float _GlossIntensity2,_GlossIntensity3;
 float4 _SnowNoiseTile;
 float4 _SplatSnowIntensity;
-sampler2D _BumpSplat0, _BumpSplat1;
-sampler2D _BumpSplat2, _BumpSplat3;
+Texture2D _BumpSplat0, _BumpSplat1;
+Texture2D _BumpSplat2, _BumpSplat3;
 
 half4 _RainSpecColor;
 half4 _RainSpecDir;
@@ -72,10 +73,10 @@ float4 splat_control = tex2D (_Control, IN.uv_Control);
 
 // #if defined(NORMAL_MAP_ON)
 if(_NormalMapOn){
-    float3 n1 = splat_control.r * UnpackScaleNormal(tex2D(_BumpSplat0, IN.uv_Splat0),_NormalRange);
-    float3 n2 = splat_control.g * UnpackScaleNormal(tex2D(_BumpSplat1, IN.uv_Splat1),_NormalRange1);
-    float3 n3 = splat_control.b * UnpackScaleNormal(tex2D(_BumpSplat2, IN.uv_Splat2),_NormalRange2);
-    float3 n4 = splat_control.a * UnpackScaleNormal(tex2D(_BumpSplat3, IN.uv_Splat3),_NormalRange3);
+    float3 n1 = splat_control.r * UnpackScaleNormal(_BumpSplat0.Sample(tex_linear_repeat, IN.uv_Splat0),_NormalRange);
+    float3 n2 = splat_control.g * UnpackScaleNormal(_BumpSplat1.Sample(tex_linear_repeat, IN.uv_Splat1),_NormalRange1);
+    float3 n3 = splat_control.b * UnpackScaleNormal(_BumpSplat2.Sample(tex_linear_repeat, IN.uv_Splat2),_NormalRange2);
+    float3 n4 = splat_control.a * UnpackScaleNormal(_BumpSplat3.Sample(tex_linear_repeat, IN.uv_Splat3),_NormalRange3);
     o.Normal = normalize(n1 + n2+n3+n4);
     // IN.wn = o.Normal;
     // o.Normal = length(o.Normal)<0.001f? float3(0,0,0.1):o.Normal;
@@ -135,7 +136,7 @@ UNITY_FOG_COORDS(7)
 float4 lmap : TEXCOORD8;
 
 float4 normalUV:TEXCOORD9;
-FOG_COORDS(10)
+float2 fog :TEXCOORD10;
 UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -143,8 +144,8 @@ UNITY_VERTEX_INPUT_INSTANCE_ID
 
 //for terrain rendering instenced
 #if defined(UNITY_INSTANCING_ENABLED) && !defined(SHADER_API_D3D11_9X)
-    sampler2D _TerrainHeightmapTexture;
-    sampler2D _TerrainNormalmapTexture;
+    Texture2D _TerrainHeightmapTexture;
+    Texture2D _TerrainNormalmapTexture;
     float4    _TerrainHeightmapRecipSize;   // float4(1.0f/width, 1.0f/height, 1.0f/(width-1), 1.0f/(height-1))
     float4    _TerrainHeightmapScale;       // float4(hmScale.x, hmScale.y / (float)(kMaxHeight), hmScale.z, 0.0f)
 #endif
@@ -168,7 +169,7 @@ UNITY_TRANSFER_INSTANCE_ID(v,o);
     uvoffset.xy += 0.5f * _TerrainHeightmapRecipSize.xy;
     float2 sampleCoords = (patchVertex.xy * uvscale.xy + uvoffset.xy);
 
-    float hm = UnpackHeightmap(tex2Dlod(_TerrainHeightmapTexture, float4(sampleCoords, 0, 0)));
+    float hm = UnpackHeightmap(_TerrainHeightmapTexture.SampleLevel(tex_linear_repeat, sampleCoords,1));
     v.vertex.xz = (patchVertex.xy + instanceData.xy) * _TerrainHeightmapScale.xz * instanceData.z;  //(x + xBase) * hmScale.x * skipScale;
     v.vertex.y = hm * _TerrainHeightmapScale.y;
     v.vertex.w = 1.0f;
@@ -176,7 +177,7 @@ UNITY_TRANSFER_INSTANCE_ID(v,o);
     v.texcoord.xy = (patchVertex.xy * uvscale.zw + uvoffset.zw);
     v.texcoord3 = v.texcoord2 = v.texcoord1 = v.texcoord;
 
-    float3 nor = tex2Dlod(_TerrainNormalmapTexture, float4(sampleCoords, 0, 0)).xyz;
+    float3 nor = _TerrainNormalmapTexture.Sample(tex_linear_repeat, sampleCoords, 0).xyz;
     v.normal = 2.0f * nor - 1.0f;
 
     v.tangent.xyz = cross(v.normal,float3(0,0,1));
@@ -234,9 +235,6 @@ return o;
 
 // fragment shader
 float4 frag_surf (v2f_surf IN) : SV_Target {
-    // return IN.fog.x;
-// return float4(IN.uv.xy,0,0);
-// return UNITY_SAMPLE_TEX2D(unity_Lightmap,IN.lmap);
 // prepare and unpack data
 Input surfIN;
 UNITY_INITIALIZE_OUTPUT(Input,surfIN);
@@ -274,8 +272,7 @@ surfIN.wn = worldNormal;
 // call surface function
 surf (surfIN, o);
 #if defined(LOW_SETTING)
-    //return float4(o.Albedo + o.Albedo * gi.indirect.diffuse,o.Alpha);
-    return LightingOnlyLightmap(o,IN.lmap);
+    return LightingOnlyLightmap(o,IN.lmap,light);
 #else
     // #if defined(NORMAL_MAP_ON)
     if(_NormalMapOn){
@@ -323,14 +320,10 @@ surf (surfIN, o);
     float3 specColor = _SpecColor.rgb * smoothstep(0,0.9,o.Alpha);
     c += LightingBlinn(o,halfDir,gi,atten,specColor);
 
-    if(_PixelFogOn){
-        IN.fog = GetHeightFog(worldPos);
-    }
-    BlendFog(viewDir,IN.fog,/*inout*/c.rgb);
-
-    // if(_FogOn){
-    //     UNITY_APPLY_FOG(IN.fogCoord, c); // apply fog
-    // }
+    
+    #if defined(FOG_LINEAR)
+        BlendFinalFog(IN.fog,IN.fogCoord,viewDir,worldPos,/**/c);
+    #endif
 
     c.rgb *= DayIntensity(true);
     UNITY_OPAQUE_ALPHA(c.a);
