@@ -8,6 +8,7 @@ float _Shift1,_Shift2;
 float _SpecPower1, _SpecPower2;
 float3 _SpecColor1,_SpecColor2;
 float _SpecIntensity1,_SpecIntensity2;
+float _HairAoIntensity;
 
 int _HairOn;
 
@@ -32,10 +33,11 @@ float3 CalcStrandSpec(float3 tangent,float3 normal,float3 binormal,float3 lightD
     return specColor;
 }
 
-float3 CalcHairSpecColor(float2 uv,float3 tangent,float3 normal,float3 binormal,float3 lightDir,float3 viewDir){
+float3 CalcHairSpecColor(float2 uv,float3 tangent,float3 normal,float3 binormal,float3 lightDir,float3 viewDir,out float hairAo){
     float4 shiftTex = tex2D(_ShiftTex,uv);
     float shift = shiftTex.g;
     float specMask = shiftTex.b;
+	hairAo = shiftTex.r;
     float tbMask = tex2D(_TBMaskMap,uv);
     return CalcStrandSpec(tangent,normal,binormal,lightDir,viewDir,shift,tbMask,float2(1,specMask));
 }

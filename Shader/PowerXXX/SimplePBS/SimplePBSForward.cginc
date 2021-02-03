@@ -65,31 +65,55 @@ float4 frag (v2f i) : SV_Target
     float2 uv = Parallax(i.uv,height,i.viewTangentSpace);
 
     // metallicSmoothnessOcclusion
-    float4 metallicSmoothnessOcclusion = tex2D(_MetallicSmoothnessOcclusion ,uv);
+    float4 metallicSmoothnessOcclusion = tex2D(_MetallicMap ,uv);
     float metallic = metallicSmoothnessOcclusion.r * _Metallic;
     float smoothness = metallicSmoothnessOcclusion.g * _Smoothness;
-    float roughness = 1.0 - smoothness;
-    // roughness = roughness * roughness;
     float occlusion = metallicSmoothnessOcclusion.b * _Occlusion;
     
-	//detail skin mouth eye
-	float4 detailMap = tex2D(_DetailMap, uv);
-	float4 mouthDetailMap = tex2D(_MouthDetailMap, uv);
-	float4 eyeDetailMap = tex2D(_EyeDetailMap, uv);
-	float detailMask = detailMap.a;
-	float mouthMask = mouthDetailMap.a;
-	float eyeMask = eyeDetailMap.a;
+    float roughness = 1.0 - smoothness;
+    // roughness = roughness * roughness;
+    
+	//detail skin ,mouth ,eye,eyebrow,face
+	float4 detailMap = 0;
+	float4 mouthDetailMap = 0;
+	float4 eyeDetailMap = 0;
+	float4 eyebrowDetailMap = 0;
+	float4 faceDetailMap = 0;
+	float detailMask = 0;
+	float mouthMask = 0;
+	float eyeMask = 0;
+	float eyebrowMask = 0;
+	float faceMask = 0;
 	//uv
-	float2 detailUV = uv;float2 mouthDetailUV = uv;float2 eyeDetailUV = uv;
-	if(_DetailMapOn)
-		 detailUV = uv * _DetailMap_ST.xy + _DetailMap_ST.zw;
-	if(_MouthDetailMapOn)
-		 mouthDetailUV = uv * _MouthDetailMap_ST.xy + _MouthDetailMap_ST.zw;
-	if(_EyeDetailMapOn)
-	     eyeDetailUV = uv * _EyeDetailMap_ST.xy + _EyeDetailMap_ST.zw;
+	float2 detailUV = uv;float2 mouthDetailUV = uv;float2 eyeDetailUV = uv;float2 eyebrowDetailUV = uv;float2 faceDetailUV = uv;
+	if (_DetailMapOn) {
+		detailUV = uv * _DetailMap_ST.xy + _DetailMap_ST.zw;
+		detailMap = _DetailMap.Sample(tex_linear_repeat_sampler, detailUV);
+		detailMask = detailMap.a;
+	}
+	if (_MouthDetailMapOn) {
+		mouthDetailUV = uv * _MouthDetailMap_ST.xy + _MouthDetailMap_ST.zw;
+		mouthDetailMap = _MouthDetailMap.Sample(tex_linear_repeat_sampler, mouthDetailUV);
+		mouthMask = mouthDetailMap.a;
+	}
+	if (_EyeDetailMapOn) {
+		eyeDetailUV = uv * _EyeDetailMap_ST.xy + _EyeDetailMap_ST.zw;
+		eyeDetailMap = _EyeDetailMap.Sample(tex_linear_repeat_sampler, eyeDetailUV);
+		eyeMask = eyeDetailMap.a;
+	}
+	if (_EyebrowDetailMapOn) {
+		eyebrowDetailUV = uv * _EyebrowDetailMap_ST.xy + _EyebrowDetailMap_ST.zw;
+		eyebrowDetailMap = _EyebrowDetailMap.Sample(tex_linear_repeat_sampler, eyebrowDetailUV);
+		eyebrowMask = eyebrowDetailMap.a;
+	}
+	if (_FaceDetailMapOn){
+		faceDetailUV = uv * _FaceDetailMap_ST.xy + _FaceDetailMap_ST.zw;
+		faceDetailMap = _FaceDetailMap.Sample(tex_linear_repeat_sampler, faceDetailUV);
+		faceMask = faceDetailMap.a;
+	}
 
 
-    float3 tn = CalcNormal(uv,detailUV,mouthDetailUV,eyeDetailUV ,detailMask,mouthMask,eyeMask);
+    float3 tn = CalcNormal(uv,detailMask);
 	
     float3 n = normalize(float3(
         dot(i.tSpace0.xyz,tn),
@@ -103,7 +127,7 @@ float4 frag (v2f i) : SV_Target
     float3 tangent = normalize(float3(i.tSpace0.x,i.tSpace1.x,i.tSpace2.x));
     float3 binormal = normalize(float3(i.tSpace0.y,i.tSpace1.y,i.tSpace2.y));
 
-    float4 mainTex = CalcAlbedo(uv, detailUV, mouthDetailUV, eyeDetailUV,detailMask * _DetailMapIntensity,mouthMask*_MouthDetailMapIntensity,eyeMask*_EyeDetailMapIntensity);
+    float4 mainTex = CalcAlbedo(uv, detailMap.rgb, mouthDetailMap.rgb, eyeDetailMap.rgb, eyebrowDetailMap.rgb, faceDetailMap.rgb, detailMask * _DetailMapIntensity,mouthMask*_MouthDetailMapIntensity,eyeMask*_EyeDetailMapIntensity, eyebrowMask*_EyebrowDetailMapIntensity, faceMask*_FaceDetailMapIntensity);
     float3 albedo = mainTex.rgb;
 	
     albedo.rgb *= occlusion;
@@ -140,7 +164,9 @@ float4 frag (v2f i) : SV_Target
     }
 
     if(_HairOn){
-        data.hairSpecColor = CalcHairSpecColor(i.uv,tangent,n,binormal,light.dir,v);
+		float hairAo;
+        data.hairSpecColor = CalcHairSpecColor(i.uv,tangent,n,binormal,light.dir,v, hairAo);
+		albedo *= lerp(1, hairAo, _HairAoIntensity);
     }
 
     half4 c = CalcPBS(albedo, specColor, oneMinusReflectivity, smoothness, n, v, light, indirect,data);

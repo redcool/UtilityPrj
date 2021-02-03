@@ -9,45 +9,79 @@
 #define INV_PI 0.31830988618f
 #define DielectricSpec 0.04
 
+//------------------------- main texture
+
 sampler2D _MainTex;
 float4 _Color;
 float4 _MainTex_ST;
 sampler2D _NormalMap;
 float _NormalMapScale;
 
-sampler2D _MetallicSmoothnessOcclusion;
+sampler2D _MetallicMap; //metallicSmoothnessOcclusion,
 sampler2D _HeightClothSSSMask;
 
 float _Smoothness;
 float _Metallic;
 float _Occlusion;
 
+//-------------------------- detail map 
+// detail map mode id
+#define DETAIL_MAP_MODE_MULTIPLY 0
+#define DETAIL_MAP_MODE_REPLACE 1
+SamplerState tex_linear_repeat_sampler;
+
 int _DetailMapOn;
-sampler2D _DetailMap;
+int _DetailMapMode;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailMap);
 float _DetailMapIntensity;
 float4 _DetailMap_ST;
-sampler2D _DetailNormalMap;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailNormalMap);
+float4 _DetailNormalMap_ST;
 float _DetailNormalMapScale;
 //Mouth
 int _MouthDetailMapOn;
-sampler2D _MouthDetailMap;
+int _MouthDetailMapMode;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_MouthDetailMap);
 float _MouthDetailMapIntensity;
 float4 _MouthDetailMap_ST;
-sampler2D _MouthDetailNormalMap;
-float _MouthDetailNormalMapScale;
+//UNITY_DECLARE_TEX2D_NOSAMPLER(_MouthDetailNormalMap);
+//float4 _MouthDetailNormalMap_ST;
+//float _MouthDetailNormalMapScale;
 //Eye
 int _EyeDetailMapOn;
-sampler2D _EyeDetailMap;
+int _EyeDetailMapMode;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_EyeDetailMap);
 float _EyeDetailMapIntensity;
 float4 _EyeDetailMap_ST;
-sampler2D _EyeDetailNormalMap;
-float _EyeDetailNormalMapScale;
+//UNITY_DECLARE_TEX2D_NOSAMPLER(_EyeDetailNormalMap);
+//float4 _EyeDetailNormalMap_ST;
+//float _EyeDetailNormalMapScale;
+//Eyebrow
+int _EyebrowDetailMapOn;
+int _EyebrowDetailMapMode;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_EyebrowDetailMap);
+float _EyebrowDetailMapIntensity;
+float4 _EyebrowDetailMap_ST;
+//UNITY_DECLARE_TEX2D_NOSAMPLER(_EyebrowDetailNormalMap);
+//float4 _EyebrowDetailNormalMap_ST;
+//float _EyebrowDetailNormalMapScale;
+//Face
+int _FaceDetailMapOn;
+int _FaceDetailMapMode;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_FaceDetailMap);
+float _FaceDetailMapIntensity;
+float4 _FaceDetailMap_ST;
+//UNITY_DECLARE_TEX2D_NOSAMPLER(_FaceDetailNormalMap);
+//float4 _FaceDetailNormalMap_ST;
+//float _FaceDetailNormalMapScale;
 
+//---------------------------- ibl
 samplerCUBE _EnvCube;
 float _EnvIntensity;
 float3 _ReflectionOffsetDir;
 
 sampler2D _EmissionMap;
+float4 _EmissionColor;
 float _Emission;
 float _IndirectIntensity;
 
@@ -134,44 +168,57 @@ inline float2 Parallax(float2 uv,float height,float3 viewTangentSpace){
     }
     return uv;
 }
-inline float3 CalcDetailNormal(sampler2D tex, float2 uv, float scale, float3 tn, float mask, bool isOn) {
-	if (isOn) {
-		float3 dtn = UnpackScaleNormal(tex2D(tex, uv), scale);
-		dtn = BlendNormals(tn, dtn);
-		tn = lerp(tn, dtn, mask);
-	}
-	return tn;
-}
 
-inline float3 CalcNormal(float2 uv, float2 detailUV, float2 mouthDetailUV, float2 eyeDetailUV,float detailMask,float mouthMask,float eyeMask){
+//inline float3 CalcDetailNormal(Texture2D tex, float2 uv, float scale,float4 uvTilingOffset, float3 tn, float mask, bool isOn) {
+//	if (isOn) {
+//		float3 dtn = UnpackScaleNormal(tex.Sample(tex_linear_repeat_sampler,uv * uvTilingOffset.xy + uvTilingOffset.zw), scale);
+//        dtn = normalize(float3(tn.xy+dtn.xy,tn.z*dtn.z));
+//		tn = lerp(tn, dtn, mask);
+//	}
+//	return tn;
+//}
+
+inline float3 CalcNormal(float2 uv, float detailMask ){
     float3 tn = UnpackScaleNormal(tex2D(_NormalMap,uv),_NormalMapScale);
 	
-	tn = CalcDetailNormal(_DetailNormalMap, detailUV, _DetailNormalMapScale, tn, detailMask, _DetailMapOn);
-	tn = CalcDetailNormal(_MouthDetailNormalMap, mouthDetailUV, _MouthDetailNormalMapScale, tn, mouthMask, _MouthDetailMapOn);
-	tn = CalcDetailNormal(_EyeDetailNormalMap, eyeDetailUV, _EyeDetailNormalMapScale, tn, eyeMask, _EyeDetailMapOn);
+	if (_DetailMapOn) {
+		float3 dtn = UnpackScaleNormal(_DetailNormalMap.Sample(tex_linear_repeat_sampler, uv * _DetailNormalMap_ST.xy + _DetailNormalMap_ST.zw), _DetailNormalMapScale);
+		dtn = normalize(float3(tn.xy + dtn.xy, tn.z*dtn.z));
+		tn = lerp(tn, dtn, detailMask);
+	}
     return tn;
 }
-inline float3 CalcDetailAlbedo(sampler2D tex, float2 uv, float mask,bool isOn) {
-	float3 addColor = (float3)1;
-	if (isOn) {
-		float3 detailAlbedo = tex2D(tex, uv);
-		addColor = lerp(1, detailAlbedo * unity_ColorSpaceDouble.rgb, mask);
-	}
-	return addColor;
+
+
+inline void ApplyDetailAlbedo(inout float4 mainColor, float3 detailMapColor,  float mask,bool isOn,int detailMapMode){
+    if(isOn){
+        //float3 detailAlbedo = tex2D(tex, uv);
+		//float3 detailAlbedo=tex.Sample(tex_linear_repeat_sampler,uv);
+		float3 detailAlbedo = detailMapColor;
+        if(detailMapMode == DETAIL_MAP_MODE_MULTIPLY){
+            mainColor.rgb *= lerp(1,detailAlbedo * unity_ColorSpaceDouble.rgb,mask);
+        }else if(detailMapMode == DETAIL_MAP_MODE_REPLACE){
+            mainColor.rgb = lerp(mainColor,detailAlbedo,mask);
+        }
+    }
+    
 }
 
-inline float4 CalcAlbedo(float2 uv, float2 detailUV, float2 mouthDetailUV, float2 eyeDetailUV, float detailMask, float mouthMask,float eyeMask) {
-    float4 albedo = tex2D(_MainTex,uv) * _Color;
-	albedo.rgb *= CalcDetailAlbedo(_DetailMap,  detailUV, detailMask, _DetailMapOn);
-	albedo.rgb*= CalcDetailAlbedo(_MouthDetailMap, mouthDetailUV, mouthMask, _MouthDetailMapOn);
-	albedo.rgb *= CalcDetailAlbedo(_EyeDetailMap,  eyeDetailUV, eyeMask, _EyeDetailMapOn);
-    return albedo;
+inline float4 CalcAlbedo(float2 uv, float3 detailMapCol, float3 mouthDetailMapCol, float3 eyeDetailMapCol, float3 eyebrowDetailMapCol, float3 faceDetailMapCol, float detailMask, float mouthMask,float eyeMask, float eyebrowMask, float faceMask) {
+    float4 albedo = tex2D(_MainTex,uv) ;
+    ApplyDetailAlbedo(albedo, detailMapCol, detailMask, _DetailMapOn,_DetailMapMode);
+    ApplyDetailAlbedo(albedo, mouthDetailMapCol, mouthMask, _MouthDetailMapOn,_MouthDetailMapMode);
+    ApplyDetailAlbedo(albedo, eyeDetailMapCol, eyeMask, _EyeDetailMapOn,_EyeDetailMapMode);
+    // return albedo;
+	ApplyDetailAlbedo(albedo, eyebrowDetailMapCol, eyebrowMask, _EyebrowDetailMapOn, _EyebrowDetailMapMode);
+	ApplyDetailAlbedo(albedo, faceDetailMapCol, faceMask, _FaceDetailMapOn, _FaceDetailMapMode);
+    return albedo * _Color;
 }
 
 inline UnityIndirect CalcGI(float3 albedo,float2 uv,float3 reflectDir,float3 normal,float occlusion,float roughness){
-    float3 indirectSpecular = GetIndirectSpecular(reflectDir,roughness) * occlusion * _EnvIntensity;
+    float3 indirectSpecular = GetIndirectSpecular(reflectDir,roughness) * occlusion * _EnvIntensity * _IndirectIntensity;
     float3 indirectDiffuse = albedo * occlusion;
-    indirectDiffuse += ShadeSH9(float4(normal,1)) * _IndirectIntensity;
+    indirectDiffuse += ShadeSH9(float4(normal,1));
     UnityIndirect indirect = {indirectDiffuse,indirectSpecular};
     return indirect;
 }
@@ -275,7 +322,7 @@ inline float Cloth(float nv,float clothMask){
 */
 float3 CalcEmission(float3 albedo,float2 uv){
     float4 tex = tex2D(_EmissionMap,uv);
-    return albedo * tex.rgb * tex.a * _Emission;
+    return albedo * tex.rgb * tex.a * _Emission * _EmissionColor;
 }
 
 struct PBSData{
@@ -323,7 +370,7 @@ inline float4 PBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,fl
     // -------------- specular part
     float3 F = FresnelTerm(specColor,lh);
     float3 specularTerm = (float3)0;
-    
+
     if(data.isHairOn){
         specularTerm = data.hairSpecColor *nl;
     }else{
@@ -332,10 +379,10 @@ inline float4 PBS(float3 diffColor,half3 specColor,float oneMinusReflectivity,fl
         //float D = NDFBlinnPhongTerm(nh,RoughnessToSpecPower(a));
         float D = D_GGXTerm(nh,a2);
 
-        if(data.isClothOn){
-            V = AshikhminV(nv,nl);
-            D = CharlieD(a2,nh);
-        }
+        // if(data.isClothOn){
+        //     V = AshikhminV(nv,nl);
+        //     D = CharlieD(a,nh);
+        // }
         specularTerm = V * D * PI * nl;
     }
 

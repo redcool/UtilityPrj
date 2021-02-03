@@ -9,7 +9,7 @@ Shader "Character/SimplePBS"
 {
     Properties
     {
-        [Header(LightingProcessIsRequired)]
+        [Header(Lighting Process Is Required)]
         [Space(20)][Header(MainProp)]
         _MainTex ("Texture", 2D) = "white" {}
         _Color("Color",color) = (1,1,1,1)
@@ -17,31 +17,50 @@ Shader "Character/SimplePBS"
         [noscaleoffset]_NormalMap("NormalMap",2d) = "bump"{}
         _NormalMapScale("_NormalMapScale",range(0,5)) = 1
 
-        [noscaleoffset]_MetallicSmoothnessOcclusion("Metallic(R),Smoothness(G),Occlusion(B)",2d) = "white"{}
+        [noscaleoffset]_MetallicMap("Metallic(R),Smoothness(G),Occlusion(B)",2d) = "white"{}
         _Metallic("_Metallic",range(0,1)) = 0.5
         _Smoothness("Smoothness",range(0,1)) = 0
         _Occlusion("_Occlusion",range(0,1)) = 1
 
         [Space(10)][Header(DetailMap)]
         [Toggle]_DetailMapOn("_DetailMapOn",int) = 0
+        [Enum(Multiply,0,Replace,1)]_DetailMapMode("_DetailMapMode",int) = 0
         _DetailMap("_DetailMap(RGB),DetailMask(A)",2d) = "white"{}
         _DetailMapIntensity("_DetailMapIntensity",range(0,1)) = 1
-        [noscaleoffset]_DetailNormalMap("_DetailNormalMap",2d) = "bump"{}
+        _DetailNormalMap("_DetailNormalMap",2d) = "bump"{}
         _DetailNormalMapScale("_DetailNormalMapScale",range(0,5)) = 1
 
 		[Space(10)][Header(MouthDetailMap)]
 		[Toggle]_MouthDetailMapOn("_MouthDetailMapOn",int) = 0
+        [Enum(Multiply,0,Replace,1)]_MouthDetailMapMode("_MouthDetailMapMode",int) = 0
 		_MouthDetailMap("_MouthDetailMap(rgb),MouthMask(A)",2d) = "white"{}
 		_MouthDetailMapIntensity("_MouthDetailMapIntensity",range(0,1)) = 1
-		[noscaleoffset]_MouthDetailNormalMap("_MouthDetailNormalMap",2d) = "bump"{}
-		_MouthDetailNormalMapScale("_MouthDetailNormalMapScale",range(0,5)) = 1
+		/*_MouthDetailNormalMap("_MouthDetailNormalMap",2d) = "bump"{}
+		_MouthDetailNormalMapScale("_MouthDetailNormalMapScale",range(0,5)) = 1*/
 
 		[Space(10)][Header(EyeDetailMap)]
 		[Toggle]_EyeDetailMapOn("_EyeDetailMapOn",int) = 0
+        [Enum(Multiply,0,Replace,1)]_EyeDetailMapMode("_EyeDetailMapMode",int) = 0
 		_EyeDetailMap("_EyeDetailMap(RGB),EyeMask(A)",2d) = "white"{}
 		_EyeDetailMapIntensity("_EyeDetailMapIntensity",range(0,1)) = 1
-		[noscaleoffset]_EyeDetailNormalMap("_EyeDetailNormalMap",2d) = "bump"{}
-		_EyeDetailNormalMapScale("_EyeDetailNormalMapScale",range(0,5)) = 1
+		/*_EyeDetailNormalMap("_EyeDetailNormalMap",2d) = "bump"{}
+		_EyeDetailNormalMapScale("_EyeDetailNormalMapScale",range(0,5)) = 1*/
+
+		[Space(10)][Header(EyebrowDetailMap)]
+		[Toggle]_EyebrowDetailMapOn("_EyebrowDetailMapOn",int) = 0
+		[Enum(Multiply,0,Replace,1)]_EyebrowDetailMapMode("_EyebrowDetailMapMode",int) = 0
+		_EyebrowDetailMap("_EyebrowDetailMap(RGB),EyebrowDetailMask(A)",2d) = "white"{}
+		_EyebrowDetailMapIntensity("_EyebrowDetailMapIntensity",range(0,1)) = 1
+		/*_EyebrowDetailNormalMap("_EyebrowDetailNormalMap",2d) = "bump"{}
+		_EyebrowDetailNormalMapScale("_EyebrowDetailNormalMapScale",range(0,5)) = 1*/
+
+		[Space(10)][Header(FaceDetailMap)]
+		[Toggle]_FaceDetailMapOn("_FaceDetailMapOn",int) = 0
+		[Enum(Multiply,0,Replace,1)]_FaceDetailMapMode("_FaceDetailMapMode",int) = 0
+		_FaceDetailMap("_FaceDetailMap(RGB),FaceDetailMask(A)",2d) = "white"{}
+		_FaceDetailMapIntensity("_FaceDetailMapIntensity",range(0,1)) = 1
+		/*_FaceDetailNormalMap("_FaceDetailNormalMap",2d) = "bump"{}
+		_FaceDetailNormalMapScale("_FaceDetailNormalMapScale",range(0,5)) = 1*/
         
         [Space(10)][Header(IBL)]
         [noscaleoffset]_EnvCube("_EnvCube",cube) = "white"{}
@@ -50,6 +69,7 @@ Shader "Character/SimplePBS"
 
         [Space(10)][Header(Emission)]
         [noscaleoffset]_EmissionMap("_EmissionMap(RGB),EmissionMask(A)",2d) = "white"{}
+        [hdr]_EmissionColor("_EmissionColor",color) = (1,1,1,1)
         _Emission("_Emission",float) = 0
 
         [Space(10)][Header(Indirect Diffuse)]
@@ -106,6 +126,7 @@ Shader "Character/SimplePBS"
 
         [Header(Tangent Shift)]
         _ShiftTex("_ShiftTex(g:shift,b:mask)",2d) = ""{}
+		_HairAoIntensity("HairAoIntensity",range(0,1))=1
 
         [Header(Spec Shift1)]
         _Shift1("_Shift1",float) = 0
