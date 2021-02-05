@@ -75,15 +75,15 @@ float4 frag (v2f i) : SV_Target
     
 	//detail skin ,mouth ,eye,eyebrow,face
 	float4 detailMap = 0;
-	float4 mouthDetailMap = 0;
-	float4 eyeDetailMap = 0;
-	float4 eyebrowDetailMap = 0;
-	float4 faceDetailMap = 0;
+	float4 detail1Map = 0;
+	float4 detail2Map = 0;
+	float4 detail3Map = 0;
+	float4 detail4Map = 0;
 	float detailMask = 0;
-	float mouthMask = 0;
-	float eyeMask = 0;
-	float eyebrowMask = 0;
-	float faceMask = 0;
+	float detail1Mask = 0;
+	float detail2Mask = 0;
+	float detail3Mask = 0;
+	float detail4Mask = 0;
 	//uv
 	float2 detailUV = uv;float2 mouthDetailUV = uv;float2 eyeDetailUV = uv;float2 eyebrowDetailUV = uv;float2 faceDetailUV = uv;
 	if (_DetailMapOn) {
@@ -91,25 +91,25 @@ float4 frag (v2f i) : SV_Target
 		detailMap = _DetailMap.Sample(tex_linear_repeat_sampler, detailUV);
 		detailMask = detailMap.a;
 	}
-	if (_MouthDetailMapOn) {
-		mouthDetailUV = uv * _MouthDetailMap_ST.xy + _MouthDetailMap_ST.zw;
-		mouthDetailMap = _MouthDetailMap.Sample(tex_linear_repeat_sampler, mouthDetailUV);
-		mouthMask = mouthDetailMap.a;
+	if (_Detail1_MapOn) {
+		mouthDetailUV = uv * _Detail1_Map_ST.xy + _Detail1_Map_ST.zw;
+		detail1Map = _Detail1_Map.Sample(tex_linear_repeat_sampler, mouthDetailUV);
+		detail1Mask = detail1Map.a;
 	}
-	if (_EyeDetailMapOn) {
-		eyeDetailUV = uv * _EyeDetailMap_ST.xy + _EyeDetailMap_ST.zw;
-		eyeDetailMap = _EyeDetailMap.Sample(tex_linear_repeat_sampler, eyeDetailUV);
-		eyeMask = eyeDetailMap.a;
+	if (_Detail2_MapOn) {
+		eyeDetailUV = uv * _Detail2_Map_ST.xy + _Detail2_Map_ST.zw;
+		detail2Map = _Detail2_Map.Sample(tex_linear_repeat_sampler, eyeDetailUV);
+		detail2Mask = detail2Map.a;
 	}
-	if (_EyebrowDetailMapOn) {
-		eyebrowDetailUV = uv * _EyebrowDetailMap_ST.xy + _EyebrowDetailMap_ST.zw;
-		eyebrowDetailMap = _EyebrowDetailMap.Sample(tex_linear_repeat_sampler, eyebrowDetailUV);
-		eyebrowMask = eyebrowDetailMap.a;
+	if (_Detail3_MapOn) {
+		eyebrowDetailUV = uv * _Detail3_Map_ST.xy + _Detail3_Map_ST.zw;
+		detail3Map = _Detail3_Map.Sample(tex_linear_repeat_sampler, eyebrowDetailUV);
+		detail3Mask = detail3Map.a;
 	}
-	if (_FaceDetailMapOn){
-		faceDetailUV = uv * _FaceDetailMap_ST.xy + _FaceDetailMap_ST.zw;
-		faceDetailMap = _FaceDetailMap.Sample(tex_linear_repeat_sampler, faceDetailUV);
-		faceMask = faceDetailMap.a;
+	if (_Detail4_MapOn){
+		faceDetailUV = uv * _Detail4_Map_ST.xy + _Detail4_Map_ST.zw;
+		detail4Map = _Detail4_Map.Sample(tex_linear_repeat_sampler, faceDetailUV);
+		detail4Mask = detail4Map.a;
 	}
 
 
@@ -127,7 +127,7 @@ float4 frag (v2f i) : SV_Target
     float3 tangent = normalize(float3(i.tSpace0.x,i.tSpace1.x,i.tSpace2.x));
     float3 binormal = normalize(float3(i.tSpace0.y,i.tSpace1.y,i.tSpace2.y));
 
-    float4 mainTex = CalcAlbedo(uv, detailMap.rgb, mouthDetailMap.rgb, eyeDetailMap.rgb, eyebrowDetailMap.rgb, faceDetailMap.rgb, detailMask * _DetailMapIntensity,mouthMask*_MouthDetailMapIntensity,eyeMask*_EyeDetailMapIntensity, eyebrowMask*_EyebrowDetailMapIntensity, faceMask*_FaceDetailMapIntensity);
+    float4 mainTex = CalcAlbedo(uv, detailMap.rgb, detail1Map.rgb, detail2Map.rgb, detail3Map.rgb, detail4Map.rgb, detailMask * _DetailMapIntensity,detail1Mask*_Detail1_MapIntensity,detail2Mask*_Detail2_MapIntensity, detail3Mask*_Detail3_MapIntensity, detail4Mask*_Detail4_MapIntensity);
     float3 albedo = mainTex.rgb;
 	
     albedo.rgb *= occlusion;

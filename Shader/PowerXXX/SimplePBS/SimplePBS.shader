@@ -22,45 +22,41 @@ Shader "Character/SimplePBS"
         _Smoothness("Smoothness",range(0,1)) = 0
         _Occlusion("_Occlusion",range(0,1)) = 1
 
-        [Space(10)][Header(DetailMap)]
+		[Space(10)][Header(Detail4_Map Top Layer)]
+		[Toggle]_Detail4_MapOn("_Detail4_MapOn",int) = 0
+		[Enum(Multiply,0,Replace,1)]_Detail4_MapMode("_Detail4_MapMode",int) = 0
+		_Detail4_Map("_Detail4_Map(RGB),Detail4_Mask(A)",2d) = "white"{}
+		_Detail4_MapIntensity("_Detail4_MapIntensity",range(0,1)) = 1
+		/*_Detail4_NormalMap("_Detail4_NormalMap",2d) = "bump"{}
+		_Detail4_NormalMapScale("_Detail4_NormalMapScale",range(0,5)) = 1*/
+		[Space(10)][Header(Detail3_Map)]
+		[Toggle]_Detail3_MapOn("_Detail3_MapOn",int) = 0
+		[Enum(Multiply,0,Replace,1)]_Detail3_MapMode("_Detail3_MapMode",int) = 0
+		_Detail3_Map("_Detail3_Map(RGB),Detail3_Mask(A)",2d) = "white"{}
+		_Detail3_MapIntensity("_Detail3_MapIntensity",range(0,1)) = 1
+		/*_Detail3_NormalMap("_Detail3_NormalMap",2d) = "bump"{}
+		_Detail3_NormalMapScale("_Detail3_NormalMapScale",range(0,5)) = 1*/
+		[Space(10)][Header(Detail2_Map)]
+		[Toggle]_Detail2_MapOn("_Detail2_MapOn",int) = 0
+        [Enum(Multiply,0,Replace,1)]_Detail2_MapMode("_Detail2_MapMode",int) = 0
+		_Detail2_Map("_Detail2_Map(RGB),EyeMask(A)",2d) = "white"{}
+		_Detail2_MapIntensity("_Detail2_MapIntensity",range(0,1)) = 1
+		/*_Detail2_NormalMap("_Detail2_NormalMap",2d) = "bump"{}
+		_Detail2_NormalMapScale("_Detail2_NormalMapScale",range(0,5)) = 1*/
+		[Space(10)][Header(Detail1_Map)]
+		[Toggle]_Detail1_MapOn("_Detail1_MapOn",int) = 0
+        [Enum(Multiply,0,Replace,1)]_Detail1_MapMode("_Detail1_MapMode",int) = 0
+		_Detail1_Map("_Detail1_Map(rgb),MouthMask(A)",2d) = "white"{}
+		_Detail1_MapIntensity("_Detail1_MapIntensity",range(0,1)) = 1
+		/*_Detail1_NormalMap("_Detail1_NormalMap",2d) = "bump"{}
+		_Detail1_NormalMapScale("_Detail1_NormalMapScale",range(0,5)) = 1*/
+        [Space(10)][Header(DetailMap Bottom Layer)]
         [Toggle]_DetailMapOn("_DetailMapOn",int) = 0
         [Enum(Multiply,0,Replace,1)]_DetailMapMode("_DetailMapMode",int) = 0
         _DetailMap("_DetailMap(RGB),DetailMask(A)",2d) = "white"{}
         _DetailMapIntensity("_DetailMapIntensity",range(0,1)) = 1
         _DetailNormalMap("_DetailNormalMap",2d) = "bump"{}
         _DetailNormalMapScale("_DetailNormalMapScale",range(0,5)) = 1
-
-		[Space(10)][Header(MouthDetailMap)]
-		[Toggle]_MouthDetailMapOn("_MouthDetailMapOn",int) = 0
-        [Enum(Multiply,0,Replace,1)]_MouthDetailMapMode("_MouthDetailMapMode",int) = 0
-		_MouthDetailMap("_MouthDetailMap(rgb),MouthMask(A)",2d) = "white"{}
-		_MouthDetailMapIntensity("_MouthDetailMapIntensity",range(0,1)) = 1
-		/*_MouthDetailNormalMap("_MouthDetailNormalMap",2d) = "bump"{}
-		_MouthDetailNormalMapScale("_MouthDetailNormalMapScale",range(0,5)) = 1*/
-
-		[Space(10)][Header(EyeDetailMap)]
-		[Toggle]_EyeDetailMapOn("_EyeDetailMapOn",int) = 0
-        [Enum(Multiply,0,Replace,1)]_EyeDetailMapMode("_EyeDetailMapMode",int) = 0
-		_EyeDetailMap("_EyeDetailMap(RGB),EyeMask(A)",2d) = "white"{}
-		_EyeDetailMapIntensity("_EyeDetailMapIntensity",range(0,1)) = 1
-		/*_EyeDetailNormalMap("_EyeDetailNormalMap",2d) = "bump"{}
-		_EyeDetailNormalMapScale("_EyeDetailNormalMapScale",range(0,5)) = 1*/
-
-		[Space(10)][Header(EyebrowDetailMap)]
-		[Toggle]_EyebrowDetailMapOn("_EyebrowDetailMapOn",int) = 0
-		[Enum(Multiply,0,Replace,1)]_EyebrowDetailMapMode("_EyebrowDetailMapMode",int) = 0
-		_EyebrowDetailMap("_EyebrowDetailMap(RGB),EyebrowDetailMask(A)",2d) = "white"{}
-		_EyebrowDetailMapIntensity("_EyebrowDetailMapIntensity",range(0,1)) = 1
-		/*_EyebrowDetailNormalMap("_EyebrowDetailNormalMap",2d) = "bump"{}
-		_EyebrowDetailNormalMapScale("_EyebrowDetailNormalMapScale",range(0,5)) = 1*/
-
-		[Space(10)][Header(FaceDetailMap)]
-		[Toggle]_FaceDetailMapOn("_FaceDetailMapOn",int) = 0
-		[Enum(Multiply,0,Replace,1)]_FaceDetailMapMode("_FaceDetailMapMode",int) = 0
-		_FaceDetailMap("_FaceDetailMap(RGB),FaceDetailMask(A)",2d) = "white"{}
-		_FaceDetailMapIntensity("_FaceDetailMapIntensity",range(0,1)) = 1
-		/*_FaceDetailNormalMap("_FaceDetailNormalMap",2d) = "bump"{}
-		_FaceDetailNormalMapScale("_FaceDetailNormalMapScale",range(0,5)) = 1*/
         
         [Space(10)][Header(IBL)]
         [noscaleoffset]_EnvCube("_EnvCube",cube) = "white"{}

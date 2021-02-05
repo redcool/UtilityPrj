@@ -39,41 +39,41 @@ UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailNormalMap);
 float4 _DetailNormalMap_ST;
 float _DetailNormalMapScale;
 //Mouth
-int _MouthDetailMapOn;
-int _MouthDetailMapMode;
-UNITY_DECLARE_TEX2D_NOSAMPLER(_MouthDetailMap);
-float _MouthDetailMapIntensity;
-float4 _MouthDetailMap_ST;
-//UNITY_DECLARE_TEX2D_NOSAMPLER(_MouthDetailNormalMap);
-//float4 _MouthDetailNormalMap_ST;
-//float _MouthDetailNormalMapScale;
+int _Detail1_MapOn;
+int _Detail1_MapMode;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_Detail1_Map);
+float _Detail1_MapIntensity;
+float4 _Detail1_Map_ST;
+//UNITY_DECLARE_TEX2D_NOSAMPLER(_Detail1_NormalMap);
+//float4 _Detail1_NormalMap_ST;
+//float _Detail1_NormalMapScale;
 //Eye
-int _EyeDetailMapOn;
-int _EyeDetailMapMode;
-UNITY_DECLARE_TEX2D_NOSAMPLER(_EyeDetailMap);
-float _EyeDetailMapIntensity;
-float4 _EyeDetailMap_ST;
-//UNITY_DECLARE_TEX2D_NOSAMPLER(_EyeDetailNormalMap);
-//float4 _EyeDetailNormalMap_ST;
-//float _EyeDetailNormalMapScale;
+int _Detail2_MapOn;
+int _Detail2_MapMode;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_Detail2_Map);
+float _Detail2_MapIntensity;
+float4 _Detail2_Map_ST;
+//UNITY_DECLARE_TEX2D_NOSAMPLER(_Detail2_NormalMap);
+//float4 _Detail2_NormalMap_ST;
+//float _Detail2_NormalMapScale;
 //Eyebrow
-int _EyebrowDetailMapOn;
-int _EyebrowDetailMapMode;
-UNITY_DECLARE_TEX2D_NOSAMPLER(_EyebrowDetailMap);
-float _EyebrowDetailMapIntensity;
-float4 _EyebrowDetailMap_ST;
-//UNITY_DECLARE_TEX2D_NOSAMPLER(_EyebrowDetailNormalMap);
-//float4 _EyebrowDetailNormalMap_ST;
-//float _EyebrowDetailNormalMapScale;
+int _Detail3_MapOn;
+int _Detail3_MapMode;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_Detail3_Map);
+float _Detail3_MapIntensity;
+float4 _Detail3_Map_ST;
+//UNITY_DECLARE_TEX2D_NOSAMPLER(_Detail3_NormalMap);
+//float4 _Detail3_NormalMap_ST;
+//float _Detail3_NormalMapScale;
 //Face
-int _FaceDetailMapOn;
-int _FaceDetailMapMode;
-UNITY_DECLARE_TEX2D_NOSAMPLER(_FaceDetailMap);
-float _FaceDetailMapIntensity;
-float4 _FaceDetailMap_ST;
-//UNITY_DECLARE_TEX2D_NOSAMPLER(_FaceDetailNormalMap);
-//float4 _FaceDetailNormalMap_ST;
-//float _FaceDetailNormalMapScale;
+int _Detail4_MapOn;
+int _Detail4_MapMode;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_Detail4_Map);
+float _Detail4_MapIntensity;
+float4 _Detail4_Map_ST;
+//UNITY_DECLARE_TEX2D_NOSAMPLER(_Detail4_NormalMap);
+//float4 _Detail4_NormalMap_ST;
+//float _Detail4_NormalMapScale;
 
 //---------------------------- ibl
 samplerCUBE _EnvCube;
@@ -204,14 +204,18 @@ inline void ApplyDetailAlbedo(inout float4 mainColor, float3 detailMapColor,  fl
     
 }
 
-inline float4 CalcAlbedo(float2 uv, float3 detailMapCol, float3 mouthDetailMapCol, float3 eyeDetailMapCol, float3 eyebrowDetailMapCol, float3 faceDetailMapCol, float detailMask, float mouthMask,float eyeMask, float eyebrowMask, float faceMask) {
+inline float4 CalcAlbedo(float2 uv, 
+    float3 detailMapCol, float3 detail1MapCol, float3 detail2MapCol, float3 detail3MapCol, float3 detail4MapCol,
+    float detailMask, float detail1Mask,float detail2Mask, float detail3Mask, float detail4Mask) 
+{
+
     float4 albedo = tex2D(_MainTex,uv) ;
     ApplyDetailAlbedo(albedo, detailMapCol, detailMask, _DetailMapOn,_DetailMapMode);
-    ApplyDetailAlbedo(albedo, mouthDetailMapCol, mouthMask, _MouthDetailMapOn,_MouthDetailMapMode);
-    ApplyDetailAlbedo(albedo, eyeDetailMapCol, eyeMask, _EyeDetailMapOn,_EyeDetailMapMode);
+    ApplyDetailAlbedo(albedo, detail1MapCol, detail1Mask, _Detail1_MapOn,_Detail1_MapMode);
+    ApplyDetailAlbedo(albedo, detail2MapCol, detail2Mask, _Detail2_MapOn,_Detail2_MapMode);
     // return albedo;
-	ApplyDetailAlbedo(albedo, eyebrowDetailMapCol, eyebrowMask, _EyebrowDetailMapOn, _EyebrowDetailMapMode);
-	ApplyDetailAlbedo(albedo, faceDetailMapCol, faceMask, _FaceDetailMapOn, _FaceDetailMapMode);
+	ApplyDetailAlbedo(albedo, detail3MapCol, detail3Mask, _Detail3_MapOn, _Detail3_MapMode);
+	ApplyDetailAlbedo(albedo, detail4MapCol, detail4Mask, _Detail4_MapOn, _Detail4_MapMode);
     return albedo * _Color;
 }
 
