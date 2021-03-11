@@ -4,6 +4,8 @@
     pbs渲染流程
     1 简化了gi(diffuse,specular)
     2 同LightingProcess传递光照信息
+
+    2021/03/11 加入阴影
 */
 Shader "Character/PowerPBS"
 {
@@ -21,6 +23,9 @@ Shader "Character/PowerPBS"
         _Metallic("_Metallic",range(0,1)) = 0.5
         _Smoothness("Smoothness",range(0,1)) = 0
         _Occlusion("_Occlusion",range(0,1)) = 1
+
+        [Space(10)][Header(Shadow)]
+        [Toggle]_ApplyShadowOn("_ApplyShadowOn",int) = 1
 
 		[Space(10)][Header(Detail4_Map Top Layer)]
 		[Toggle]_Detail4_MapOn("_Detail4_MapOn",int) = 0
@@ -153,6 +158,7 @@ Shader "Character/PowerPBS"
             #pragma fragment frag
             // make fog work
             #pragma multi_compile_fog
+            #pragma multi_compile_fwdbase
             #pragma target 3.0
             #define UNITY_BRDF_PBS BRDF1_Unity_PBS
             #define PBS1
@@ -210,5 +216,5 @@ Shader "Character/PowerPBS"
         }
     }
 
-    FallBack "Transparent/Cutout/VertexLit"
+    FallBack "Diffuse"
 }

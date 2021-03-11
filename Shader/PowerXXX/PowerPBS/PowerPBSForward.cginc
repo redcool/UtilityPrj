@@ -7,6 +7,7 @@
 #include "UnityStandardBRDF.cginc"
 #include "PowerPBSCore.cginc"
 #include "PowerPBSHair.cginc"
+#include "AutoLight.cginc"
 
 struct appdata
 {
@@ -25,6 +26,7 @@ struct v2f
     float4 tSpace1:TEXCOORD3;
     float4 tSpace2:TEXCOORD4;
     float3 viewTangentSpace:TEXCOORD5;
+    UNITY_SHADOW_COORDS(6)
 };
 
 //-------------------------------------
@@ -48,13 +50,14 @@ v2f vert (appdata v)
         float3x3 tSpace = float3x3(o.tSpace0.xyz,o.tSpace1.xyz,o.tSpace2.xyz);
         o.viewTangentSpace = mul(viewWorldSpace,tSpace);
     }
-
+    UNITY_TRANSFER_LIGHTING(o,v.uv.xy);
     UNITY_TRANSFER_FOG(o,o.vertex);
     return o;
 }
 
 float4 frag (v2f i) : SV_Target
 {
+
     // heightClothSSSMask
     float4 heightClothSSSMask = tex2D(_HeightClothSSSMask,i.uv);
     float height = heightClothSSSMask.r;
@@ -68,7 +71,7 @@ float4 frag (v2f i) : SV_Target
     float4 metallicSmoothnessOcclusion = tex2D(_MetallicMap ,uv);
     float metallic = metallicSmoothnessOcclusion.r * _Metallic;
     float smoothness = metallicSmoothnessOcclusion.g * _Smoothness;
-    float occlusion = metallicSmoothnessOcclusion.b * _Occlusion;
+    float occlusion = lerp(1,metallicSmoothnessOcclusion.b , _Occlusion);
     
     float roughness = 1.0 - smoothness;
     // roughness = roughness * roughness;
@@ -139,14 +142,17 @@ float4 frag (v2f i) : SV_Target
         clip(alpha - 0.5);
 
     UnityLight light = GetLight();
-    // UnityLight light = {_LightColor0.xyz,_WorldSpaceLightPos0.xyz,0};
+
+    if(_ApplyShadowOn){
+        UNITY_LIGHT_ATTENUATION(atten, i, worldPos)
+        light.color *= atten;
+    }
 
     UnityIndirect indirect = CalcGI(albedo,uv,r,n,occlusion,roughness);    
 
     half oneMinusReflectivity;
     half3 specColor;
     albedo = DiffuseAndSpecularFromMetallic (albedo, metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
-// specColor *= albedo;
 
     half outputAlpha;
     albedo = AlphaPreMultiply (albedo, alpha, oneMinusReflectivity, /*out*/ outputAlpha);

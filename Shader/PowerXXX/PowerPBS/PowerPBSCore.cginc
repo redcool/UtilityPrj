@@ -16,6 +16,7 @@ float4 _Color;
 float4 _MainTex_ST;
 sampler2D _NormalMap;
 float _NormalMapScale;
+int _ApplyShadowOn;
 
 sampler2D _MetallicMap; //metallicSmoothnessOcclusion,
 sampler2D _HeightClothSSSMask;
