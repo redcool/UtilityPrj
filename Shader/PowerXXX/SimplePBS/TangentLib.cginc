@@ -29,7 +29,10 @@
     float3 tangent = normalize(float3(input.tSpace0.x,input.tSpace1.x,input.tSpace2.x));\
     float3 binormal = normalize(float3(input.tSpace0.y,input.tSpace1.y,input.tSpace2.y));\
     float3 normal = normalize(float3(input.tSpace0.z,input.tSpace1.z,input.tSpace2.z));\
-    float3 worldPos = (float3(input.tSpace0.w,input.tSpace1.w,input.tSpace2.w))
+    float3 worldPos = normalize(float3(input.tSpace0.w,input.tSpace1.w,input.tSpace2.w))
 
+float3 TangentToWorld(float3 tSpace0,float3 tSpace1,float3 tSpace2,float3 tn){
+    return normalize(float3(dot(tSpace0,tn),dot(tSpace1,tn),dot(tSpace2,tn)));
+}
 
 #endif //TANGENT_LIB_CGINC
