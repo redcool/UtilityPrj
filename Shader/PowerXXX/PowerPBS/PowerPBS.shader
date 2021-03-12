@@ -5,7 +5,9 @@
     1 简化了gi(diffuse,specular)
     2 同LightingProcess传递光照信息
 
-    2021/03/11 加入阴影
+    2021/03/11 
+        1 加入阴影
+        2 调整Occlusion的算法
 */
 Shader "Character/PowerPBS"
 {
@@ -158,10 +160,11 @@ Shader "Character/PowerPBS"
             #pragma fragment frag
             // make fog work
             #pragma multi_compile_fog
-            #pragma multi_compile_fwdbase
+            // #pragma multi_compile_fwdbase
             #pragma target 3.0
             #define UNITY_BRDF_PBS BRDF1_Unity_PBS
             #define PBS1
+            #define SHADOWS_SCREEN
             #include "PowerPBSForward.cginc"
            
             ENDCG
