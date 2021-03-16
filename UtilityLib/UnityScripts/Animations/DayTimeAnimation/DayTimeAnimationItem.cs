@@ -5,16 +5,32 @@ using UnityEngine;
 /// </summary>
 public class DayTimeAnimationItem :MonoBehaviour
 {
-    [SerializeField]Animation anim;
+    Animation anim;
 
     private void Awake()
     {
         anim = GetComponent<Animation>();
-        enabled = anim && anim.clip;
         if (anim)
         {
             anim.playAutomatically = false;
             anim.Stop();
+
+            if (!anim.clip)
+                UseFirstClip();
+        }
+
+        enabled = anim && anim.clip;
+    }
+
+    private void UseFirstClip()
+    {
+        foreach (AnimationState state in anim)
+        {
+            if (!state.clip)
+                continue;
+
+            anim.clip = state.clip;
+            break;
         }
     }
 

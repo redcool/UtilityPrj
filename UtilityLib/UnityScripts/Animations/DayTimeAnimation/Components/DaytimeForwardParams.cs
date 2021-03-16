@@ -19,19 +19,6 @@ public class DaytimeForwardParams : MonoBehaviour
     public bool fogEnabled;
     public Color fogColor = Color.gray;
 
-    [Header("Furniature Light Control")]
-    public bool isFurnitureLightControlOn;
-    public float furnitureLightIntensity = 1;
-
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        if (!HeightFogSetting.Instance)
-        {
-            Shader.SetGlobalInt(WeatherShader.IS_HEIGHT_FOG_ON, 0);
-        }
-    }
 
     // Update is called once per frame
     void Update()
@@ -39,9 +26,12 @@ public class DaytimeForwardParams : MonoBehaviour
         RenderSettings.ambientSkyColor = ambientColor;
 
         UpdateFog();
+    }
 
-        Shader.SetGlobalInt("_FurnitureLightControlOn", isFurnitureLightControlOn ? 1 : 0);
-        Shader.SetGlobalFloat("_FurnitureLightIntensity", furnitureLightIntensity);
+    void EnableFog(bool isEnalbed)
+    {
+        RenderSettings.fog = isEnalbed;
+        //Shader.SetGlobalInt(WeatherShader.IS_FOG_ON, fogEnabled ? 1 : 0);
     }
 
     private void UpdateFog()
@@ -53,12 +43,7 @@ public class DaytimeForwardParams : MonoBehaviour
             RenderSettings.fog = fogEnabled;
             RenderSettings.fogColor = fogColor;
 
-            Shader.SetGlobalInt(WeatherShader.IS_FOG_ON, fogEnabled ? 1 : 0);
         }
     }
 
-    private void OnDestroy()
-    {
-        Shader.SetGlobalInt("_FurnitureLightControlOn", 0);
-    }
 }
