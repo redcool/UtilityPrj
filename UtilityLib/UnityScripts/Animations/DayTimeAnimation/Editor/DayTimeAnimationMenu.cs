@@ -1,17 +1,20 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// 24h ���� editor
+/// 24h 动画 editor
 /// </summary>
 public class DayTimeAnimationMenu
 {
-    public const string ROOT_PATH = "DayTimeAnimation/";
+    public const string ROOT_PATH = "动画昼夜/";
+    public const string CORE_PATH = ROOT_PATH+"核心组件/";
+    public const string MATERIAL_PATH = ROOT_PATH + "材质组件/";
+    public const string FOG_PROP_PATH = ROOT_PATH;
 
-    [MenuItem(ROOT_PATH + "Add DayTimeAnimationDriver",priority = 2)]
+    [MenuItem(CORE_PATH + "添加 DayTimeAnimationDriver", priority = 2)]
     static void AddDriver()
     {
         var driver = Object.FindObjectOfType<DayTimeAnimationDriver>(true);
@@ -24,9 +27,9 @@ public class DayTimeAnimationMenu
     }
 
     /// <summary>
-    /// �½� item
+    /// 新建 item
     /// </summary>
-    [MenuItem(ROOT_PATH+ "New DayTimeAnimationItem")]
+    [MenuItem(CORE_PATH + "新建 DayTimeAnimationItem")]
     static void NewItem()
     {
         var items = Object.FindObjectsOfType<DayTimeAnimationItem>(true);
@@ -35,18 +38,43 @@ public class DayTimeAnimationMenu
         go.transform.SetParent(Selection.activeTransform, false);
     }
 
+
     /// <summary>
-    /// ���� item���
+    /// 附加 item组件
     /// </summary>
-    [MenuItem(ROOT_PATH + "Attach DayTimeAnimationItem To Selection")]
+    [MenuItem(CORE_PATH + "附加 DayTimeAnimationItem 到选择节点")]
     static void AttachItemComponentToSelection()
     {
-        if (!Selection.activeObject)
+        AttachComponent<DayTimeAnimationItem>(Selection.activeGameObject);
+    }
+
+    [MenuItem(MATERIAL_PATH + "附加 Material Color到选择节点")]
+    static void AttachMaterialColor()
+    {
+        AttachComponent<DaytimeAnimationMaterialColor>(Selection.activeGameObject);
+    }
+
+    [MenuItem(MATERIAL_PATH + "附加 Material Float到选择节点")]
+    static void AttachMaterialFloat()
+    {
+        AttachComponent<DaytimeAnimationMaterialFloat>(Selection.activeGameObject);
+    }
+
+    [MenuItem(FOG_PROP_PATH+"Fog Ambient")]
+    static void AttachForwardParams()
+    {
+        AttachComponent<DaytimeForwardParams>(Selection.activeGameObject);
+    }
+
+
+    public static void AttachComponent<T>(GameObject go) where T : Component
+    {
+        if (!go)
             return;
 
-        var item = Selection.activeGameObject.GetComponent<DayTimeAnimationItem>();
+        var item = go.GetComponent<T>();
         if (!item)
-            item = Selection.activeGameObject.AddComponent<DayTimeAnimationItem>();
+            item = go.AddComponent<T>();
         EditorGUIUtility.PingObject(item);
     }
 }

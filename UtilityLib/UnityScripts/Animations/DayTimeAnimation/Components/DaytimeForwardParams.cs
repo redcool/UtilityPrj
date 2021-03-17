@@ -14,11 +14,16 @@ public class DaytimeForwardParams : MonoBehaviour
 
     [Header("Fog")]
     public bool isUpdateFog;
-    public float fogEndDistance=100;
-    public float fogStartDistance=10;
     public bool fogEnabled;
     public Color fogColor = Color.gray;
+    public FogMode fogMode = FogMode.Linear;
 
+    [Header("Linear Fog")]
+    public float fogEndDistance=100;
+    public float fogStartDistance=10;
+
+    [Header("Exp Fog")]
+    public float fogDentisy = 0.01f;
 
     // Update is called once per frame
     void Update()
@@ -40,9 +45,11 @@ public class DaytimeForwardParams : MonoBehaviour
         {
             RenderSettings.fogEndDistance = fogEndDistance;
             RenderSettings.fogStartDistance = fogStartDistance;
-            RenderSettings.fog = fogEnabled;
-            RenderSettings.fogColor = fogColor;
+            EnableFog(fogEnabled);
 
+            RenderSettings.fogColor = fogColor;
+            RenderSettings.fogMode = fogMode;
+            RenderSettings.fogDensity = fogDentisy;
         }
     }
 
