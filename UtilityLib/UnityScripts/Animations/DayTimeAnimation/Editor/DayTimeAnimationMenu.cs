@@ -10,7 +10,7 @@ using UnityEngine;
 public class DayTimeAnimationMenu
 {
     public const string ROOT_PATH = "动画昼夜/";
-    public const string CORE_PATH = ROOT_PATH+"核心组件/";
+    public const string CORE_PATH = ROOT_PATH + "核心组件/";
     public const string MATERIAL_PATH = ROOT_PATH + "材质组件/";
     public const string FOG_PROP_PATH = ROOT_PATH;
 
@@ -60,13 +60,13 @@ public class DayTimeAnimationMenu
         AttachComponent<DaytimeAnimationMaterialFloat>(Selection.activeGameObject);
     }
 
-    [MenuItem(FOG_PROP_PATH+"Fog Ambient")]
+    [MenuItem(FOG_PROP_PATH + "环境(Fog,Ambient)")]
     static void AttachForwardParams()
     {
         AttachComponent<DaytimeForwardParams>(Selection.activeGameObject);
     }
 
-
+    
     public static void AttachComponent<T>(GameObject go) where T : Component
     {
         if (!go)

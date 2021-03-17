@@ -9,7 +9,11 @@ using UnityEngine;
 [ExecuteInEditMode]
 public class DaytimeForwardParams : MonoBehaviour
 {
-    [Header("RenderSettings")]
+    [Header("Upadte Frequency")]
+    [Min(1)] public int updateFrameCount = 3;
+    int frameCount;
+
+    [Header("Env Settings")]
     public Color ambientColor = Color.gray;
 
     [Header("Fog")]
@@ -19,18 +23,29 @@ public class DaytimeForwardParams : MonoBehaviour
     public FogMode fogMode = FogMode.Linear;
 
     [Header("Linear Fog")]
-    public float fogEndDistance=100;
     public float fogStartDistance=10;
+    public float fogEndDistance=100;
 
     [Header("Exp Fog")]
     public float fogDentisy = 0.01f;
 
+
+
     // Update is called once per frame
     void Update()
     {
-        RenderSettings.ambientSkyColor = ambientColor;
+        frameCount++;
+        if (frameCount < updateFrameCount)
+            return;
+
+        UpdateEnv();
 
         UpdateFog();
+    }
+
+    private void UpdateEnv()
+    {
+        RenderSettings.ambientSkyColor = ambientColor;
     }
 
     void EnableFog(bool isEnalbed)
@@ -41,16 +56,16 @@ public class DaytimeForwardParams : MonoBehaviour
 
     private void UpdateFog()
     {
-        if (isUpdateFog)
-        {
-            RenderSettings.fogEndDistance = fogEndDistance;
-            RenderSettings.fogStartDistance = fogStartDistance;
-            EnableFog(fogEnabled);
+        if (!isUpdateFog)
+            return;
 
-            RenderSettings.fogColor = fogColor;
-            RenderSettings.fogMode = fogMode;
-            RenderSettings.fogDensity = fogDentisy;
-        }
+        RenderSettings.fogEndDistance = fogEndDistance;
+        RenderSettings.fogStartDistance = fogStartDistance;
+        EnableFog(fogEnabled);
+
+        RenderSettings.fogColor = fogColor;
+        RenderSettings.fogMode = fogMode;
+        RenderSettings.fogDensity = fogDentisy;
     }
 
 }
