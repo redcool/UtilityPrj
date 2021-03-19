@@ -34,7 +34,7 @@ public class DayTimeAnimationMenu
     {
         var items = Object.FindObjectsOfType<DayTimeAnimationItem>(true);
 
-        var go = new GameObject("DayTimeAnimationDriver_" + items.Length, new[] { typeof(DayTimeAnimationItem) });
+        var go = new GameObject("DayTimeAnimationItem_" + items.Length, new[] { typeof(DayTimeAnimationItem) });
         go.transform.SetParent(Selection.activeTransform, false);
     }
 
