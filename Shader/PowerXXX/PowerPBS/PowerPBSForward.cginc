@@ -148,7 +148,7 @@ float4 frag (v2f i) : SV_Target
 
     if(_ApplyShadowOn){
         // UNITY_LIGHT_ATTENUATION(atten, i, worldPos)
-        half atten = SHADOW_ATTENUATION(i);
+        half atten = UPR_SHADOW_ATTENUATION(i,worldPos);
         light.color *= atten;
     }
 

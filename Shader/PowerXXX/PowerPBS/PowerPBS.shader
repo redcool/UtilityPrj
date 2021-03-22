@@ -164,8 +164,9 @@ Shader "Character/PowerPBS"
             #pragma target 3.0
             #define UNITY_BRDF_PBS BRDF1_Unity_PBS
             #define PBS1
-            // #define SHADOWS_SCREEN
-            #define URP_SHADOW
+
+            // #define SHADOWS_SCREEN // for drp
+            #define URP_SHADOW // for urp 
             #include "PowerPBSForward.cginc"
            
             ENDCG
