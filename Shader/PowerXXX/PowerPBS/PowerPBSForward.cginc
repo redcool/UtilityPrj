@@ -8,6 +8,7 @@
 #include "PowerPBSCore.cginc"
 #include "PowerPBSHair.cginc"
 #include "AutoLight.cginc"
+#include "PowerPBSUrpShadows.cginc"
 
 struct appdata
 {
@@ -21,19 +22,20 @@ struct v2f
 {
     float2 uv : TEXCOORD0;
     UNITY_FOG_COORDS(1)
-    float4 vertex : SV_POSITION;
+    float4 pos : SV_POSITION;
     float4 tSpace0:TEXCOORD2;
     float4 tSpace1:TEXCOORD3;
     float4 tSpace2:TEXCOORD4;
     float3 viewTangentSpace:TEXCOORD5;
-    UNITY_SHADOW_COORDS(6)
+    SHADOW_COORDS(6)
+    // UNITY_LIGHTING_COORDS(6,7)
 };
 
 //-------------------------------------
 v2f vert (appdata v)
 {
     v2f o = (v2f)0;
-    o.vertex = UnityObjectToClipPos(v.vertex);
+    o.pos = UnityObjectToClipPos(v.vertex);
     o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 
     float3 worldPos = mul(unity_ObjectToWorld,v.vertex);
@@ -50,8 +52,9 @@ v2f vert (appdata v)
         float3x3 tSpace = float3x3(o.tSpace0.xyz,o.tSpace1.xyz,o.tSpace2.xyz);
         o.viewTangentSpace = mul(viewWorldSpace,tSpace);
     }
-    UNITY_TRANSFER_LIGHTING(o,v.uv.xy);
-    UNITY_TRANSFER_FOG(o,o.vertex);
+    //UNITY_TRANSFER_LIGHTING(o,v.uv.xy);
+    TRANSFER_SHADOW(o)
+    UNITY_TRANSFER_FOG(o,o.pos);
     return o;
 }
 
@@ -144,7 +147,8 @@ float4 frag (v2f i) : SV_Target
     UnityLight light = GetLight();
 
     if(_ApplyShadowOn){
-        UNITY_LIGHT_ATTENUATION(atten, i, worldPos)
+        // UNITY_LIGHT_ATTENUATION(atten, i, worldPos)
+        half atten = SHADOW_ATTENUATION(i);
         light.color *= atten;
     }
 

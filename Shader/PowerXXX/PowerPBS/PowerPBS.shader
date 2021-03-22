@@ -154,7 +154,7 @@ Shader "Character/PowerPBS"
 
         Pass
         {
-            Tags{"LightMode"="ForwardBase" }
+            // Tags{"LightMode"="ForwardBase" }
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -164,12 +164,14 @@ Shader "Character/PowerPBS"
             #pragma target 3.0
             #define UNITY_BRDF_PBS BRDF1_Unity_PBS
             #define PBS1
-            #define SHADOWS_SCREEN
+            // #define SHADOWS_SCREEN
+            #define URP_SHADOW
             #include "PowerPBSForward.cginc"
            
             ENDCG
         }
     }
+/*    
     SubShader
     {
         Tags { "RenderType"="Opaque" }
@@ -218,6 +220,6 @@ Shader "Character/PowerPBS"
             ENDCG
         }
     }
-
+*/
     FallBack "Diffuse"
 }
