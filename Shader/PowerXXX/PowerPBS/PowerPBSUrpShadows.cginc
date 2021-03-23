@@ -1,8 +1,11 @@
+/**
+    shadows 
+    URP keyword URP_SHADOW required
+    drp keyword SHADOW_SCREEN required
+*/
 #if !defined(POWER_PBS_SHADOW_CGINC)
 #define POWER_PBS_SHADOW_CGINC
 
-
-// #define SHADOWS_SCREEN
 #include "AutoLight.cginc"
 
 #if defined (URP_SHADOW)
@@ -30,7 +33,7 @@
     #if defined(UNITY_NO_SCREENSPACE_SHADOWS)
         UNITY_DECLARE_SHADOWMAP(_MainLightShadowmapTexture);
         #define TRANSFER_SHADOW(a) a._ShadowCoord = mul( _MainLightWorldToShadow[0], mul( unity_ObjectToWorld, v.vertex ) );
-        inline fixed unitySampleShadow (unityShadowCoord4 shadowCoord,half3 worldPos)
+        inline fixed CalcShadow (unityShadowCoord4 shadowCoord,half3 worldPos)
         {
             #if defined(SHADOWS_NATIVE)
                 fixed shadow = UNITY_SAMPLE_SHADOW(_MainLightShadowmapTexture, shadowCoord.xyz);
@@ -58,6 +61,15 @@
     #endif
 
     #define SHADOW_COORDS(idx1) unityShadowCoord4 _ShadowCoord : TEXCOORD##idx1;
-    #define UPR_SHADOW_ATTENUATION(a,worldPos) unitySampleShadow(a._ShadowCoord,worldPos)
+    // #define URP_SHADOW_ATTENUATION(a,worldPos) unitySampleShadow(a._ShadowCoord,worldPos)
 #endif
+
+#if !defined(URP_SHADOW)
+    // drp shadows
+    #define URP_SHADOW_ATTENUATION(a,worldPos) SHADOW_ATTENUATION(a)
+#else
+    //urp shadows
+    #define URP_SHADOW_ATTENUATION(a,worldPos) CalcShadow(a._ShadowCoord,worldPos)
+#endif
+
 #endif //POWER_PBS_SHADOW_CGINC
