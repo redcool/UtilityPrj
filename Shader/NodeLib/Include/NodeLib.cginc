@@ -159,6 +159,10 @@ void Unity_GradientNoise_float(float2 UV, float Scale, out float Out)
     Out = unity_gradientNoise(UV * Scale) + 0.5;
 }
 
+float Unity_GradientNoise(float2 uv,float scale){
+	return  unity_gradientNoise(uv * scale) + 0.5;
+}
+
 //---------------------------
 
 inline float unity_noise_randomValue(float2 uv)
