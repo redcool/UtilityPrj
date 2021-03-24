@@ -160,6 +160,7 @@ Shader "Character/PowerPBS"
             #pragma fragment frag
             // make fog work
             #pragma multi_compile_fog
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
             // #pragma multi_compile_fwdbase
             #pragma target 3.0
             #define UNITY_BRDF_PBS BRDF1_Unity_PBS

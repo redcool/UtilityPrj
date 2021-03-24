@@ -16,9 +16,9 @@ Shader "Unlit/ShadowTest"
             #pragma fragment frag
 
             #include "UnityCG.cginc"
-
+#pragma multi_compile _ _MAIN_LIGHT_SHADOWS
             #define URP_SHADOW
-            #define SHADOWS_SCREEN
+            // #define SHADOWS_SCREEN
             #include "../PowerPBSUrpShadows.cginc"
 
             struct appdata

@@ -35,6 +35,10 @@
         #define TRANSFER_SHADOW(a) a._ShadowCoord = mul( _MainLightWorldToShadow[0], mul( unity_ObjectToWorld, v.vertex ) );
         inline fixed CalcShadow (unityShadowCoord4 shadowCoord,half3 worldPos)
         {
+            #if !defined(_MAIN_LIGHT_SHADOWS)
+                return 1;
+            #endif
+
             #if defined(SHADOWS_NATIVE)
                 fixed shadow = UNITY_SAMPLE_SHADOW(_MainLightShadowmapTexture, shadowCoord.xyz);
                 shadow = lerp(1,shadow,_MainLightShadowParams.x);
