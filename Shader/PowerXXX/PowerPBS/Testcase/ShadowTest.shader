@@ -11,6 +11,7 @@ Shader "Unlit/ShadowTest"
 
         Pass
         {
+
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -19,6 +20,7 @@ Shader "Unlit/ShadowTest"
 #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
             #define URP_SHADOW
             // #define SHADOWS_SCREEN
+            
             #include "../PowerPBSUrpShadows.cginc"
 
             struct appdata
@@ -53,6 +55,21 @@ Shader "Unlit/ShadowTest"
             {
                 return URP_SHADOW_ATTENUATION(i,i.worldPos);
             }
+            ENDCG
+        }
+
+        pass{
+            Tags{"LightMode" = "ShadowCaster"}
+
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+
+            #define URP_SHADOW
+            #include "../PowerPBSShadowCasterPass.cginc"
             ENDCG
         }
     }

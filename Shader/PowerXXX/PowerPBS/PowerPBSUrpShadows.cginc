@@ -8,68 +8,66 @@
 
 #include "AutoLight.cginc"
 
+
+
 #if defined (URP_SHADOW)
 
 //--------- urp shadow handles
 // CBUFFER_START(MainLightShadows)
     #define MAX_SHADOW_CASCADES 4
     float4x4    _MainLightWorldToShadow[MAX_SHADOW_CASCADES + 1];
-    half4       _MainLightShadowOffset0;
-    half4       _MainLightShadowOffset1;
-    half4       _MainLightShadowOffset2;
-    half4       _MainLightShadowOffset3;
-    half4       _MainLightShadowParams;  // (x: shadowStrength, y: 1.0 if soft shadows, 0.0 otherwise, z: oneOverFadeDist, w: minusStartFade)
+    float4       _MainLightShadowOffset0;
+    float4       _MainLightShadowOffset1;
+    float4       _MainLightShadowOffset2;
+    float4       _MainLightShadowOffset3;
+    float4       _MainLightShadowParams;  // (x: shadowStrength, y: 1.0 if soft shadows, 0.0 otherwise, z: oneOverFadeDist, w: minusStartFade)
 // CBUFFER_END
+    float4 _ShadowBias; // x: depth bias, y: normal bias
 
-    half GetShadowFade(float3 positionWS)
+    float3 ApplyShadowBias(float3 positionWS, float3 normalWS, float3 lightDirection)
+    {
+        float invNdotL = 1.0 - saturate(dot(lightDirection, normalWS));
+        float scale = invNdotL * _ShadowBias.y;
+
+        // normal bias is negative since we want to apply an inset normal offset
+        positionWS = lightDirection * _ShadowBias.xxx + positionWS;
+        positionWS = normalWS * scale.xxx + positionWS;
+        return positionWS;
+    }
+    float GetShadowFade(float3 positionWS)
     {
         float3 camToPixel = positionWS - _WorldSpaceCameraPos;
         float distanceCamToPixel2 = dot(camToPixel, camToPixel);
 
-        half fade = saturate(distanceCamToPixel2 * _MainLightShadowParams.z + _MainLightShadowParams.w);
+        float fade = saturate(distanceCamToPixel2 * _MainLightShadowParams.z + _MainLightShadowParams.w);
         return fade * fade;
     }
 
-    #if defined(UNITY_NO_SCREENSPACE_SHADOWS)
-        UNITY_DECLARE_SHADOWMAP(_MainLightShadowmapTexture);
-        #define TRANSFER_SHADOW(a) a._ShadowCoord = mul( _MainLightWorldToShadow[0], mul( unity_ObjectToWorld, v.vertex ) );
-        inline fixed CalcShadow (unityShadowCoord4 shadowCoord,half3 worldPos)
-        {
-            #if !defined(_MAIN_LIGHT_SHADOWS)
-                return 1;
-            #endif
+    UNITY_DECLARE_SHADOWMAP(_MainLightShadowmapTexture);
+    #define TRANSFER_SHADOW(a) a._ShadowCoord = mul( _MainLightWorldToShadow[0], mul( unity_ObjectToWorld, v.vertex ) );
+    inline float CalcShadow (unityShadowCoord4 shadowCoord,float3 worldPos)
+    {
+        #if !defined(_MAIN_LIGHT_SHADOWS)
+            return 1;
+        #endif
 
-            #if defined(SHADOWS_NATIVE)
-                fixed shadow = UNITY_SAMPLE_SHADOW(_MainLightShadowmapTexture, shadowCoord.xyz);
-                shadow = lerp(1,shadow,_MainLightShadowParams.x);
-                half shadowFade = GetShadowFade(worldPos);
-                return lerp(shadow,1,shadowFade);
-            #else
-                // gles 2.0
-                // unityShadowCoord dist = SAMPLE_DEPTH_TEXTURE(_MainLightShadowmapTexture, shadowCoord.xy);
-                // // tegra is confused if we use _LightShadowData.x directly
-                // // with "ambiguous overloaded function reference max(mediump float, float)"
-                // unityShadowCoord lightShadowDataX = _MainLightShadowParams.x;
-                // unityShadowCoord threshold = shadowCoord.z;
-                // return max(dist > threshold, lightShadowDataX);
-            #endif
-        }
-    #else // UNITY_NO_SCREENSPACE_SHADOWS
-        // UNITY_DECLARE_SCREENSPACE_SHADOWMAP(_MainLightShadowmapTexture);
-        // #define TRANSFER_SHADOW(a) a._ShadowCoord = ComputeScreenPos(a.pos);
-        // inline fixed unitySampleShadow (unityShadowCoord4 shadowCoord)
-        // {
-        //     fixed shadow = UNITY_SAMPLE_SCREEN_SHADOW(_MainLightShadowmapTexture, shadowCoord);
-        //     return shadow;
-        // }
-    #endif
+        #if defined(SHADOWS_NATIVE)
+            float shadow = UNITY_SAMPLE_SHADOW(_MainLightShadowmapTexture, shadowCoord.xyz);
+                //float shadow = _MainLightShadowmapTexture.SampleCmpLevelZero(sampler_MainLightShadowmapTexture,shadowCoord.xy,shadowCoord.z);
+            shadow = lerp(1,shadow,_MainLightShadowParams.x);
+            float shadowFade = GetShadowFade(worldPos);
+            return lerp(shadow,1,shadowFade);
+        #else
+            // gles 2.0 , not supported
+            return 1;
+        #endif
+    }
 
     #define SHADOW_COORDS(idx1) unityShadowCoord4 _ShadowCoord : TEXCOORD##idx1;
-    // #define URP_SHADOW_ATTENUATION(a,worldPos) unitySampleShadow(a._ShadowCoord,worldPos)
 #endif
 
 #if !defined(URP_SHADOW)
-    // drp shadows
+    // drp shadows , call AutoLight.cginc' SHADOW_ATTENUATION
     #define URP_SHADOW_ATTENUATION(a,worldPos) SHADOW_ATTENUATION(a)
 #else
     //urp shadows

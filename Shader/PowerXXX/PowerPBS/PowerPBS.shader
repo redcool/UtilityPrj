@@ -172,6 +172,21 @@ Shader "Character/PowerPBS"
            
             ENDCG
         }
+
+        Pass{
+            Tags{"LightMode" = "ShadowCaster"}
+
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+
+            #define URP_SHADOW // for urp 
+            #include "PowerPBSShadowCasterPass.cginc"
+            ENDCG
+        }
     }
 /*    
     SubShader
