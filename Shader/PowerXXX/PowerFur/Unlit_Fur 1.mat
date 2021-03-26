@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Unlit_Fur 1
   m_Shader: {fileID: 4800000, guid: f34259b6de8dd404180844a0493fc03a, type: 3}
-  m_ShaderKeywords: _VERTEXOFFSETATTENON_ON
+  m_ShaderKeywords: _FRAGMENTAOON_ON _VERTEXAOON_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -20,7 +20,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _FlowMap:
-        m_Texture: {fileID: 2800000, guid: f186bd879777c48faa1b3992c1a89102, type: 3}
+        m_Texture: {fileID: 2800000, guid: 7bf833574703d114c99b09228f302f95, type: 3}
         m_Scale: {x: 10, y: 10}
         m_Offset: {x: 0, y: 0}
     - _FurMaskMap:
@@ -36,19 +36,27 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _Density: 2.08
-    - _FurRadius: 2.19
-    - _Length: 0.29
+    - _Density: 2.41
+    - _FlowMapIntensity: 1.1
+    - _FlowMapOn: 0
+    - _FragmentAOOn: 1
+    - _FurRadius: 1.44
+    - _Length: 0.22
     - _OcclusionPower: 4.92
-    - _Rigidness: 2.3
+    - _Rigidness: 2.24
+    - _ThicknessMax: 1.5
+    - _ThicknessMin: 0.1
     - _Tile: 0.17
-    - _VertexOffsetAttenOn: 1
-    - _WindScale: 0.5
-    - _WindSpeed: 0
+    - _VertexAOOn: 1
+    - _VertexOffsetAttenOn: 0
+    - _WindScale: -0.02
+    - _WindSpeed: 1
     m_Colors:
-    - _Color1: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-    - _Color2: {r: 1, g: 1, b: 1, a: 1}
+    - _Alpha: {r: 0.14, g: 0.87, b: 0, a: 0}
+    - _Color: {r: 2.270603, g: 2.270603, b: 2.270603, a: 1}
+    - _Color1: {r: 1, g: 0.9669811, b: 0.9669811, a: 1}
+    - _Color2: {r: 3.8182085, g: 3.8182085, b: 3.8182085, a: 1}
     - _OcclusionColor: {r: 1, g: 1, b: 1, a: 1}
-    - _UVOffset: {r: 1, g: 0, b: 0.5, a: 1}
+    - _UVOffset: {r: 2.26, g: 0, b: 0.89, a: -3.83}
     - _WindDir: {r: 0, g: 1, b: 0, a: 0}
   m_BuildTextureStacks: []
