@@ -18,6 +18,7 @@
         float4 vertex : SV_POSITION;
         float3 diffColor:TEXCOORD2;
         float3 specColor:TEXCOORD3;
+        float nv:TEXCOORD4;
     };
 
     sampler2D _MainTex;
@@ -95,8 +96,10 @@
         // diffuse color
         float3 normal = UnityObjectToWorldNormal(v.normal);        
         float3 lightDir = UnityWorldSpaceLightDir(worldPos);
+        float3 viewDir = UnityWorldSpaceViewDir(worldPos);
         // float ao = saturate(pow(FUR_OFFSET,_OcclusionPower) * 3);
         float nl = saturate(dot(lightDir,normal));
+        float nv = saturate(dot(viewDir,normal));
 
         // ao = smoothstep(0.1,0.7,FUR_OFFSET);
         // o.diffColor = lerp(_OcclusionColor,1,ao);
@@ -104,6 +107,8 @@
         if(_VertexAOOn){
             o.diffColor *= furMask.b * (1 - FUR_OFFSET);
         }
+        o.nv = pow(nv,1);
+
         return o;
     }
 
@@ -129,7 +134,8 @@
 
         float alphaNoise = furMask.x;
         float a = smoothstep(_ThicknessMin,_ThicknessMax,alphaNoise.x * (1 - FUR_OFFSET));
-        // a *= alphaNoise;
+        // a *= i.nv;
+        // return i.nv;
 // a *= 1 - FUR_OFFSET;
         // float3 c = col.rgb - pow(1 - FUR_OFFSET,3) * .1;
         // a = clamp(a - pow(FUR_OFFSET,2) * _Density,0,1);
