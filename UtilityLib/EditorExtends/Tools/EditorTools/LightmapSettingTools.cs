@@ -1,5 +1,5 @@
 ﻿#if UNITY_EDITOR
-namespace MyTools
+namespace PowerUtilities
 {
     using System;
     using System.Collections;
@@ -50,7 +50,7 @@ namespace MyTools
             if (!mr)
                 return;
 
-            EditorTools.AddStaticFlags(mr.gameObject, StaticEditorFlags.LightmapStatic);
+            EditorTools.AddStaticFlags(mr.gameObject, StaticEditorFlags.ContributeGI);
         }
 
         public static void SetScaleInLightmap(this MeshRenderer mr, float value, bool setLightmapStatic = true)

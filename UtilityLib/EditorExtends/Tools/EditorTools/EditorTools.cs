@@ -1,5 +1,5 @@
 ﻿#if UNITY_EDITOR
-namespace MyTools
+namespace PowerUtilities
 {
     using UnityEngine;
     using System.Collections;
@@ -10,7 +10,7 @@ namespace MyTools
     using Object = UnityEngine.Object;
     using System.Collections.Generic;
     using System.Text;
-    using MyTools;
+    using PowerUtilities;
 
     public static class EditorTools
     {

@@ -1,31 +1,34 @@
-﻿#if UNITY_EDITOR
-using MyTools;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditor;
-using UnityEngine;
-
-public class TerrainMapExtractor
+﻿namespace PowerUtilities
 {
-    const string PATH_FORMAT = "Assets/TileTerrain/{0}_blend.png";
+#if UNITY_EDITOR
+    //using PowerUtilities;
+    using System.Collections;
+    using System.Collections.Generic;
+    using UnityEditor;
+    using UnityEngine;
 
-    [MenuItem(TileTerrainWindow.ROOT_PATH+"/ExtractAlphaMap")]
-    static void ExtractBlendMap()
+    public class TerrainMapExtractor
     {
-        var t = Terrain.activeTerrain;
-        if (t)
+        const string PATH_FORMAT = "Assets/TileTerrain/{0}_blend.png";
+
+        [MenuItem(TileTerrainWindow.ROOT_PATH + "/ExtractAlphaMap")]
+        static void ExtractBlendMap()
         {
-            var path = string.Format(PATH_FORMAT, t.name);
-            PathTools.CreateAbsFolderPath(path);
-            TerrainTools.ExtractAlphaMapToPNG(t, path);
-            AssetDatabase.Refresh();
+            var t = Terrain.activeTerrain;
+            if (t)
+            {
+                var path = string.Format(PATH_FORMAT, t.name);
+                PathTools.CreateAbsFolderPath(path);
+                TerrainTools.ExtractAlphaMapToPNG(t, path);
+                AssetDatabase.Refresh();
+            }
+            else
+            {
+                Debug.LogError("select a Terrain first.");
+            }
         }
-        else
-        {
-            Debug.LogError("select a Terrain first.");
-        }
+
+
     }
-
-
-}
 #endif
+}

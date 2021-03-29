@@ -1,4 +1,4 @@
-﻿namespace MyTools
+﻿namespace PowerUtilities
 {
     using System;
     using System.Collections;
