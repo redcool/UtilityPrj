@@ -1,4 +1,5 @@
-﻿using MyTools;
+﻿#if UNITY_EDITOR
+using MyTools;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
@@ -50,6 +51,7 @@ public class TileTerrainWindow : EditorWindow
         else
         {
             EditorGUILayout.HelpBox("场景里没有Terrain", MessageType.Info);
+            return;
         }
 
         saveResolution = (SaveResolution)EditorGUILayout.EnumPopup("Save Resolution:", saveResolution);
@@ -128,3 +130,4 @@ public class TileTerrainWindow : EditorWindow
     
     
 }
+#endif
