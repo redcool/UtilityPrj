@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#if UNITY_EDITOR
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
@@ -143,6 +144,7 @@ public class TestTerrainEditor : Editor
         go.AddComponent<MeshRenderer>().sharedMaterial = mat;
     }
 }
+#endif
 public class TestTerrain : MonoBehaviour
 {
     public Material mat;
