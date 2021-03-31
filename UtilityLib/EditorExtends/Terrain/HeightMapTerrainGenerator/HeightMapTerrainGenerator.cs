@@ -9,6 +9,7 @@ namespace PowerUtilities
     using System;
     using static PowerUtilities.HeightMapTerrainGenerator;
     using System.IO;
+    using System.Linq;
 
     [CustomEditor(typeof(HeightMapTerrainGenerator))]
     public class HeightMapTerrainGeneratorEditor : Editor
@@ -35,12 +36,15 @@ namespace PowerUtilities
 
             EditorGUILayout.BeginVertical("");
             {
+                if(inst.heightmaps != null && inst.heightmaps.Length > 0)
                 {
                     // split textures
                     EditorGUILayout.BeginVertical("Box");
                     EditorGUILayout.LabelField("Textures");
                     if (GUILayout.Button("Split Heightmaps"))
                     {
+                        inst.heightmaps = inst.heightmaps.Where(hm => hm).ToArray();
+
                         inst.splitTextureList = SplitTextures(inst.heightmaps, inst.heightMapResolution, ref inst.countInRow);
                     }
                     if (GUILayout.Button("Save Heightmaps"))
@@ -53,6 +57,7 @@ namespace PowerUtilities
                 EditorGUILayout.Space(8);
 
                 // generate tile terrains
+                if(inst.splitTextureList != null && inst.splitTextureList.Count > 0)
                 {
                     EditorGUILayout.BeginVertical("Box");
                     EditorGUILayout.LabelField("Terrains");
@@ -62,7 +67,10 @@ namespace PowerUtilities
                     }
                     EditorGUILayout.EndVertical();
                 }
+
                 // update tile
+                if(inst.splitTextureList != null && inst.splitTextureList.Count > 0
+                    && inst.generatedTerrainList != null && inst.generatedTerrainList.Count > 0)
                 {
                     EditorGUILayout.BeginVertical("Box");
                     EditorGUILayout.PrefixLabel("Update Terrain Tile");
@@ -82,8 +90,6 @@ namespace PowerUtilities
             }
             EditorGUILayout.EndVertical();
         }
-
-
 
         private void SaveTextures(List<Texture2D> splitTextureList,int countInRow)
         {
@@ -108,7 +114,7 @@ namespace PowerUtilities
 
         List<Texture2D> SplitTextures(Texture2D[] heightmaps, HeightMapResolution resolution, ref int countInRow)
         {
-            if (heightmaps == null)
+            if (heightmaps == null || heightmaps.Length == 0)
                 return null;
 
             var res = (int)resolution;
@@ -118,7 +124,11 @@ namespace PowerUtilities
             for (int i = 0; i < heightmaps.Length; i++)
             {
                 var heightmap = heightmaps[i];
+                if (heightmap == null)
+                    continue;
+
                 var countInRowTile = heightmap.width / res;
+                countInRowTile = Mathf.Max(1, countInRowTile);
 
                 countInRow += countInRowTile;
 
@@ -225,12 +235,12 @@ namespace PowerUtilities
         public List<Texture2D> splitTextureList;
 
         [Header("Terrain")]
-        public int countInRow = 1;
+        [Min(1)]public int countInRow = 1;
         public Vector3 terrainSize = new Vector3(1000,600,1000);
         public Material material;
         [Min(0)]public int pixelError = 100;
 
-        [HideInInspector]public int updateTerrainId;
-        public List<Terrain> generatedTerrainList;
+        [HideInInspector][Min(0)]public int updateTerrainId;
+        [HideInInspector] public List<Terrain> generatedTerrainList;
     }
 }
