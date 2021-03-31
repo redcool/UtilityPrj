@@ -3,7 +3,7 @@ Shader "Unlit/TileTerrain"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-        _ControlMap("_ControlMap",2d) = ""{}
+        _Control("_Control",2d) = ""{}
         _Splat0("_Splat0",2d) = ""{}
         _Splat1("_Splat1",2d) = ""{}
         _Splat2("_Splat2",2d) = ""{}
@@ -35,7 +35,7 @@ Shader "Unlit/TileTerrain"
                 float4 vertex : SV_POSITION;
             };
 
-            sampler2D _ControlMap;
+            sampler2D _Control;
             sampler2D _Splat0,_Splat1,_Splat2,_Splat3;
 
             v2f vert (appdata v)
@@ -48,7 +48,7 @@ Shader "Unlit/TileTerrain"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float4 controlMap = tex2D(_ControlMap,i.uv);
+                float4 controlMap = tex2D(_Control,i.uv);
                 float4 splat0 = tex2D(_Splat0,i.uv);
                 float4 splat1 = tex2D(_Splat1,i.uv);
                 float4 splat2 = tex2D(_Splat2,i.uv);

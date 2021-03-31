@@ -8,6 +8,12 @@ namespace PowerUtilities
     using System;
     using System.IO;
 
+    public enum TextureResolution
+    {
+        x32 = 32, x64 = 64, x128 = 128, x256 = 256, x512 = 512, x1024 = 1024, x2048 = 2048, x4096 = 4096
+    }
+
+
     public static class TextureTools
     {
         static List<TextureImporterFormat> uncompressionFormats = new List<TextureImporterFormat>(new []{
@@ -79,7 +85,7 @@ namespace PowerUtilities
             return newTexs;
         }
 
-        public static void SaveTextures(List<Texture2D> splitTextureList, string folder, int countInRow, bool showPropressBar = true)
+        public static void SaveTexturesToFolder(List<Texture2D> splitTextureList, string folder, int countInRow, bool showPropressBar = true)
         {
             for (int i = 0; i < splitTextureList.Count; i++)
             {
@@ -98,6 +104,51 @@ namespace PowerUtilities
             }
             if (showPropressBar)
                 EditorUtility.ClearProgressBar();
+        }
+
+        public static void SaveTexturesDialog(List<Texture2D> textures, int countInRow, string dialogTitle = "Save SplitedTextures")
+        {
+            if (textures == null)
+                return;
+
+            var folder = EditorUtility.SaveFolderPanel(dialogTitle, "", "");
+            if (string.IsNullOrEmpty(folder))
+                return;
+
+            SaveTexturesToFolder(textures, folder, countInRow);
+        }
+
+        public static List<Texture2D> SplitTextures(Texture2D[] textures, TextureResolution resolution, ref int countInRow)
+        {
+            if (textures == null || textures.Length == 0)
+                return null;
+
+            var res = (int)resolution;
+            var textureList = new List<Texture2D>();
+            countInRow = 0;
+
+            for (int i = 0; i < textures.Length; i++)
+            {
+                var tex = textures[i];
+                if (tex == null)
+                    continue;
+
+                var countInRowTile = tex.width / res;
+                countInRowTile = Mathf.Max(1, countInRowTile);
+
+                countInRow += countInRowTile;
+
+                if (tex.width > res)
+                {
+                    var texs = tex.SplitTexture(res);
+                    textureList.AddRange(texs);
+                }
+                else
+                {
+                    textureList.Add(tex);
+                }
+            }
+            return textureList;
         }
     }
 }

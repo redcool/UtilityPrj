@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Text;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -18,6 +19,22 @@ public class TestHeightEditor : Editor
         {
             inst.Generate();
         }
+
+        if (GUILayout.Button("Check Colors"))
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < inst.texs.Length; i++)
+            {
+                var tex = inst.texs[i];
+                var colors = tex.GetPixels();
+                sb.Clear();
+                foreach (var item in colors)
+                {
+                    sb.AppendFormat(item.ToString());
+                }
+                Debug.Log(sb);
+            }
+        }
     }
 }
 #endif
@@ -25,6 +42,11 @@ public class TestHeightEditor : Editor
 public class TestHeight : MonoBehaviour
 {
     public Texture2D tex;
+    public Vector3 size = new Vector3(1000, 600, 1000);
+    public int rowId;
+
+
+    public Texture2D[] texs;
     // Start is called before the first frame update
     public void Generate()
     {
@@ -34,7 +56,8 @@ public class TestHeight : MonoBehaviour
         var w = tex.width;
         var res = w + 1;
 
-        td.size = new Vector3(w, 20, w);
+        td.size = size;
+        td.heightmapResolution = res;
 
         var heights = new float[res, res];
         var colors = tex.GetPixels();
@@ -46,12 +69,14 @@ public class TestHeight : MonoBehaviour
                 var idX = x == 0 ? 0 : x - 1;
                 var idY = y == 0 ? 0 : y - 1;
                 heights[y, x] = colors[idX + idY * w].r;
+                if(x == rowId && y == 0)
+                {
+                    Debug.Log(heights[y, x]);
+                }
             }
         }
-        
-        //td.heightmapResolution = 1;
+
         td.SetHeights(0, 0, heights);
-        Debug.Log(td.heightmapResolution);
     }
 
 

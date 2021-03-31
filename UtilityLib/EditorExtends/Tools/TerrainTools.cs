@@ -3,6 +3,7 @@
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using UnityEngine;
@@ -160,12 +161,12 @@
             return mesh;
         }
 
-        public static void GenerateWhole(Terrain terrain,Transform paretTr, int resScale = 1)
+        public static void GenerateWhole(Terrain terrain, Transform paretTr, int resScale = 1)
         {
             var td = terrain.terrainData;
             var hw = td.heightmapResolution;
             var hh = td.heightmapResolution;
-            
+
             var resolution = td.heightmapResolution - 1;
 
             var meshScale = td.heightmapScale * resScale;
@@ -259,6 +260,46 @@
 
 
             td.SetHeights(0, 0, heights);
+        }
+
+        public static void ApplyAlphamap(this TerrainData td, Texture2D[] controlMaps)
+        {
+            if (controlMaps == null || controlMaps.Length == 0)
+                return;
+
+            controlMaps = controlMaps.Where(c => c).ToArray();
+
+            var res = td.alphamapResolution;
+            float[,,] map = new float[res, res, td.alphamapLayers];
+
+            Vector2 uv = Vector2.one;
+
+            for (int id = 0; id < controlMaps.Length; id++)
+            {
+                var controlMap = controlMaps[id];
+                var colors = controlMap.GetPixels();
+                var controlMapRes = controlMap.width;
+                var alphaId = id * 4;
+
+                for (int y = 0; y < res; y++)
+                {
+                    uv.y = (float)y / res;
+                    for (int x = 0; x < res; x++)
+                    {
+                        uv.x = (float)x / res;
+
+                        // set alpha[x,y,z,w]
+                        for (int channelId = 0; channelId < 1; channelId++)
+                        {
+                            var coordX = (int)(uv.x * controlMapRes);
+                            var coordY = (int)(uv.y * controlMapRes);
+                            map[y,x, 0] = colors[coordX + coordY * controlMapRes][channelId];
+
+                        }
+                    }
+                }
+            }
+            td.SetAlphamaps(0, 0, map);
         }
 
     }
