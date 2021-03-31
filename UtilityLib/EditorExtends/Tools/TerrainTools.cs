@@ -235,5 +235,31 @@
 
 #endif
 
+        public static void ApplyHeightmap(this TerrainData td, Texture2D tex)
+        {
+            if (!tex)
+                return;
+
+            var res = tex.width + 1;
+            td.heightmapResolution = res;
+
+            int w = tex.width;// (int)terrainSize.x;
+            var heights = new float[res, res];
+            var colors = tex.GetPixels();
+
+            for (int y = 0; y < res; y++)
+            {
+                for (int x = 0; x < res; x++)
+                {
+                    var idX = x == 0 ? 0 : x - 1;
+                    var idY = y == 0 ? 0 : y - 1;
+                    heights[y, x] = colors[idX + idY * w].r;
+                }
+            }
+
+
+            td.SetHeights(0, 0, heights);
+        }
+
     }
 }
