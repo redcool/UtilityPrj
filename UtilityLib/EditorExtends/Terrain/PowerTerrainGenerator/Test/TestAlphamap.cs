@@ -1,9 +1,11 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class TestAlphamap : MonoBehaviour
 {
     public TerrainLayer[] terrayLayers;
+    
     // Add some random "noise" to the alphamaps.
     void AddAlphaNoise(Terrain t, float noiseScale)
     {

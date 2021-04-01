@@ -46,6 +46,26 @@ namespace PowerUtilities
             tempLayers = EditorGUILayout.MaskField(label, tempLayers, InternalEditorUtility.layers);
             return InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(tempLayers);
         }
+
+        public static void DrawFoldContent(ref (string title, bool fold) foldInfo, Action drawContentAction)
+        {
+            DrawFoldContent(ref foldInfo, drawContentAction, GUI.contentColor);
+        }
+
+        public static void DrawFoldContent(ref (string title, bool fold) foldInfo, Action drawContentAction, Color titleColor, float space=8)
+        {
+            var originalColor = GUI.contentColor;
+            GUI.contentColor = titleColor;
+
+            foldInfo.fold = EditorGUILayout.Foldout(foldInfo.fold, foldInfo.title);
+            GUI.contentColor = originalColor;
+
+            if (foldInfo.fold)
+            {
+                drawContentAction();
+            }
+            EditorGUILayout.Space(space);
+        }
     }
 }
 #endif

@@ -5,18 +5,18 @@ namespace PowerUtilities {
     using UnityEditor;
     using UnityEngine;
 
-    public class HeightMapTerrainGeneratorMenu
+    public class PowerTerrainGeneratorMenu
     {
         const string ROOT_PATH = "PowerUtilities";
 
-        [MenuItem(ROOT_PATH + "/Terrain/Add HeightMapTerrainGenerator")]
+        [MenuItem(ROOT_PATH + "/Terrain/Add PowerTerrainGenerator")]
         static void ShowMenu()
         {
             var go = Selection.activeGameObject;
             if (!go)
                 return;
 
-            go.GetOrAddComponent<HeightMapTerrainGenerator>();
+            go.GetOrAddComponent<PowerTerrainGenerator>();
         }
     }
 }

@@ -117,7 +117,13 @@ namespace PowerUtilities
 
             SaveTexturesToFolder(textures, folder, countInRow);
         }
-
+        /// <summary>
+        /// Split Textures by resolution
+        /// </summary>
+        /// <param name="textures"></param>
+        /// <param name="resolution"></param>
+        /// <param name="countInRow"></param>
+        /// <returns></returns>
         public static List<Texture2D> SplitTextures(Texture2D[] textures, TextureResolution resolution, ref int countInRow)
         {
             if (textures == null || textures.Length == 0)

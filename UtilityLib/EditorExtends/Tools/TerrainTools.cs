@@ -1,5 +1,6 @@
 ﻿namespace PowerUtilities
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
@@ -7,6 +8,8 @@
     using System.Text;
     using System.Threading;
     using UnityEngine;
+    using Object = UnityEngine.Object;
+
     public static class TerrainTools
     {
         public static void CopyFromTerrain(MeshRenderer mr, Terrain terrain)
@@ -236,6 +239,55 @@
 
 #endif
 
+        public static List<Terrain> GenerateTerrainsByHeightmaps(Transform rootTr, List<Texture2D> heightmaps, int countInRow, Vector3 terrainSize, Material materialTemplate)
+        {
+            if (heightmaps == null)
+                return null;
+
+            // cleanup
+            foreach (Transform item in rootTr)
+            {
+                Object.DestroyImmediate(item.gameObject);
+            }
+
+            // calc rows
+            var count = heightmaps.Count;
+            var rows = count / countInRow;
+            if (count % countInRow > 0)
+                rows++;
+
+            // get root go
+            var terrainRootGo = new GameObject("Terrains");
+            terrainRootGo.transform.SetParent(rootTr, false);
+
+            // generate terrain go
+            var heightMapId = 0;
+            var terrainList = new List<Terrain>();
+            for (int y = 0; y < rows; y++)
+            {
+                for (int x = 0; x < countInRow; x++)
+                {
+                    var go = new GameObject(string.Format("Terrain Tile [{0},{1}]", x, y));
+                    var t = go.AddComponent<Terrain>();
+                    terrainList.Add(t);
+
+                    t.terrainData = new TerrainData();
+                    t.terrainData.ApplyHeightmap(heightmaps[heightMapId++]);
+                    t.terrainData.size = terrainSize;
+
+                    t.transform.SetParent(terrainRootGo.transform, false);
+                    t.transform.position = Vector3.Scale(terrainSize, new Vector3(x, 0, y));
+
+                    var c = go.AddComponent<TerrainCollider>();
+                    c.terrainData = t.terrainData;
+
+                    t.materialTemplate = materialTemplate;
+                }
+                //break;
+            }
+            return terrainList;
+        }
+
         public static void ApplyHeightmap(this TerrainData td, Texture2D tex)
         {
             if (!tex)
@@ -262,10 +314,34 @@
             td.SetHeights(0, 0, heights);
         }
 
-        public static void ApplyAlphamap(this TerrainData td, Texture2D[] controlMaps)
+        /// <summary>
+        /// 
+        /// terrainData's alphamapLayers must >= controlMaps.length * 4
+        /// 
+        /// maps : 
+        /// (y)</summary>br>
+        /// *
+        /// *         (alphamapLayers)
+        /// *       *
+        /// *     *
+        /// *   *
+        /// * *
+        /// ***************(x)
+        /// </summary>
+        /// <param name="td"></param>
+        /// <param name="controlMaps"></param>
+        public static void ApplyAlphamaps(this TerrainData td, Texture2D[] controlMaps)
         {
             if (controlMaps == null || controlMaps.Length == 0)
                 return;
+
+            // check terrain layers
+            var controlMapLayers = controlMaps.Length * 4;
+            var terrainLayers = td.alphamapLayers;
+            if (terrainLayers < controlMapLayers)
+            {
+                Debug.Log( string.Format("Warning ! terrainData's alphamapLayers < {0}, need add terrainLayers!", controlMapLayers));
+            }
 
             controlMaps = controlMaps.Where(c => c).ToArray();
 
@@ -279,7 +355,6 @@
                 var controlMap = controlMaps[id];
                 var colors = controlMap.GetPixels();
                 var controlMapRes = controlMap.width;
-                var alphaId = id * 4;
 
                 for (int y = 0; y < res; y++)
                 {
@@ -289,11 +364,11 @@
                         uv.x = (float)x / res;
 
                         // set alpha[x,y,z,w]
-                        for (int channelId = 0; channelId < 1; channelId++)
+                        for (int layerId = 0; layerId < terrainLayers; layerId++)
                         {
-                            var coordX = (int)(uv.x * controlMapRes);
-                            var coordY = (int)(uv.y * controlMapRes);
-                            map[y,x, 0] = colors[coordX + coordY * controlMapRes][channelId];
+                            var pixelX = (int)(uv.x * controlMapRes);
+                            var pixelY = (int)(uv.y * controlMapRes);
+                            map[y,x, layerId] = colors[pixelX + pixelY * controlMapRes][layerId];
 
                         }
                     }

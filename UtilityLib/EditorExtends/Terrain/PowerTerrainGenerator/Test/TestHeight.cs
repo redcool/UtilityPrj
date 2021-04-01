@@ -9,16 +9,21 @@ using UnityEditor;
 public class TestHeightEditor : Editor
 {
     TestHeight inst;
+
+    bool isFold;
     public override void OnInspectorGUI()
     {
         inst = target as TestHeight;
 
         base.OnInspectorGUI();
+        isFold = EditorGUILayout.BeginFoldoutHeaderGroup(isFold, "test");
 
+        if(isFold)
         if (GUILayout.Button("Test"))
         {
             inst.Generate();
         }
+        EditorGUILayout.EndFoldoutHeaderGroup();
 
         if (GUILayout.Button("Check Colors"))
         {
