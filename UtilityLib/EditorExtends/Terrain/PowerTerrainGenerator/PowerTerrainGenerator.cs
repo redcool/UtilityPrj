@@ -13,22 +13,22 @@
     /// </summary>
     public class PowerTerrainGenerator : MonoBehaviour
     {
-        [Header("Heightmap")]
+        //[Header("Heightmap")]
         public Texture2D[] heightmaps;
         public TextureResolution heightMapResolution = TextureResolution.x256;
-
         public List<Texture2D> splitedHeightmapList;
+        [Min(1)]public int heightMapCountInRow = 1;
 
-        [Header("Terrain")]
-        [Min(1)]public int countInRow = 1;
+        //[Header("Terrain")]
         public Vector3 terrainSize = new Vector3(1000,600,1000);
         [Min(0)]public int updateTerrainId;
         public List<Terrain> generatedTerrainList;
 
-        [Header("Settings")]
+        //[Header("Settings")]
         [Min(0)]public int pixelError = 100;
+        public string nameTemplate = "Terrain Tile [{0},{1}]";
 
-        [Header("Material")]
+        //[Header("Material")]
         public Material materialTemplate;
         public TerrainLayer[] terrainLayers;
 
@@ -36,6 +36,13 @@
         public List<Texture2D> splitedControlMaps;// terrain tile controlMaps
         public TextureResolution controlMapResolution = TextureResolution.x256;
         [Min(1)]public int controlMapCountInRow;
+
+        public (string title, bool fold) heightmapFold = ("Heightmaps", false);
+        public (string title, bool fold) terrainFold = ("Generate Terrains", false);
+        public (string title, bool fold) materialFold = ("Material", false);
+        public (string title, bool fold) controlMapFold = ("Control Map", false);
+        public (string title, bool fold) settingsFold = ("Settings", false);
+        public (string title, bool fold) exportFold = ("Export", false);
 
     }
 }

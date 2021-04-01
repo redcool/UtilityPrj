@@ -35,14 +35,6 @@ namespace PowerUtilities
 ";
         PowerTerrainGenerator inst;
 
-        (string title, bool fold) heightmapFold = ("Heightmaps", false);
-        (string title, bool fold) terrainFold = ("Generate Terrains",false);
-        (string title, bool fold) materialFold = ("Material",false);
-        (string title, bool fold) controlMapFold= ("Control Map", false);
-        (string title, bool fold) settingsFold = ("Settings", false);
-        (string title, bool fold) generatedTerrainsFold = ("Generated Terrains", false);
-
-
         public override void OnInspectorGUI()
         {
             EditorGUILayout.HelpBox(helpStr, MessageType.Info);
@@ -53,15 +45,17 @@ namespace PowerUtilities
 
             EditorGUI.BeginChangeCheck();
 
-            EditorGUITools.DrawFoldContent(ref heightmapFold, () => DrawHeightmapsUI());
-            EditorGUITools.DrawFoldContent(ref terrainFold, () =>
+            EditorGUITools.DrawFoldContent(ref inst.heightmapFold, () => DrawHeightmapsUI());
+            EditorGUITools.DrawFoldContent(ref inst.terrainFold, () =>
             {
                 DrawGenerateTerrainUI();
                 DrawUpdateTerrainTileUI();
             });
-            EditorGUITools.DrawFoldContent(ref materialFold, () => DrawMaterialUI(),Color.yellow);
-            EditorGUITools.DrawFoldContent(ref controlMapFold, () => DrawControlMapUI());
-            EditorGUITools.DrawFoldContent(ref settingsFold, () => DrawTerrainSettings(), Color.yellow);
+            EditorGUITools.DrawFoldContent(ref inst.materialFold, () => DrawMaterialUI(),Color.yellow);
+            EditorGUITools.DrawFoldContent(ref inst.controlMapFold, () => DrawControlMapUI());
+            EditorGUITools.DrawFoldContent(ref inst.settingsFold, () => DrawTerrainSettings(), Color.yellow);
+
+            EditorGUITools.DrawFoldContent(ref inst.exportFold, () => DrawExportUI());
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -77,7 +71,6 @@ namespace PowerUtilities
             {
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.heightmaps)));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.heightMapResolution)));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.splitedHeightmapList)));
 
                 if (inst.heightmaps != null && inst.heightmaps.Length > 0)
                 {
@@ -88,14 +81,18 @@ namespace PowerUtilities
                     if (GUILayout.Button("Split Heightmaps"))
                     {
                         inst.heightmaps = inst.heightmaps.Where(hm => hm).ToArray();
-                        inst.splitedHeightmapList = TextureTools.SplitTextures(inst.heightmaps, inst.heightMapResolution, ref inst.countInRow);
+                        inst.splitedHeightmapList = TextureTools.SplitTextures(inst.heightmaps, inst.heightMapResolution, ref inst.heightMapCountInRow,(progress)=> {
+                            EditorUtility.DisplayProgressBar("Split Heightmaps", "Split Heightmaps", progress);
+                        });
+                        EditorUtility.ClearProgressBar();
                     }
                     if (GUILayout.Button("Save Heightmaps"))
                     {
-                        TextureTools.SaveTexturesDialog(inst.splitedHeightmapList, inst.countInRow);
+                        TextureTools.SaveTexturesDialog(inst.splitedHeightmapList, inst.heightMapCountInRow);
                     }
                     EditorGUILayout.EndHorizontal();
                 }
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.splitedHeightmapList)));
             }
             EditorGUILayout.EndVertical();
         }
@@ -109,11 +106,55 @@ namespace PowerUtilities
             EditorGUILayout.EndVertical();
         }
 
+
+        void ExportTerrains(List<Terrain> terrainList)
+        {
+            var folder = EditorUtility.SaveFolderPanel("Export", "Assets", "ExportTerrains");
+            if (string.IsNullOrEmpty(folder))
+                return;
+
+            var dataFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(PathTools.GetAssetPath(folder), "TerrainDatas"));
+            var prefabFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(PathTools.GetAssetPath(folder), "TerrainPrefabs"));
+            for (int i = 0; i < terrainList.Count; i++)
+            {
+                var terrain = terrainList[i];
+                var dataPath = $"{dataFolder}/{terrain.name}.asset";
+                AssetDatabase.CreateAsset(terrain.terrainData, dataPath);
+                
+                terrain.terrainData = AssetDatabase.LoadAssetAtPath<TerrainData>(dataPath);
+
+                var prefabPath = $"{prefabFolder}/{terrain.name}.prefab";
+                PrefabUtility.SaveAsPrefabAssetAndConnect(terrain.gameObject, prefabPath, InteractionMode.UserAction);
+            }
+        }
+
+        void DrawExportUI()
+        {
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.nameTemplate)));
+            EditorGUILayout.BeginHorizontal("Box");
+            if (GUILayout.Button("Rename"))
+            {
+                for (int i = 0; i < inst.generatedTerrainList.Count; i++)
+                {
+                    var rowId = i % inst.heightMapCountInRow;
+                    var colId = i / inst.heightMapCountInRow;
+
+                    inst.generatedTerrainList[i].gameObject.name = string.Format(inst.nameTemplate, rowId, colId);
+                }
+            }
+            if(GUILayout.Button("Export Terrains"))
+            {
+                ExportTerrains(inst.generatedTerrainList);
+            }
+
+            EditorGUILayout.EndHorizontal();
+        }
+
         void DrawGenerateTerrainUI()
         {
             EditorGUILayout.BeginVertical("Box");
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.countInRow)));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.heightMapCountInRow)));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.terrainSize)));
                 // generate tile terrains
                 if (inst.splitedHeightmapList != null && inst.splitedHeightmapList.Count > 0)
@@ -121,7 +162,7 @@ namespace PowerUtilities
                     EditorGUILayout.LabelField("Terrains");
                     if (GUILayout.Button("Generate Terrains"))
                     {
-                        inst.generatedTerrainList = TerrainTools.GenerateTerrainsByHeightmaps(inst.transform, inst.splitedHeightmapList, inst.countInRow, inst.terrainSize, inst.materialTemplate);
+                        inst.generatedTerrainList = TerrainTools.GenerateTerrainsByHeightmaps(inst.transform, inst.splitedHeightmapList, inst.heightMapCountInRow, inst.terrainSize, inst.materialTemplate);
                     }
 
                     EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.generatedTerrainList)));
@@ -186,7 +227,10 @@ namespace PowerUtilities
                     if (GUILayout.Button("Split ControlMap"))
                     {
                         inst.controlMaps = inst.controlMaps.Where(t => t).ToArray();
-                        inst.splitedControlMaps = TextureTools.SplitTextures(inst.controlMaps, inst.controlMapResolution, ref inst.controlMapCountInRow);
+                        inst.splitedControlMaps = TextureTools.SplitTextures(inst.controlMaps, inst.controlMapResolution, ref inst.controlMapCountInRow,(progress)=> {
+                            EditorUtility.DisplayProgressBar("Spliat ControlMaps", "Spliat ControlMaps", progress);
+                        });
+                        EditorUtility.ClearProgressBar();
                     }
                     if (GUILayout.Button("Save ControlMaps"))
                         TextureTools.SaveTexturesDialog(inst.splitedControlMaps, inst.controlMapCountInRow);

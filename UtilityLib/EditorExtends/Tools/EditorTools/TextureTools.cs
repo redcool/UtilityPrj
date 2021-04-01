@@ -60,7 +60,7 @@ namespace PowerUtilities
         /// <param name="tex"></param>
         /// <param name="resolution"></param>
         /// <returns></returns>
-        public static Texture2D[] SplitTexture(this Texture2D tex, int resolution)
+        public static Texture2D[] SplitTexture(this Texture2D tex, int resolution,Action<float> onProgress)
         {
             if (tex.width <= resolution)
             {
@@ -80,6 +80,9 @@ namespace PowerUtilities
                     var newTex = newTexs[id++] = new Texture2D(resolution, resolution);
                     newTex.SetPixels(tex.GetPixels(x * resolution, y * resolution, resolution, resolution));
                     newTex.Apply();
+
+                    if (onProgress != null)
+                        onProgress((float)id / newTexs.Length);
                 }
             }
             return newTexs;
@@ -124,7 +127,7 @@ namespace PowerUtilities
         /// <param name="resolution"></param>
         /// <param name="countInRow"></param>
         /// <returns></returns>
-        public static List<Texture2D> SplitTextures(Texture2D[] textures, TextureResolution resolution, ref int countInRow)
+        public static List<Texture2D> SplitTextures(Texture2D[] textures, TextureResolution resolution, ref int countInRow,Action<float> onProgress)
         {
             if (textures == null || textures.Length == 0)
                 return null;
@@ -146,7 +149,7 @@ namespace PowerUtilities
 
                 if (tex.width > res)
                 {
-                    var texs = tex.SplitTexture(res);
+                    var texs = tex.SplitTexture(res,onProgress);
                     textureList.AddRange(texs);
                 }
                 else
