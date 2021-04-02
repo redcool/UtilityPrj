@@ -1,88 +1,92 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using System.Text;
+namespace PowerUtilities
+{
+    using System.Collections;
+    using System.Collections.Generic;
+    using UnityEngine;
+    using System.Text;
 
 #if UNITY_EDITOR
-using UnityEditor;
-[CustomEditor(typeof(TestHeight))]
-public class TestHeightEditor : Editor
-{
-    TestHeight inst;
-
-    bool isFold;
-    public override void OnInspectorGUI()
+    using UnityEditor;
+    [CustomEditor(typeof(TestHeight))]
+    public class TestHeightEditor : Editor
     {
-        inst = target as TestHeight;
+        TestHeight inst;
 
-        base.OnInspectorGUI();
-        isFold = EditorGUILayout.BeginFoldoutHeaderGroup(isFold, "test");
-
-        if(isFold)
-        if (GUILayout.Button("Test"))
+        bool isFold;
+        public override void OnInspectorGUI()
         {
-            inst.Generate();
-        }
-        EditorGUILayout.EndFoldoutHeaderGroup();
+            inst = target as TestHeight;
 
-        if (GUILayout.Button("Check Colors"))
-        {
-            var sb = new StringBuilder();
-            for (int i = 0; i < inst.texs.Length; i++)
-            {
-                var tex = inst.texs[i];
-                var colors = tex.GetPixels();
-                sb.Clear();
-                foreach (var item in colors)
+            base.OnInspectorGUI();
+            isFold = EditorGUILayout.BeginFoldoutHeaderGroup(isFold, "test");
+
+            if (isFold)
+                if (GUILayout.Button("Test"))
                 {
-                    sb.AppendFormat(item.ToString());
+                    inst.Generate();
                 }
-                Debug.Log(sb);
+            EditorGUILayout.EndFoldoutHeaderGroup();
+
+            if (GUILayout.Button("Check Colors"))
+            {
+                var sb = new StringBuilder();
+                for (int i = 0; i < inst.texs.Length; i++)
+                {
+                    var tex = inst.texs[i];
+                    var colors = tex.GetPixels();
+                    sb.Clear();
+                    foreach (var item in colors)
+                    {
+                        sb.AppendFormat(item.ToString());
+                    }
+                    Debug.Log(sb);
+                }
             }
         }
     }
-}
 #endif
 
-public class TestHeight : MonoBehaviour
-{
-    public Texture2D tex;
-    public Vector3 size = new Vector3(1000, 600, 1000);
-    public int rowId;
-
-
-    public Texture2D[] texs;
-    // Start is called before the first frame update
-    public void Generate()
+    public class TestHeight : MonoBehaviour
     {
-        var t = GetComponent<Terrain>();
-        var td = t.terrainData;
+        public Texture2D tex;
+        public Vector3 size = new Vector3(1000, 600, 1000);
+        public int rowId;
 
-        var w = tex.width;
-        var res = w + 1;
 
-        td.size = size;
-        td.heightmapResolution = res;
-
-        var heights = new float[res, res];
-        var colors = tex.GetPixels();
-
-        for (int y = 0; y < res; y++)
+        public Texture2D[] texs;
+        // Start is called before the first frame update
+        public void Generate()
         {
-            for (int x = 0; x < res; x++)
+            var t = GetComponent<Terrain>();
+            var td = t.terrainData;
+
+            var w = tex.width;
+            var res = w + 1;
+
+            td.size = size;
+            td.heightmapResolution = res;
+
+            var heights = new float[res, res];
+            var colors = tex.GetPixels();
+
+            for (int y = 0; y < res; y++)
             {
-                var idX = x == 0 ? 0 : x - 1;
-                var idY = y == 0 ? 0 : y - 1;
-                heights[y, x] = colors[idX + idY * w].r;
-                if(x == rowId && y == 0)
+                for (int x = 0; x < res; x++)
                 {
-                    Debug.Log(heights[y, x]);
+                    var idX = x == 0 ? 0 : x - 1;
+                    var idY = y == 0 ? 0 : y - 1;
+                    heights[y, x] = colors[idX + idY * w].r;
+                    if (x == rowId && y == 0)
+                    {
+                        Debug.Log(heights[y, x]);
+                    }
                 }
             }
+
+            td.SetHeights(0, 0, heights);
         }
 
-        td.SetHeights(0, 0, heights);
-    }
 
+    }
 
 }

@@ -66,6 +66,22 @@ namespace PowerUtilities
             }
             EditorGUILayout.Space(space);
         }
+
+        public static void DrawColorUI(Action drawAction,Color contentColor,Color color)
+        {
+            if (drawAction == null)
+                return;
+
+            var lastContentColor = GUI.contentColor;
+            var lastColor = GUI.color;
+
+            GUI.contentColor = contentColor;
+            GUI.color = color;
+            drawAction();
+
+            GUI.contentColor = lastContentColor;
+            GUI.color = lastColor;
+        }
     }
 }
 #endif

@@ -49,11 +49,12 @@ namespace PowerUtilities
             EditorGUITools.DrawFoldContent(ref inst.terrainFold, () =>
             {
                 DrawGenerateTerrainUI();
+                EditorGUILayout.Space(8);
                 DrawUpdateTerrainTileUI();
             });
-            EditorGUITools.DrawFoldContent(ref inst.materialFold, () => DrawMaterialUI(),Color.yellow);
+            EditorGUITools.DrawFoldContent(ref inst.materialFold, () => DrawMaterialUI(),Color.green);
             EditorGUITools.DrawFoldContent(ref inst.controlMapFold, () => DrawControlMapUI());
-            EditorGUITools.DrawFoldContent(ref inst.settingsFold, () => DrawTerrainSettings(), Color.yellow);
+            EditorGUITools.DrawFoldContent(ref inst.settingsFold, () => DrawTerrainSettings(), Color.green);
 
             EditorGUITools.DrawFoldContent(ref inst.exportFold, () => DrawExportUI());
 
@@ -72,7 +73,8 @@ namespace PowerUtilities
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.heightmaps)));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.heightMapResolution)));
 
-                if (inst.heightmaps != null && inst.heightmaps.Length > 0)
+                var disabled = (inst.heightmaps == null || inst.heightmaps.Length == 0);
+                EditorGUI.BeginDisabledGroup(disabled);
                 {
                     // split textures
                     EditorGUILayout.LabelField("Textures");
@@ -92,6 +94,8 @@ namespace PowerUtilities
                     }
                     EditorGUILayout.EndHorizontal();
                 }
+                EditorGUI.EndDisabledGroup();
+
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.splitedHeightmapList)));
             }
             EditorGUILayout.EndVertical();
@@ -107,48 +111,109 @@ namespace PowerUtilities
         }
 
 
-        void ExportTerrains(List<Terrain> terrainList)
+        void SavePrefabs(List<Terrain> terrainList)
         {
-            var folder = EditorUtility.SaveFolderPanel("Export", "Assets", "ExportTerrains");
+            if (terrainList == null || terrainList.Count == 0)
+            {
+                return;
+            }
+
+            var folder = EditorUtility.SaveFolderPanel("Save", "Assets", "Save Terrains");
             if (string.IsNullOrEmpty(folder))
                 return;
 
-            var dataFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(PathTools.GetAssetPath(folder), "TerrainDatas"));
+            //var dataFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(PathTools.GetAssetPath(folder), "TerrainDatas"));
             var prefabFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(PathTools.GetAssetPath(folder), "TerrainPrefabs"));
+
             for (int i = 0; i < terrainList.Count; i++)
             {
                 var terrain = terrainList[i];
-                var dataPath = $"{dataFolder}/{terrain.name}.asset";
-                AssetDatabase.CreateAsset(terrain.terrainData, dataPath);
-                
-                terrain.terrainData = AssetDatabase.LoadAssetAtPath<TerrainData>(dataPath);
-
+                // create prefab
                 var prefabPath = $"{prefabFolder}/{terrain.name}.prefab";
                 PrefabUtility.SaveAsPrefabAssetAndConnect(terrain.gameObject, prefabPath, InteractionMode.UserAction);
             }
         }
 
+        void SaveTerrains(List<Terrain> terrainList)
+        {
+            if (terrainList == null || terrainList.Count == 0)
+                return;
+
+            var folder = EditorUtility.SaveFolderPanel("Save", "Assets", "Save Terrains");
+            if (string.IsNullOrEmpty(folder))
+                return;
+
+            var dataFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(PathTools.GetAssetPath(folder), "TerrainDatas"));
+
+            for (int i = 0; i < terrainList.Count; i++)
+            {
+                var terrain = terrainList[i];
+                var td = terrain.terrainData;
+
+                var assetPath = AssetDatabase.GetAssetPath(td);
+                if (!td || !string.IsNullOrEmpty(assetPath))
+                    continue;
+
+                var dataPath = $"{dataFolder}/{terrain.name}.asset";
+                AssetDatabase.CreateAsset(td, dataPath);
+
+                // read from disk
+                terrain.terrainData = AssetDatabase.LoadAssetAtPath<TerrainData>(dataPath);
+            }
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        private void RenameGeneratedTerrains(List<Terrain> terrainlist, int countInRow, string nameTemplate)
+        {
+            if (terrainlist == null || terrainlist.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < terrainlist.Count; i++)
+            {
+                var rowId = i % countInRow;
+                var colId = i / countInRow;
+
+                var go = terrainlist[i].gameObject;
+                var name = string.Format(nameTemplate, rowId, colId);
+                go.name = name;
+
+                PrefabTools.RenamePrefab(go, name);
+            }
+        }
         void DrawExportUI()
         {
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.nameTemplate)));
-            EditorGUILayout.BeginHorizontal("Box");
-            if (GUILayout.Button("Rename"))
+
+            var disabled = inst.generatedTerrainList == null || inst.generatedTerrainList.Count == 0;
+            EditorGUI.BeginDisabledGroup(disabled);
             {
-                for (int i = 0; i < inst.generatedTerrainList.Count; i++)
+                if (disabled)
                 {
-                    var rowId = i % inst.heightMapCountInRow;
-                    var colId = i / inst.heightMapCountInRow;
-
-                    inst.generatedTerrainList[i].gameObject.name = string.Format(inst.nameTemplate, rowId, colId);
+                    EditorGUITools.DrawColorUI(() =>
+                    {
+                        EditorGUILayout.LabelField("warning : generatedTerrainList is empty");
+                    }, Color.yellow, Color.yellow);
                 }
-            }
-            if(GUILayout.Button("Export Terrains"))
-            {
-                ExportTerrains(inst.generatedTerrainList);
-            }
 
-            EditorGUILayout.EndHorizontal();
+                EditorGUILayout.BeginHorizontal("Box");
+                if (GUILayout.Button("Rename"))
+                {
+                    RenameGeneratedTerrains(inst.generatedTerrainList, inst.heightMapCountInRow, inst.nameTemplate);
+                }
+                if (GUILayout.Button("Save terrain prefabs"))
+                {
+                    SavePrefabs(inst.generatedTerrainList);
+                }
+
+                EditorGUILayout.EndHorizontal();
+            }
+            EditorGUI.EndDisabledGroup();
+
         }
+
 
         void DrawGenerateTerrainUI()
         {
@@ -157,41 +222,61 @@ namespace PowerUtilities
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.heightMapCountInRow)));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.terrainSize)));
                 // generate tile terrains
-                if (inst.splitedHeightmapList != null && inst.splitedHeightmapList.Count > 0)
+                var disabled = inst.splitedHeightmapList == null || inst.splitedHeightmapList.Count == 0;
+                EditorGUI.BeginDisabledGroup(disabled);
                 {
+                    if (disabled)
+                    {
+                        EditorGUITools.DrawColorUI(()=> {
+                            EditorGUILayout.LabelField("Waring : splitedHeightmapList is empty.");
+                        },Color.yellow,Color.yellow);
+                    }
                     EditorGUILayout.LabelField("Terrains");
                     if (GUILayout.Button("Generate Terrains"))
                     {
                         inst.generatedTerrainList = TerrainTools.GenerateTerrainsByHeightmaps(inst.transform, inst.splitedHeightmapList, inst.heightMapCountInRow, inst.terrainSize, inst.materialTemplate);
+                        SaveTerrains(inst.generatedTerrainList);
                     }
 
                     EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.generatedTerrainList)));
                 }
+                EditorGUI.EndDisabledGroup();
             }
             EditorGUILayout.EndVertical();
         }
 
         void DrawUpdateTerrainTileUI()
         {
+            var enabled = inst.splitedHeightmapList != null && inst.splitedHeightmapList.Count > 0
+                && inst.generatedTerrainList != null && inst.generatedTerrainList.Count > 0;
             // update tile
-            if (inst.splitedHeightmapList != null && inst.splitedHeightmapList.Count > 0
-                && inst.generatedTerrainList != null && inst.generatedTerrainList.Count > 0)
+            EditorGUI.BeginDisabledGroup(!enabled);
             {
                 EditorGUILayout.BeginVertical("Box");
+
+                if (!enabled)
+                {
+                    EditorGUITools.DrawColorUI(() => {
+                        EditorGUILayout.LabelField("Warning : splitedHeightmapList or generatedTerrainList is empty");
+                    }, Color.yellow, Color.yellow);
+                }
+
                 EditorGUILayout.PrefixLabel("Generate one terrain tile");
 
                 EditorGUILayout.BeginHorizontal("Box");
-                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.updateTerrainId)));
-
-                inst.updateTerrainId = Mathf.Clamp(inst.updateTerrainId, 0, inst.splitedHeightmapList.Count - 1);
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.updateTerrainTile)));
+                //EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.updateTerrainId)));
+                //inst.updateTerrainId = Mathf.Clamp(inst.updateTerrainId, 0, inst.splitedHeightmapList.Count - 1);
 
                 if (GUILayout.Button("Update Terrain Tile"))
                 {
-                    GenerateTerrainById(inst.generatedTerrainList, inst.splitedHeightmapList, inst.updateTerrainId);
+                    //GenerateTerrainById(inst.generatedTerrainList, inst.splitedHeightmapList, inst.updateTerrainId);
+                    GenerateTerrainTile(inst.generatedTerrainList, inst.splitedHeightmapList, inst.updateTerrainTile);
                 }
                 EditorGUILayout.EndHorizontal();
                 EditorGUILayout.EndVertical();
             }
+            EditorGUI.EndDisabledGroup();
         }
 
         void DrawMaterialUI()
@@ -211,7 +296,9 @@ namespace PowerUtilities
             {
                 item.heightmapPixelError = inst.pixelError;
                 item.materialTemplate = inst.materialTemplate;
-                item.terrainData.terrainLayers = inst.terrainLayers;
+
+                if(item.terrainData)
+                    item.terrainData.terrainLayers = inst.terrainLayers;
             }
         }
         void DrawControlMapUI()
@@ -296,6 +383,17 @@ namespace PowerUtilities
                 return;
 
             terrain.terrainData.ApplyHeightmap(heightmap);
+        }
+
+        void GenerateTerrainTile(List<Terrain> terrains,List<Texture2D> heightmaps,Terrain terrain)
+        {
+            if (!terrain)
+                return;
+
+            var id = terrains.FindIndex((t) => t == terrain);
+            if (id < 0 || id >= terrains.Count)
+                return;
+            GenerateTerrainById(terrains, heightmaps, id);
         }
 
     }

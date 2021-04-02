@@ -1,57 +1,60 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-public class TerrainGenerator : MonoBehaviour
+namespace PowerUtilities
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using UnityEngine;
 
-    public int width = 256;
-    public int height = 256;
-    public int depth = 20;
-
-    public float scale = 20;
-
-    // Use this for initialization
-    void Start()
+    public class TerrainGenerator : MonoBehaviour
     {
-        Terrain terrain = GetComponent<Terrain>();
-        terrain.terrainData = GenerateTerrainData(terrain.terrainData);
-    }
 
-    void Update()
-    {
-        Terrain terrain = GetComponent<Terrain>();
-        terrain.terrainData = GenerateTerrainData(terrain.terrainData);
-    }
+        public int width = 256;
+        public int height = 256;
+        public int depth = 20;
 
-    private TerrainData GenerateTerrainData(TerrainData terrainData)
-    {
-        terrainData.heightmapResolution = width + 1;
-        terrainData.size = new Vector3(width, depth, height);
-        terrainData.SetHeights(0, 0, GenerateHeights());
-        return terrainData;
-    }
+        public float scale = 20;
 
-    private float[,] GenerateHeights()
-    {
-        float[,] heights = new float[width+1, height+1];
-        for (int x = 0; x <= width; x++)
+        // Use this for initialization
+        void Start()
         {
-            for (int y = 0; y <= height; y++)
-            {
-                heights[x, y] = CalculateHeight(x, y);
-            }
+            Terrain terrain = GetComponent<Terrain>();
+            terrain.terrainData = GenerateTerrainData(terrain.terrainData);
         }
 
-        return heights;
-    }
+        void Update()
+        {
+            Terrain terrain = GetComponent<Terrain>();
+            terrain.terrainData = GenerateTerrainData(terrain.terrainData);
+        }
 
-    private float CalculateHeight(int x, int y)
-    {
-        float xCoord = (float)x / width * scale;
-        float yCoord = (float)y / height * scale;
+        private TerrainData GenerateTerrainData(TerrainData terrainData)
+        {
+            terrainData.heightmapResolution = width + 1;
+            terrainData.size = new Vector3(width, depth, height);
+            terrainData.SetHeights(0, 0, GenerateHeights());
+            return terrainData;
+        }
 
-        return Mathf.PerlinNoise(xCoord, yCoord);
+        private float[,] GenerateHeights()
+        {
+            float[,] heights = new float[width + 1, height + 1];
+            for (int x = 0; x <= width; x++)
+            {
+                for (int y = 0; y <= height; y++)
+                {
+                    heights[x, y] = CalculateHeight(x, y);
+                }
+            }
+
+            return heights;
+        }
+
+        private float CalculateHeight(int x, int y)
+        {
+            float xCoord = (float)x / width * scale;
+            float yCoord = (float)y / height * scale;
+
+            return Mathf.PerlinNoise(xCoord, yCoord);
+        }
     }
 }

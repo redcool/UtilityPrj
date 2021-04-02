@@ -9,6 +9,7 @@
     using System.Threading;
     using UnityEngine;
     using Object = UnityEngine.Object;
+    using Random = UnityEngine.Random;
 
     public static class TerrainTools
     {
@@ -375,6 +376,39 @@
                 }
             }
             td.SetAlphamaps(0, 0, map);
+        }
+
+        public static void CopyAlphamapsFrom(this TerrainData td,TerrainData from)
+        {
+            if (!from)
+                return;
+
+            var maps = from.GetAlphamaps(0, 0, from.alphamapResolution, from.alphamapResolution);
+            td.SetAlphamaps(0, 0, maps);
+        }
+
+        public static void AddAlphaNoise(this TerrainData td, float noiseScale)
+        {
+            float[,,] maps = td.GetAlphamaps(0, 0, td.alphamapWidth, td.alphamapHeight);
+
+            for (int y = 0; y < td.alphamapHeight; y++)
+            {
+                for (int x = 0; x < td.alphamapWidth; x++)
+                {
+                    float a0 = maps[x, y, 0];
+                    float a1 = maps[x, y, 1];
+
+                    a0 += Random.value * noiseScale;
+                    a1 += Random.value * noiseScale;
+
+                    float total = a0 + a1;
+
+                    maps[x, y, 0] = a0 / total;
+                    maps[x, y, 1] = a1 / total;
+                }
+            }
+
+            td.SetAlphamaps(0, 0, maps);
         }
 
     }

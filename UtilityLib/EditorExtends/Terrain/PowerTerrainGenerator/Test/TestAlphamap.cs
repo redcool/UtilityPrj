@@ -1,43 +1,70 @@
-using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
-
-public class TestAlphamap : MonoBehaviour
+namespace PowerUtilities
 {
-    public TerrainLayer[] terrayLayers;
-    
-    // Add some random "noise" to the alphamaps.
-    void AddAlphaNoise(Terrain t, float noiseScale)
+    using UnityEngine;
+    using System.Collections;
+    using System.Collections.Generic;
+    using PowerUtilities;
+
+#if UNITY_EDITOR
+    using UnityEditor;
+    [CustomEditor(typeof(TestAlphamap))]
+    public class TestAlphamapEditor : Editor
     {
-
-        var td = t.terrainData;
-        td.terrainLayers = terrayLayers;
-
-        float[,,] maps = t.terrainData.GetAlphamaps(0, 0, t.terrainData.alphamapWidth, t.terrainData.alphamapHeight);
-        
-        for (int y = 0; y < t.terrainData.alphamapHeight; y++)
+        TestAlphamap inst;
+        public override void OnInspectorGUI()
         {
-            for (int x = 0; x < t.terrainData.alphamapWidth; x++)
+            inst = target as TestAlphamap;
+            base.OnInspectorGUI();
+
+            var terrain = inst.GetComponent<Terrain>();
+            var path = "Assets/Test/TestTerrain.asset";
+
+            if (GUILayout.Button("Save"))
             {
-                float a0 = maps[x, y, 0];
-                float a1 = maps[x, y, 1];
 
-                a0 += Random.value * noiseScale;
-                a1 += Random.value * noiseScale;
+                var td = new TerrainData();
 
-                float total = a0 + a1;
+                td.terrainLayers = inst.terrayLayers;
+                td.heightmapResolution = 513;
+                td.alphamapResolution = 512;
+                AssetDatabase.CreateAsset(td, path);
 
-                maps[x, y, 0] = a0 / total;
-                maps[x, y, 1] = a1 / total;
+                var tdAsset = AssetDatabase.LoadAssetAtPath<TerrainData>(path);
+                TerrainTools.AddAlphaNoise(td, 100);
+                tdAsset.CopyAlphamapsFrom(td);
+                terrain.terrainData = tdAsset;
+
+                //var td = terrain.terrainData;
+
+                //terrain.terrainData = td;
+
+
+                //td.CopyActiveRenderTextureToTexture(TerrainData.AlphamapTextureName, 0, new RectInt(0, 0, 512, 512), new Vector2Int(0, 0), false);
+                //td.SyncTexture(TerrainData.AlphamapTextureName);
+                //AssetDatabase.SaveAssets();
+
+
+
+                //terrain.terrainData = AssetDatabase.LoadAssetAtPath<TerrainData>(path);
+
+
+            }
+
+            if (GUILayout.Button("Noise"))
+            {
+                var tdAsset = AssetDatabase.LoadAssetAtPath<TerrainData>(path);
+                TerrainTools.AddAlphaNoise(tdAsset, 100);
             }
         }
-
-        t.terrainData.SetAlphamaps(0, 0, maps);
     }
+#endif
 
-    private void Start()
+    public class TestAlphamap : MonoBehaviour
     {
-        var t = GetComponent<Terrain>();
-        AddAlphaNoise(t, 10);
+        public TerrainLayer[] terrayLayers;
+
+        // Add some random "noise" to the alphamaps.
+
+
     }
 }
