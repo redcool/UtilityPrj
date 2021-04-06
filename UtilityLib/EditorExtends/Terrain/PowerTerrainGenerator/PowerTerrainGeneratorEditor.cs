@@ -33,6 +33,8 @@ namespace PowerUtilities
     4.3 指定对应的controlMap到对应的Terrain块
 
 ";
+        const string saveRootFolder = "Assets";
+
         PowerTerrainGenerator inst;
 
         public override void OnInspectorGUI()
@@ -111,43 +113,42 @@ namespace PowerUtilities
         }
 
 
-        void SavePrefabs(List<Terrain> terrainList)
+        void SavePrefabs(List<Terrain> terrainList,string folder)
         {
             if (terrainList == null || terrainList.Count == 0)
             {
                 return;
             }
 
-            var folder = EditorUtility.SaveFolderPanel("Save", "Assets", "Save Terrains");
-            if (string.IsNullOrEmpty(folder))
-                return;
-
-            //var dataFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(PathTools.GetAssetPath(folder), "TerrainDatas"));
-            var prefabFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(PathTools.GetAssetPath(folder), "TerrainPrefabs"));
+            var prefabFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(folder, "TerrainPrefabs"));
 
             for (int i = 0; i < terrainList.Count; i++)
             {
                 var terrain = terrainList[i];
+
+                if (!terrain)
+                    continue;
+
                 // create prefab
                 var prefabPath = $"{prefabFolder}/{terrain.name}.prefab";
                 PrefabUtility.SaveAsPrefabAssetAndConnect(terrain.gameObject, prefabPath, InteractionMode.UserAction);
             }
+            EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>(prefabFolder));
         }
 
-        void SaveTerrains(List<Terrain> terrainList)
+        void SaveTerrains(List<Terrain> terrainList,string folder)
         {
             if (terrainList == null || terrainList.Count == 0)
                 return;
 
-            var folder = EditorUtility.SaveFolderPanel("Save", "Assets", "Save Terrains");
-            if (string.IsNullOrEmpty(folder))
-                return;
-
-            var dataFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(PathTools.GetAssetPath(folder), "TerrainDatas"));
+            var dataFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(folder, "TerrainDatas"));
 
             for (int i = 0; i < terrainList.Count; i++)
             {
                 var terrain = terrainList[i];
+                if (!terrain)
+                    continue;
+
                 var td = terrain.terrainData;
 
                 var assetPath = AssetDatabase.GetAssetPath(td);
@@ -162,6 +163,7 @@ namespace PowerUtilities
             }
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+            EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>(dataFolder));
         }
 
         private void RenameGeneratedTerrains(List<Terrain> terrainlist, int countInRow, string nameTemplate)
@@ -185,7 +187,6 @@ namespace PowerUtilities
         }
         void DrawExportUI()
         {
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.nameTemplate)));
 
             var disabled = inst.generatedTerrainList == null || inst.generatedTerrainList.Count == 0;
             EditorGUI.BeginDisabledGroup(disabled);
@@ -198,17 +199,21 @@ namespace PowerUtilities
                     }, Color.yellow, Color.yellow);
                 }
 
-                EditorGUILayout.BeginHorizontal("Box");
+                EditorGUILayout.BeginVertical("Box");
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.nameTemplate)));
                 if (GUILayout.Button("Rename"))
                 {
                     RenameGeneratedTerrains(inst.generatedTerrainList, inst.heightMapCountInRow, inst.nameTemplate);
                 }
+                EditorGUILayout.EndVertical();
+
+
+                EditorGUILayout.BeginVertical("Box");
                 if (GUILayout.Button("Save terrain prefabs"))
                 {
-                    SavePrefabs(inst.generatedTerrainList);
+                    SavePrefabs(inst.generatedTerrainList,saveRootFolder);
                 }
-
-                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
             }
             EditorGUI.EndDisabledGroup();
 
@@ -235,7 +240,7 @@ namespace PowerUtilities
                     if (GUILayout.Button("Generate Terrains"))
                     {
                         inst.generatedTerrainList = TerrainTools.GenerateTerrainsByHeightmaps(inst.transform, inst.splitedHeightmapList, inst.heightMapCountInRow, inst.terrainSize, inst.materialTemplate);
-                        SaveTerrains(inst.generatedTerrainList);
+                        SaveTerrains(inst.generatedTerrainList,saveRootFolder);
                     }
 
                     EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.generatedTerrainList)));
@@ -297,8 +302,10 @@ namespace PowerUtilities
                 item.heightmapPixelError = inst.pixelError;
                 item.materialTemplate = inst.materialTemplate;
 
-                if(item.terrainData)
+                if (item.terrainData)
+                {
                     item.terrainData.terrainLayers = inst.terrainLayers;
+                }
             }
         }
         void DrawControlMapUI()

@@ -1,7 +1,9 @@
-﻿namespace PowerUtilities
+﻿#if UNITY_EDITOR
+namespace PowerUtilities
 {
     using System.Collections;
     using System.Collections.Generic;
+    using UnityEditor.Presets;
     using UnityEngine;
 
 
@@ -44,6 +46,7 @@
         public (string title, bool fold) controlMapFold = ("Control Map", false);
         public (string title, bool fold) settingsFold = ("Settings", false);
         public (string title, bool fold) exportFold = ("Export", false);
-
+        
     }
 }
+#endif
