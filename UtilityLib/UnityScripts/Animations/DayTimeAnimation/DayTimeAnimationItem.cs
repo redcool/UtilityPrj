@@ -47,8 +47,11 @@ public class DayTimeAnimationItem :MonoBehaviour
     private void InitPlayableDirector()
     {
         director = GetComponent<PlayableDirector>();
-        director.playOnAwake = false;
-        director.Stop();
+        if (director)
+        {
+            director.playOnAwake = false;
+            director.Stop();
+        }
     }
 
     private void InitMainClip()
