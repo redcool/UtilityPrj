@@ -10,6 +10,7 @@ namespace PowerUtilities
 
     public static class EditorGUITools
     {
+        public static Color darkGray = new Color(0.2f,0.3f,0.4f);
         public static void DrawPreview(Texture tex)
         {
             var rect = GUILayoutUtility.GetRect(100, 100, "Box");
@@ -52,19 +53,26 @@ namespace PowerUtilities
             DrawFoldContent(ref foldInfo, drawContentAction, GUI.contentColor);
         }
 
-        public static void DrawFoldContent(ref (string title, bool fold) foldInfo, Action drawContentAction, Color titleColor, float space=8)
+        public static void DrawFoldContent(ref (string title, bool fold) foldInfo, Action drawContentAction, Color titleColor, float space=1)
         {
-            var originalColor = GUI.contentColor;
+            var lastColor = GUI.contentColor;
             GUI.contentColor = titleColor;
 
-            foldInfo.fold = EditorGUILayout.Foldout(foldInfo.fold, foldInfo.title);
-            GUI.contentColor = originalColor;
+            var lastBg = GUI.backgroundColor;
+            GUI.backgroundColor = Color.gray;
+
+            EditorGUILayout.BeginVertical("Button");
+            foldInfo.fold = EditorGUILayout.Foldout(foldInfo.fold, foldInfo.title,true);
+            EditorGUILayout.Space(space);
+            EditorGUILayout.EndVertical();
+
+            GUI.backgroundColor = lastBg;
+            GUI.contentColor = lastColor;
 
             if (foldInfo.fold)
             {
                 drawContentAction();
             }
-            EditorGUILayout.Space(space);
         }
 
         public static void DrawColorUI(Action drawAction,Color contentColor,Color color)
