@@ -28,10 +28,6 @@ public class BlitFrameBufferToTexture : MonoBehaviour
     {
         cam = GetComponent<Camera>();
         cam.depthTextureMode = camDepthTextureMode;
-        if(cam.depthTextureMode != DepthTextureMode.None)
-        {
-            return;
-        }
 
         colorRT = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0);
         depthRT = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0);
@@ -49,8 +45,8 @@ public class BlitFrameBufferToTexture : MonoBehaviour
 
     private void OnDestroy()
     {
-        cam.RemoveCommandBuffer(CameraEvent.AfterSkybox, blitColor);
-        cam.RemoveCommandBuffer(CameraEvent.AfterForwardOpaque, blitDepth);
+        cam.RemoveCommandBuffer(blitColorEvent, blitColor);
+        cam.RemoveCommandBuffer(blitDepthEvent, blitDepth);
 
         blitColor.Dispose();
         blitDepth.Dispose();
