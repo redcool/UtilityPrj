@@ -28,6 +28,10 @@ public class BlitFrameBufferToTexture : MonoBehaviour
     {
         cam = GetComponent<Camera>();
         cam.depthTextureMode = camDepthTextureMode;
+        if(cam.depthTextureMode != DepthTextureMode.None)
+        {
+            return;
+        }
 
         colorRT = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0);
         depthRT = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0);
