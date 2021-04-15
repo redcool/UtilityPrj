@@ -10,16 +10,18 @@ public class BlitFrameBufferToTexture : MonoBehaviour
     [SerializeField] RenderTexture colorRT;
     [SerializeField] RenderTexture depthRT;
 
-    [Header("Camera events")]
+    [Header("Color Texture")]
+    public bool isBlitColorTexture = true;
     public CameraEvent blitColorEvent = CameraEvent.AfterForwardOpaque;
-    public CameraEvent blitDepthEvent = CameraEvent.AfterForwardOpaque;
 
-    [Header("Camera Settings")]
+    [Header("Depth Texture")]
     [Tooltip("mobile need depth mode at least")]
+    public bool isBlitDepthTexture = true;
+    public CameraEvent blitDepthEvent = CameraEvent.AfterForwardOpaque;
     public DepthTextureMode camDepthTextureMode;
 
     Camera cam;
-    CommandBuffer blitColor, blitDepth;
+    CommandBuffer blitColorBuf, blitDepthBuf;
 
     public readonly int screenColorTextureId = Shader.PropertyToID("_ScreenColorTexture");
     public readonly int screenDepthTextureId = Shader.PropertyToID("_ScreenDepthTexture");
@@ -29,27 +31,46 @@ public class BlitFrameBufferToTexture : MonoBehaviour
         cam = GetComponent<Camera>();
         cam.depthTextureMode = camDepthTextureMode;
 
-        colorRT = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0);
-        depthRT = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0);
+        if (isBlitColorTexture)
+        {
+            colorRT = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0);
 
-        blitColor = new CommandBuffer { name = "blit color" };
-        blitColor.Blit(BuiltinRenderTextureType.CurrentActive, colorRT);
-        blitColor.SetGlobalTexture(screenColorTextureId,colorRT);
-        cam.AddCommandBuffer(blitColorEvent, blitColor);
+            blitColorBuf = CreateBlitBuffer("Blit Color", BuiltinRenderTextureType.CurrentActive, colorRT, screenColorTextureId, cam, blitColorEvent);
+        }
 
-        blitDepth = new CommandBuffer { name = "blit depth" };
-        blitDepth.Blit(BuiltinRenderTextureType.Depth, depthRT.colorBuffer);
-        blitDepth.SetGlobalTexture(screenDepthTextureId,depthRT);
-        cam.AddCommandBuffer(blitDepthEvent, blitDepth);
+        if (isBlitDepthTexture)
+        {
+            depthRT = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0);
+
+            blitDepthBuf = CreateBlitBuffer("Blit Depth", BuiltinRenderTextureType.Depth, depthRT, screenDepthTextureId, cam, blitDepthEvent);
+        }
     }
+
+
 
     private void OnDestroy()
     {
-        cam.RemoveCommandBuffer(blitColorEvent, blitColor);
-        cam.RemoveCommandBuffer(blitDepthEvent, blitDepth);
+        ReleaseCommandBuffer(cam, blitColorEvent, blitColorBuf);
+        ReleaseCommandBuffer(cam, blitDepthEvent, blitDepthBuf);
+    }
 
-        blitColor.Dispose();
-        blitDepth.Dispose();
+    public static CommandBuffer CreateBlitBuffer(string bufferName, RenderTargetIdentifier srcId, RenderTargetIdentifier dstId, int globalShaderId, Camera cam, CameraEvent cameraEvent)
+    {
+        if (!cam)
+            return null;
+
+        var cmd = new CommandBuffer { name = "blit depth" };
+        cmd.Blit(srcId, dstId);
+        cmd.SetGlobalTexture(globalShaderId, dstId);
+        cam.AddCommandBuffer(cameraEvent, cmd);
+        return cmd;
+    }
+    public static void ReleaseCommandBuffer(Camera cam,CameraEvent cameraEvent,CommandBuffer buf)
+    {
+        if (buf == null || !cam)
+            return;
+        cam.RemoveCommandBuffer(cameraEvent, buf);
+        buf.Dispose();
     }
 #endif
 }
