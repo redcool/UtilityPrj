@@ -240,7 +240,7 @@
 
 #endif
 
-        public static List<Terrain> GenerateTerrainsByHeightmaps(Transform rootTr, List<Texture2D> heightmaps, int countInRow, Vector3 terrainSize, Material materialTemplate)
+        public static List<Terrain> GenerateTerrainsByHeightmaps(Transform rootTr, List<Texture2D> heightmaps,int heightmapScale, int countInRow, Vector3 terrainSize, Material materialTemplate)
         {
             if (heightmaps == null)
                 return null;
@@ -273,7 +273,7 @@
                     terrainList.Add(t);
 
                     t.terrainData = new TerrainData();
-                    t.terrainData.ApplyHeightmap(heightmaps[heightMapId++]);
+                    t.terrainData.ApplyHeightmap(heightmaps[heightMapId++], heightmapScale);
                     t.terrainData.size = terrainSize;
 
                     t.transform.SetParent(terrainRootGo.transform, false);
@@ -289,30 +289,128 @@
             return terrainList;
         }
 
-        public static void ApplyHeightmap(this TerrainData td, Texture2D tex)
+        public static void ApplyHeightmap(this TerrainData td, Texture2D heightmap,int heightmapResolutionScale=1)
         {
-            if (!tex)
+            if (!heightmap)
                 return;
 
-            var res = tex.width + 1;
-            td.heightmapResolution = res;
+            var heightmapRes = heightmap.width * heightmapResolutionScale + 1;
+            td.heightmapResolution = heightmapRes;
 
-            int w = tex.width;// (int)terrainSize.x;
-            var heights = new float[res, res];
-            var colors = tex.GetPixels();
+            BlitToHeightmap(td, heightmap);
 
-            for (int y = 0; y < res; y++)
+            //int w = tex.width;// (int)terrainSize.x;
+            //var heights = new float[heightmapRes, heightmapRes];
+            //var colors = tex.GetPixels();
+
+            //for (int y = 0; y < heightmapRes; y++)
+            //{
+            //    for (int x = 0; x < heightmapRes; x++)
+            //    {
+            //        var idX = x == 0 ? 0 : x - 1;
+            //        var idY = y == 0 ? 0 : y - 1;
+
+            //        // remap x,y
+            //        idX = Mathf.FloorToInt((idX / (float)heightmapRes) * w );
+            //        idY = Mathf.FloorToInt(idY / (float)heightmapRes * w);
+
+            //        heights[y, x] = Mathf.LinearToGammaSpace(colors[idX + idY * w].r);
+            //        //heights[y, x] = FilterColorBox(colors,idX,idY,w,w);
+            //    }
+            //}
+
+
+            //td.SetHeights(0, 0, heights);
+        }
+
+        static Material GetBlitHeightmapMaterial()
+        {
+            //return new Material(Shader.Find("Hidden/TerrainTools/HeightBlit"));
+            return new Material(Shader.Find("Hidden/Terrain/BlitTextureToHeightmap"));
+        }
+
+
+
+        public static void ResizeHeightmap(TerrainData terrainData, int resolution)
+        {
+            RenderTexture oldRT = RenderTexture.active;
+
+            RenderTexture oldHeightmap = RenderTexture.GetTemporary(terrainData.heightmapTexture.descriptor);
+            Graphics.Blit(terrainData.heightmapTexture, oldHeightmap);
+#if UNITY_2019_3_OR_NEWER
+            // terrain holes
+            RenderTexture oldHoles = RenderTexture.GetTemporary(terrainData.holesTexture.width, terrainData.holesTexture.height);
+            Graphics.Blit(terrainData.holesTexture, oldHoles);
+#endif
+
+            float sUV = 1.0f;
+            int dWidth = terrainData.heightmapResolution;
+            int sWidth = resolution;
+
+            Vector3 oldSize = terrainData.size;
+            terrainData.heightmapResolution = resolution;
+            terrainData.size = oldSize;
+
+            oldHeightmap.filterMode = FilterMode.Bilinear;
+
+            // Make sure textures are offset correctly when resampling
+            // tsuv = (suv * swidth - 0.5) / (swidth - 1)
+            // duv = (tsuv(dwidth - 1) + 0.5) / dwidth
+            // duv = (((suv * swidth - 0.5) / (swidth - 1)) * (dwidth - 1) + 0.5) / dwidth
+            // k = (dwidth - 1) / (swidth - 1) / dwidth
+            // duv = suv * (swidth * k)		+ 0.5 / dwidth - 0.5 * k
+
+            float k = (dWidth - 1.0f) / (sWidth - 1.0f) / dWidth;
+            float scaleX = sUV * (sWidth * k);
+            float offsetX = (float)(0.5 / dWidth - 0.5 * k);
+            Vector2 scale = new Vector2(scaleX, scaleX);
+            Vector2 offset = new Vector2(offsetX, offsetX);
+
+            Graphics.Blit(oldHeightmap, terrainData.heightmapTexture, scale, offset);
+            RenderTexture.ReleaseTemporary(oldHeightmap);
+
+#if UNITY_2019_3_OR_NEWER
+            oldHoles.filterMode = FilterMode.Point;
+            Graphics.Blit(oldHoles, (RenderTexture)terrainData.holesTexture);
+            RenderTexture.ReleaseTemporary(oldHoles);
+#endif
+
+            RenderTexture.active = oldRT;
+
+            terrainData.DirtyHeightmapRegion(new RectInt(0, 0, terrainData.heightmapTexture.width, terrainData.heightmapTexture.height), TerrainHeightmapSyncControl.HeightAndLod);
+#if UNITY_2019_3_OR_NEWER
+            terrainData.DirtyTextureRegion(TerrainData.HolesTextureName, new RectInt(0, 0, terrainData.holesTexture.width, terrainData.holesTexture.height), false);
+#endif
+        }
+
+        public static float normalizedHeightScale => 32766.0f / 65535.0f;
+        public static void BlitToHeightmap(this TerrainData td,Texture2D heightmap)
+        {
+            var blitMat = GetBlitHeightmapMaterial();
+            //blitMat.SetFloat("_Height_Offset", 0 * kNormalizedHeightScale);
+            blitMat.SetFloat("_Height_Scale", normalizedHeightScale);
+            Graphics.Blit(heightmap, td.heightmapTexture, blitMat);
+            td.DirtyHeightmapRegion(new RectInt(0, 0, td.heightmapResolution, td.heightmapResolution), TerrainHeightmapSyncControl.HeightAndLod);
+             
+            //ResizeHeightmap(td, 513);
+        }
+
+        static float FilterColorBox(Color[] colors,int coordX,int coordY,int width,int height)
+        {
+            float c = 0;
+            for (int j = -1; j < 2; j++)
             {
-                for (int x = 0; x < res; x++)
+                for (int i = -1; i < 2; i++)
                 {
-                    var idX = x == 0 ? 0 : x - 1;
-                    var idY = y == 0 ? 0 : y - 1;
-                    heights[y, x] = colors[idX + idY * w].r;
+                    var x = coordX + i;
+                    var y = coordY + j;
+                    if (x < 0 || x >= width || y < 0 || y >= height)
+                        continue;
+
+                    c += Mathf.LinearToGammaSpace (colors[y * width + x].r);
                 }
             }
-
-
-            td.SetHeights(0, 0, heights);
+            return c / 9;
         }
 
         /// <summary>
