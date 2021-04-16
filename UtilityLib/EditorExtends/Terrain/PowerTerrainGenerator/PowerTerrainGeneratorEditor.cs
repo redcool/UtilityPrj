@@ -59,6 +59,7 @@ namespace PowerUtilities
             EditorGUITools.DrawFoldContent(ref inst.settingsFold, () => DrawTerrainSettings(), Color.green);
 
             EditorGUITools.DrawFoldContent(ref inst.exportFold, () => DrawExportUI());
+            EditorGUITools.DrawFoldContent(ref inst.saveOptionsFold, () => DrawSaveOptionsUI());
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -113,20 +114,23 @@ namespace PowerUtilities
         }
 
 
-        void SavePrefabs(List<Terrain> terrainList,string folder)
+        void SavePrefabs(List<Terrain> terrainList,string assetFolder,bool isCreateSubFolder)
         {
             if (terrainList == null || terrainList.Count == 0)
             {
                 return;
             }
+            PathTools.CreateAbsFolderPath(assetFolder);
 
-            var prefabFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(folder, "TerrainPrefabs"));
+            var prefabFolder = assetFolder;
+            if(isCreateSubFolder)
+                prefabFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(assetFolder, "TerrainPrefabs"));
 
             for (int i = 0; i < terrainList.Count; i++)
             {
                 var terrain = terrainList[i];
 
-                if (!terrain)
+                if (!terrain || !terrain.terrainData)
                     continue;
 
                 // create prefab
@@ -136,12 +140,16 @@ namespace PowerUtilities
             EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>(prefabFolder));
         }
 
-        void SaveTerrains(List<Terrain> terrainList,string folder)
+        void SaveTerrains(List<Terrain> terrainList,string assetFolder,bool isCreateSubFolder)
         {
             if (terrainList == null || terrainList.Count == 0)
                 return;
 
-            var dataFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(folder, "TerrainDatas"));
+            //Create folder
+            PathTools.CreateAbsFolderPath(assetFolder);
+            var dataFolder = assetFolder;
+            if(isCreateSubFolder)
+                dataFolder = AssetDatabase.GUIDToAssetPath(AssetDatabase.CreateFolder(assetFolder, "TerrainDatas"));
 
             for (int i = 0; i < terrainList.Count; i++)
             {
@@ -185,9 +193,18 @@ namespace PowerUtilities
                 PrefabTools.RenamePrefab(go, name);
             }
         }
+
+        void DrawSaveOptionsUI()
+        {
+            EditorGUILayout.BeginVertical("Box");
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.isCreateSubFolder)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.terrainDataSavePath)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.prefabSavePath)));
+            EditorGUILayout.EndVertical();
+        }
+
         void DrawExportUI()
         {
-
             var disabled = inst.generatedTerrainList == null || inst.generatedTerrainList.Count == 0;
             EditorGUI.BeginDisabledGroup(disabled);
             {
@@ -211,7 +228,8 @@ namespace PowerUtilities
                 EditorGUILayout.BeginVertical("Box");
                 if (GUILayout.Button("Save terrain prefabs"))
                 {
-                    SavePrefabs(inst.generatedTerrainList,saveRootFolder);
+                    RenameGeneratedTerrains(inst.generatedTerrainList, inst.heightMapCountInRow, inst.nameTemplate);
+                    SavePrefabs(inst.generatedTerrainList,inst.prefabSavePath,inst.isCreateSubFolder);
                 }
                 EditorGUILayout.EndVertical();
             }
@@ -226,6 +244,7 @@ namespace PowerUtilities
             {
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.heightMapCountInRow)));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.terrainSize)));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.terrainHeightmapScale)));
                 // generate tile terrains
                 var disabled = inst.splitedHeightmapList == null || inst.splitedHeightmapList.Count == 0;
                 EditorGUI.BeginDisabledGroup(disabled);
@@ -239,8 +258,8 @@ namespace PowerUtilities
                     EditorGUILayout.LabelField("Terrains");
                     if (GUILayout.Button("Generate Terrains"))
                     {
-                        inst.generatedTerrainList = TerrainTools.GenerateTerrainsByHeightmaps(inst.transform, inst.splitedHeightmapList, inst.heightMapCountInRow, inst.terrainSize, inst.materialTemplate);
-                        SaveTerrains(inst.generatedTerrainList,saveRootFolder);
+                        inst.generatedTerrainList = TerrainTools.GenerateTerrainsByHeightmaps(inst.transform, inst.splitedHeightmapList,inst.terrainHeightmapScale, inst.heightMapCountInRow, inst.terrainSize, inst.materialTemplate);
+                        SaveTerrains(inst.generatedTerrainList,inst.terrainDataSavePath,inst.isCreateSubFolder);
                     }
 
                     EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.generatedTerrainList)));

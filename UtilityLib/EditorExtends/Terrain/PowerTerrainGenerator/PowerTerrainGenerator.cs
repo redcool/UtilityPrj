@@ -24,6 +24,7 @@ namespace PowerUtilities
         //[Header("Terrain")]
         public Vector3 terrainSize = new Vector3(1000,600,1000);
         //[Min(0)]public int updateTerrainId;
+        [Min(1)] public int terrainHeightmapScale = 1;
         public Terrain updateTerrainTile;
         public List<Terrain> generatedTerrainList;
 
@@ -44,9 +45,14 @@ namespace PowerUtilities
         public (string title, bool fold) terrainFold = ("Generate Terrains", false);
         public (string title, bool fold) materialFold = ("Material", false);
         public (string title, bool fold) controlMapFold = ("Control Map", false);
-        public (string title, bool fold) settingsFold = ("Settings", false);
+        public (string title, bool fold) settingsFold = ("Terrain Settings", false);
         public (string title, bool fold) exportFold = ("Export", false);
-        
+        public (string title, bool fold) saveOptionsFold = ("Save Options",false);
+
+        //[Header("Save Options")]
+        public bool isCreateSubFolder = true;
+        public string terrainDataSavePath = "Assets/";
+        public string prefabSavePath = "Assets/";
     }
 }
 #endif

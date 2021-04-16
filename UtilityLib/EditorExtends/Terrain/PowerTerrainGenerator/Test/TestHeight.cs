@@ -48,6 +48,7 @@ namespace PowerUtilities
 
     public class TestHeight : MonoBehaviour
     {
+        public GUISkin skin;
         public Texture2D tex;
         public Vector3 size = new Vector3(1000, 600, 1000);
         public int rowId;
