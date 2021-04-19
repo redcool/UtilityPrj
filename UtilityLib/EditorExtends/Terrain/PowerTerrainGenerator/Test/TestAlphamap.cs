@@ -30,7 +30,7 @@ namespace PowerUtilities
                 AssetDatabase.CreateAsset(td, path);
 
                 var tdAsset = AssetDatabase.LoadAssetAtPath<TerrainData>(path);
-                TerrainTools.AddAlphaNoise(td, 100);
+                td.AddAlphaNoise(100);
                 tdAsset.CopyAlphamapsFrom(td);
                 terrain.terrainData = tdAsset;
 
@@ -53,7 +53,7 @@ namespace PowerUtilities
             if (GUILayout.Button("Noise"))
             {
                 var tdAsset = AssetDatabase.LoadAssetAtPath<TerrainData>(path);
-                TerrainTools.AddAlphaNoise(tdAsset, 100);
+                tdAsset.AddAlphaNoise(100);
             }
         }
     }

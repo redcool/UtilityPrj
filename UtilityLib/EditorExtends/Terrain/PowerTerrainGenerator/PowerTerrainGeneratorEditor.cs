@@ -109,6 +109,7 @@ namespace PowerUtilities
             EditorGUILayout.BeginVertical("Box");
             {
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.pixelError)));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.terrainHeightmapResolution)));
             }
             EditorGUILayout.EndVertical();
         }
@@ -244,7 +245,6 @@ namespace PowerUtilities
             {
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.heightMapCountInRow)));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.terrainSize)));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.terrainHeightmapScale)));
                 // generate tile terrains
                 var disabled = inst.splitedHeightmapList == null || inst.splitedHeightmapList.Count == 0;
                 EditorGUI.BeginDisabledGroup(disabled);
@@ -258,7 +258,7 @@ namespace PowerUtilities
                     EditorGUILayout.LabelField("Terrains");
                     if (GUILayout.Button("Generate Terrains"))
                     {
-                        inst.generatedTerrainList = TerrainTools.GenerateTerrainsByHeightmaps(inst.transform, inst.splitedHeightmapList,inst.terrainHeightmapScale, inst.heightMapCountInRow, inst.terrainSize, inst.materialTemplate);
+                        inst.generatedTerrainList = TerrainTools.GenerateTerrainsByHeightmaps(inst.transform, inst.splitedHeightmapList, inst.heightMapCountInRow, inst.terrainSize, inst.materialTemplate);
                         SaveTerrains(inst.generatedTerrainList,inst.terrainDataSavePath,inst.isCreateSubFolder);
                     }
 
@@ -318,14 +318,23 @@ namespace PowerUtilities
             var terrains = inst.GetComponentsInChildren<Terrain>();
             foreach (var item in terrains)
             {
+                if (!item || !item.terrainData)
+                    continue;
+
                 item.heightmapPixelError = inst.pixelError;
                 item.materialTemplate = inst.materialTemplate;
 
-                if (item.terrainData)
+                // assign terrain layers
+                item.terrainData.terrainLayers = inst.terrainLayers;
+
+                // resize heightmap
+                var targetHeightmapRes = (int)inst.terrainHeightmapResolution + 1;
+                if (item.terrainData.heightmapResolution != targetHeightmapRes)
                 {
-                    item.terrainData.terrainLayers = inst.terrainLayers;
+                    item.terrainData.ResizeHeightmap(targetHeightmapRes);
                 }
             }
+
         }
         void DrawControlMapUI()
         {

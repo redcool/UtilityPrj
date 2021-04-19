@@ -35,6 +35,7 @@ Shader "Hidden/Terrain/BlitTextureToHeightmap"
             UNITY_DECLARE_SCREENSPACE_TEXTURE(_MainTex);
             float4 _MainTex_ST;
             float _Height_Scale; // 0.49999
+            static const float _HeightOffset = 0.155;
 
             v2f vert (appdata v)
             {
@@ -51,9 +52,15 @@ Shader "Hidden/Terrain/BlitTextureToHeightmap"
             float4 frag (v2f i) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
-                float h = UnpackHeightmap(UNITY_SAMPLE_SCREENSPACE_TEXTURE(_MainTex, i.uv));
-                h = h * _Height_Scale;
-                return PackHeightmap(h);   
+
+                float4 hm = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_MainTex, i.uv);
+                // return GammaToLinearSpaceExact(hm.x);
+                // hm.xyz = GammaToLinearSpace(hm.xyz);
+
+                float h = UnpackHeightmap(hm);
+                h = GammaToLinearSpaceExact(h);
+                h *= _Height_Scale - _HeightOffset; // 0.155 
+                return PackHeightmap(h);
             }
             ENDCG
         }

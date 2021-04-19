@@ -24,12 +24,12 @@ namespace PowerUtilities
         //[Header("Terrain")]
         public Vector3 terrainSize = new Vector3(1000,600,1000);
         //[Min(0)]public int updateTerrainId;
-        [Min(1)] public int terrainHeightmapScale = 1;
         public Terrain updateTerrainTile;
         public List<Terrain> generatedTerrainList;
 
         //[Header("Settings")]
         [Min(0)]public int pixelError = 100;
+        public TextureResolution terrainHeightmapResolution = TextureResolution.x256;
         public string nameTemplate = "Terrain Tile [{0},{1}]";
 
         //[Header("Material")]

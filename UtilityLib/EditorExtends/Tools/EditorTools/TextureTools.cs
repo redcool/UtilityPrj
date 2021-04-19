@@ -7,6 +7,7 @@ namespace PowerUtilities
     using UnityEditor;
     using System;
     using System.IO;
+    using UnityEngine.Experimental.Rendering;
 
     public enum TextureResolution
     {
@@ -68,6 +69,7 @@ namespace PowerUtilities
             }
 
             tex.SetReadable(true);
+            
 
             // splite texture
             var count = tex.width / resolution;
@@ -78,6 +80,7 @@ namespace PowerUtilities
                 for (int x = 0; x < count; x++)
                 {
                     var newTex = newTexs[id++] = new Texture2D(resolution, resolution);
+                    
                     newTex.SetPixels(tex.GetPixels(x * resolution, y * resolution, resolution, resolution));
                     newTex.Apply();
 
@@ -141,6 +144,7 @@ namespace PowerUtilities
                 var tex = textures[i];
                 if (tex == null)
                     continue;
+
 
                 var countInRowTile = tex.width / res;
                 countInRowTile = Mathf.Max(1, countInRowTile);
