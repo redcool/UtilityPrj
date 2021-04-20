@@ -88,7 +88,7 @@ namespace PowerUtilities
                         inst.heightmaps = inst.heightmaps.Where(hm => hm).ToArray();
                         inst.splitedHeightmapList = TextureTools.SplitTextures(inst.heightmaps, inst.heightMapResolution, ref inst.heightMapCountInRow,(progress)=> {
                             EditorUtility.DisplayProgressBar("Split Heightmaps", "Split Heightmaps", progress);
-                        });
+                        },true);
                         EditorUtility.ClearProgressBar();
                     }
                     if (GUILayout.Button("Save Heightmaps"))
@@ -110,10 +110,48 @@ namespace PowerUtilities
             {
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.pixelError)));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.terrainHeightmapResolution)));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.groundId)));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.allowAutoConnect)));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.drawInstanced)));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.basemapDistance)));
+
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.layerMask)));
             }
             EditorGUILayout.EndVertical();
         }
 
+        void UpdateTerrainProperties()
+        {
+            var terrains = inst.GetComponentsInChildren<Terrain>();
+            foreach (var item in terrains)
+            {
+                if (!item || !item.terrainData)
+                    continue;
+
+                item.heightmapPixelError = inst.pixelError;
+                item.materialTemplate = inst.materialTemplate;
+
+                // assign terrain layers
+                item.terrainData.terrainLayers = inst.terrainLayers;
+
+                // resize heightmap
+                var targetHeightmapRes = (int)inst.terrainHeightmapResolution + 1;
+                if (item.terrainData.heightmapResolution != targetHeightmapRes)
+                {
+                    item.terrainData.ResizeHeightmap(targetHeightmapRes);
+                }
+
+                item.groupingID = inst.groundId;
+                item.allowAutoConnect = inst.allowAutoConnect;
+                item.drawInstanced = inst.drawInstanced;
+                item.basemapDistance = inst.basemapDistance;
+                item.gameObject.layer = (int)Mathf.Log(inst.layerMask,2);
+            }
+
+            if(inst.generatedTerrainList != null)
+                TerrainTools.CalculateAdjacencies(terrains, inst.tileX,inst.tileZ);
+
+        }
 
         void SavePrefabs(List<Terrain> terrainList,string assetFolder,bool isCreateSubFolder)
         {
@@ -259,6 +297,9 @@ namespace PowerUtilities
                     if (GUILayout.Button("Generate Terrains"))
                     {
                         inst.generatedTerrainList = TerrainTools.GenerateTerrainsByHeightmaps(inst.transform, inst.splitedHeightmapList, inst.heightMapCountInRow, inst.terrainSize, inst.materialTemplate);
+                        inst.tileX = inst.heightMapCountInRow;
+                        inst.tileZ = inst.generatedTerrainList.Count / inst.tileX;
+                        TerrainTools.CalculateAdjacencies(inst.generatedTerrainList.ToArray(), inst.tileX, inst.tileZ);
                         SaveTerrains(inst.generatedTerrainList,inst.terrainDataSavePath,inst.isCreateSubFolder);
                     }
 
@@ -313,29 +354,7 @@ namespace PowerUtilities
             }
             EditorGUILayout.EndVertical();
         }
-        void UpdateTerrainProperties()
-        {
-            var terrains = inst.GetComponentsInChildren<Terrain>();
-            foreach (var item in terrains)
-            {
-                if (!item || !item.terrainData)
-                    continue;
 
-                item.heightmapPixelError = inst.pixelError;
-                item.materialTemplate = inst.materialTemplate;
-
-                // assign terrain layers
-                item.terrainData.terrainLayers = inst.terrainLayers;
-
-                // resize heightmap
-                var targetHeightmapRes = (int)inst.terrainHeightmapResolution + 1;
-                if (item.terrainData.heightmapResolution != targetHeightmapRes)
-                {
-                    item.terrainData.ResizeHeightmap(targetHeightmapRes);
-                }
-            }
-
-        }
         void DrawControlMapUI()
         {
             EditorGUILayout.BeginVertical("Box");
@@ -351,7 +370,7 @@ namespace PowerUtilities
                         inst.controlMaps = inst.controlMaps.Where(t => t).ToArray();
                         inst.splitedControlMaps = TextureTools.SplitTextures(inst.controlMaps, inst.controlMapResolution, ref inst.controlMapCountInRow,(progress)=> {
                             EditorUtility.DisplayProgressBar("Spliat ControlMaps", "Spliat ControlMaps", progress);
-                        });
+                        },false);
                         EditorUtility.ClearProgressBar();
                     }
                     if (GUILayout.Button("Save ControlMaps"))

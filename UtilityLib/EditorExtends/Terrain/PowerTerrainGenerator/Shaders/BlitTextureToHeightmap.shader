@@ -59,7 +59,7 @@ Shader "Hidden/Terrain/BlitTextureToHeightmap"
 
                 float h = UnpackHeightmap(hm);
                 h = GammaToLinearSpaceExact(h);
-                h *= _Height_Scale - _HeightOffset; // 0.155 
+                h *= _Height_Scale - 0; // 0.155 
                 return PackHeightmap(h);
             }
             ENDCG

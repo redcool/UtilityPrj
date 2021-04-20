@@ -15,8 +15,7 @@ namespace PowerUtilities
             if (!heightmap)
                 return;
 
-            var heightmapRes = heightmap.width  + 1;
-            td.heightmapResolution = heightmapRes;
+            td.heightmapResolution = heightmap.width;
 
             BlitToHeightmap(td, heightmap);
 

@@ -31,6 +31,11 @@ namespace PowerUtilities
         [Min(0)]public int pixelError = 100;
         public TextureResolution terrainHeightmapResolution = TextureResolution.x256;
         public string nameTemplate = "Terrain Tile [{0},{1}]";
+        public int groundId = 1234;
+        public bool drawInstanced = false;
+        public bool allowAutoConnect = true;
+        public float basemapDistance = 1000;
+        public LayerMask layerMask = 1;
 
         //[Header("Material")]
         public Material materialTemplate;
@@ -53,6 +58,8 @@ namespace PowerUtilities
         public bool isCreateSubFolder = true;
         public string terrainDataSavePath = "Assets/";
         public string prefabSavePath = "Assets/";
+        public int tileX;
+        public int tileZ;
     }
 }
 #endif

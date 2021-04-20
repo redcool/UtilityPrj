@@ -61,7 +61,7 @@ namespace PowerUtilities
         /// <param name="tex"></param>
         /// <param name="resolution"></param>
         /// <returns></returns>
-        public static Texture2D[] SplitTexture(this Texture2D tex, int resolution,Action<float> onProgress)
+        public static Texture2D[] SplitTexture(this Texture2D tex, int resolution,Action<float> onProgress,bool isHeightmap)
         {
             if (tex.width <= resolution)
             {
@@ -70,25 +70,43 @@ namespace PowerUtilities
 
             tex.SetReadable(true);
             
-
+            var texWidth = resolution + (isHeightmap ? 1 : 0);
+            var texHeight = resolution + (isHeightmap ? 1 : 0);
             // splite texture
             var count = tex.width / resolution;
             var newTexs = new Texture2D[count * count];
-            var id = 0;
+            var texId = 0;
+
             for (int y = 0; y < count; y++)
             {
                 for (int x = 0; x < count; x++)
                 {
-                    var newTex = newTexs[id++] = new Texture2D(resolution, resolution);
-                    
-                    newTex.SetPixels(tex.GetPixels(x * resolution, y * resolution, resolution, resolution));
+                    var blockWidth = resolution + ( isHeightmap &&  x < count - 1 ? 1 : 0);
+                    var blockHeight = resolution + (isHeightmap &&  y < count - 1 ? 1 : 0);
+
+                    var newTex = newTexs[texId++] = new Texture2D(texWidth, texHeight, TextureFormat.R16, false);
+                    newTex.Fill(Color.black);
+
+
+                    newTex.SetPixels(0, 0, blockWidth, blockHeight, tex.GetPixels(x * resolution, y * resolution, blockWidth, blockHeight));
                     newTex.Apply();
 
                     if (onProgress != null)
-                        onProgress((float)id / newTexs.Length);
+                        onProgress((float)texId / newTexs.Length);
                 }
             }
             return newTexs;
+        }
+
+        public static void Fill(this Texture2D tex,Color c)
+        {
+            for (int y = 0; y < tex.height; y++)
+            {
+                for (int x = 0; x < tex.width; x++)
+                {
+                    tex.SetPixel(x, y, c);
+                }
+            }
         }
 
         public static void SaveTexturesToFolder(List<Texture2D> splitTextureList, string folder, int countInRow, bool showPropressBar = true)
@@ -130,7 +148,7 @@ namespace PowerUtilities
         /// <param name="resolution"></param>
         /// <param name="countInRow"></param>
         /// <returns></returns>
-        public static List<Texture2D> SplitTextures(Texture2D[] textures, TextureResolution resolution, ref int countInRow,Action<float> onProgress)
+        public static List<Texture2D> SplitTextures(Texture2D[] textures, TextureResolution resolution, ref int countInRow,Action<float> onProgress,bool isHeightmap)
         {
             if (textures == null || textures.Length == 0)
                 return null;
@@ -153,7 +171,7 @@ namespace PowerUtilities
 
                 if (tex.width > res)
                 {
-                    var texs = tex.SplitTexture(res,onProgress);
+                    var texs = tex.SplitTexture(res,onProgress,isHeightmap);
                     textureList.AddRange(texs);
                 }
                 else
@@ -163,6 +181,7 @@ namespace PowerUtilities
             }
             return textureList;
         }
+
     }
 }
 #endif

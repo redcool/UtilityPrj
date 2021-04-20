@@ -290,5 +290,49 @@
         }
 
 
+
+        public static void CalculateAdjacencies(Terrain[] terrains, int tilesX, int tilesZ)
+        {
+            if (terrains == null || terrains.Length == 0)
+                return;
+            // set neighbor terrains to update normal maps
+            for (int y = 0; y < tilesZ; y++)
+            {
+                for (int x = 0; x < tilesX; x++)
+                {
+                    int index = (y * tilesX) + x;
+                    Terrain terrain = terrains[index];
+                    Terrain leftTerrain = (x > 0) ? terrains[index - 1] : null;
+                    Terrain rightTerrain = (x < tilesX - 1) ? terrains[index + 1] : null;
+                    Terrain topTerrain = (y > 0) ? terrains[index - tilesX] : null;
+                    Terrain bottomTerrain = (y < tilesZ - 1) ? terrains[index + tilesX] : null;
+
+                    // NOTE: "top" and "bottom" are reversed because of the way the terrain is handled...
+                    terrain.SetNeighbors(leftTerrain, bottomTerrain, rightTerrain, topTerrain);
+                }
+            }
+        }
+
+        public static void AutoSetNeighbours(Terrain[] terrains,int countInRow)
+        {
+            if (terrains == null)
+                return;
+
+            var tileY = terrains.Length / countInRow;
+            for (int y = 0; y < tileY; y++)
+            {
+                for (int x = 0; x < countInRow; x++)
+                {
+                    var id = x + y * countInRow;
+                    var t = terrains[id];
+                    var leftId = (x - 1) + y * countInRow;
+                    var rightId = (x + 1) + y * countInRow;
+                    var topId = x + (y + 1) * countInRow;
+                    var bottomId = x + (y - 1) * countInRow;
+
+                    Debug.Log($"id:{id},r:{rightId},b:{bottomId},l:{leftId},t:{topId}");
+                }
+            }
+        }
     }
 }

@@ -61,6 +61,7 @@ namespace PowerUtilities
             var lastBg = GUI.backgroundColor;
             GUI.backgroundColor = Color.gray;
 
+            // draw title button bar
             EditorGUILayout.BeginVertical("Button");
             foldInfo.fold = EditorGUILayout.Foldout(foldInfo.fold, foldInfo.title,true);
             EditorGUILayout.Space(space);
@@ -69,9 +70,12 @@ namespace PowerUtilities
             GUI.backgroundColor = lastBg;
             GUI.contentColor = lastColor;
 
+            //draw content
             if (foldInfo.fold)
             {
+                ++EditorGUI.indentLevel;
                 drawContentAction();
+                --EditorGUI.indentLevel;
             }
         }
 
