@@ -149,7 +149,7 @@ namespace PowerUtilities
             }
 
             if(inst.generatedTerrainList != null)
-                TerrainTools.CalculateAdjacencies(terrains, inst.tileX,inst.tileZ);
+                TerrainTools.AutoSetNeighbours(terrains, inst.tileX,inst.tileZ);
 
         }
 
@@ -283,6 +283,7 @@ namespace PowerUtilities
             {
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.heightMapCountInRow)));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.terrainSize)));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.isGammaOn)));
                 // generate tile terrains
                 var disabled = inst.splitedHeightmapList == null || inst.splitedHeightmapList.Count == 0;
                 EditorGUI.BeginDisabledGroup(disabled);
@@ -296,10 +297,10 @@ namespace PowerUtilities
                     EditorGUILayout.LabelField("Terrains");
                     if (GUILayout.Button("Generate Terrains"))
                     {
-                        inst.generatedTerrainList = TerrainTools.GenerateTerrainsByHeightmaps(inst.transform, inst.splitedHeightmapList, inst.heightMapCountInRow, inst.terrainSize, inst.materialTemplate);
+                        inst.generatedTerrainList = TerrainTools.GenerateTerrainsByHeightmaps(inst.transform, inst.splitedHeightmapList, inst.heightMapCountInRow, inst.terrainSize, inst.materialTemplate,inst.isGammaOn);
                         inst.tileX = inst.heightMapCountInRow;
                         inst.tileZ = inst.generatedTerrainList.Count / inst.tileX;
-                        TerrainTools.CalculateAdjacencies(inst.generatedTerrainList.ToArray(), inst.tileX, inst.tileZ);
+                        TerrainTools.AutoSetNeighbours(inst.generatedTerrainList.ToArray(), inst.tileX, inst.tileZ);
                         SaveTerrains(inst.generatedTerrainList,inst.terrainDataSavePath,inst.isCreateSubFolder);
                     }
 
@@ -421,7 +422,7 @@ namespace PowerUtilities
 
 
 
-        void GenerateTerrainById(List<Terrain> terrains, List<Texture2D> heightmaps, int heightmapId)
+        void GenerateTerrainById(List<Terrain> terrains, List<Texture2D> heightmaps, int heightmapId,bool isGammaOn)
         {
             if (heightmaps == null || heightmapId < 0 || heightmapId >= heightmaps.Count)
                 return;
@@ -436,7 +437,7 @@ namespace PowerUtilities
             if (!terrain)
                 return;
 
-            terrain.terrainData.ApplyHeightmap(heightmap);
+            terrain.terrainData.ApplyHeightmap(heightmap,isGammaOn);
         }
 
         void GenerateTerrainTile(List<Terrain> terrains,List<Texture2D> heightmaps,Terrain terrain)
@@ -447,7 +448,7 @@ namespace PowerUtilities
             var id = terrains.FindIndex((t) => t == terrain);
             if (id < 0 || id >= terrains.Count)
                 return;
-            GenerateTerrainById(terrains, heightmaps, id);
+            GenerateTerrainById(terrains, heightmaps, id,inst.isGammaOn);
         }
 
     }

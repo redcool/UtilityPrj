@@ -10,36 +10,27 @@ namespace PowerUtilities
 {
     public static class TerrainDataEx
     {
-        public static void ApplyHeightmap(this TerrainData td, Texture2D heightmap)
+        public static void ApplyHeightmap(this TerrainData td, Texture2D heightmap,bool isGammaOn)
         {
             if (!heightmap)
                 return;
 
             td.heightmapResolution = heightmap.width;
 
-            BlitToHeightmap(td, heightmap);
+            BlitToHeightmap(td, heightmap,isGammaOn);
 
-            //int w = heightmap.width;// (int)terrainSize.x;
-            //var heights = new float[heightmapRes, heightmapRes];
+            //var w = heightmap.width;// (int)terrainSize.x;
+            //var heights = new float[w, w];
             //var colors = heightmap.GetPixels();
 
-            //for (int y = 0; y < heightmapRes; y++)
+            //for (int y = 0; y < w; y++)
             //{
-            //    for (int x = 0; x < heightmapRes; x++)
+            //    for (int x = 0; x < w; x++)
             //    {
-            //        var idX = x == 0 ? 0 : x - 1;
-            //        var idY = y == 0 ? 0 : y - 1;
-
-            //        // remap x,y
-            //        idX = Mathf.FloorToInt((idX / (float)heightmapRes) * w);
-            //        idY = Mathf.FloorToInt(idY / (float)heightmapRes * w);
-
-            //        heights[y, x] = Mathf.LinearToGammaSpace(colors[idX + idY * w].r);
+            //        heights[y, x] = Mathf.GammaToLinearSpace(colors[x + y * w].r);
             //        //heights[y, x] = FilterColorBox(colors,idX,idY,w,w);
             //    }
             //}
-
-
             //td.SetHeights(0, 0, heights);
         }
 
@@ -102,11 +93,12 @@ namespace PowerUtilities
         }
 
         public const float normalizedHeightScale = 32765.0f / 65535.0f;
-        public static void BlitToHeightmap(this TerrainData td, Texture2D heightmap)
+        public static void BlitToHeightmap(this TerrainData td, Texture2D heightmap,bool isGammaOn)
         {
             var blitMat = GetBlitHeightmapMaterial();
             blitMat.SetFloat("_Height_Offset", 0 * normalizedHeightScale);
             blitMat.SetFloat("_Height_Scale", normalizedHeightScale);
+            blitMat.SetInt("_GammaOn", isGammaOn ? 1 : 0);
             Graphics.Blit(heightmap, td.heightmapTexture, blitMat);
             td.DirtyHeightmapRegion(new RectInt(0, 0, td.heightmapResolution, td.heightmapResolution), TerrainHeightmapSyncControl.HeightAndLod);
         }

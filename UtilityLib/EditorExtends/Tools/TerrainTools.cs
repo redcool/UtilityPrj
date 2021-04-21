@@ -240,7 +240,7 @@
 
 #endif
 
-        public static List<Terrain> GenerateTerrainsByHeightmaps(Transform rootTr, List<Texture2D> heightmaps, int countInRow, Vector3 terrainSize, Material materialTemplate)
+        public static List<Terrain> GenerateTerrainsByHeightmaps(Transform rootTr, List<Texture2D> heightmaps, int countInRow, Vector3 terrainSize, Material materialTemplate,bool isGammaOn)
         {
             if (heightmaps == null)
                 return null;
@@ -273,7 +273,7 @@
                     terrainList.Add(t);
 
                     t.terrainData = new TerrainData();
-                    t.terrainData.ApplyHeightmap(heightmaps[heightMapId++]);
+                    t.terrainData.ApplyHeightmap(heightmaps[heightMapId++],isGammaOn);
                     t.terrainData.size = terrainSize;
 
                     t.transform.SetParent(terrainRootGo.transform, false);
@@ -291,7 +291,7 @@
 
 
 
-        public static void CalculateAdjacencies(Terrain[] terrains, int tilesX, int tilesZ)
+        public static void AutoSetNeighbours(Terrain[] terrains, int tilesX, int tilesZ)
         {
             if (terrains == null || terrains.Length == 0)
                 return;

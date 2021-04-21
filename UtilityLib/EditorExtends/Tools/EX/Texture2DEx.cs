@@ -4,6 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Profiling;
+using System.Diagnostics;
+using Debug = UnityEngine.Debug;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -17,7 +20,14 @@ namespace PowerUtilities
 
     public static class Texture2DEx
     {
+        static Material fillTextureMat;
 
+        public static Material GetFillTextureMaterial()
+        {
+            if (!fillTextureMat)
+                fillTextureMat = new Material(Shader.Find("Hidden/FillTexture"));
+            return fillTextureMat;
+        }
 #if UNITY_EDITOR
         static List<TextureImporterFormat> uncompressionFormats = new List<TextureImporterFormat>(new[]{
             TextureImporterFormat.ARGB32,
@@ -104,13 +114,26 @@ namespace PowerUtilities
 
         public static void Fill(this Texture2D tex, Color c)
         {
-            for (int y = 0; y < tex.height; y++)
-            {
-                for (int x = 0; x < tex.width; x++)
-                {
-                    tex.SetPixel(x, y, c);
-                }
-            }
+            var colors = Enumerable.Repeat(c, tex.width * tex.height).ToArray();
+            tex.SetPixels(colors);
+            //for (int y = 0; y < tex.height; y++)
+            //{
+            //    for (int x = 0; x < tex.width; x++)
+            //    {
+            //        tex.SetPixel(x, y, c);
+            //    }
+            //}
+        }
+        public static void FillRow(this Texture2D tex,Color c,int rowId)
+        {
+            var colors = Enumerable.Repeat(c, tex.width).ToArray();
+            tex.SetPixels(0, rowId, tex.width, 1, colors);
+        }
+
+        public static void FillColumn(this Texture2D tex,Color c,int columnId)
+        {
+            var colors = Enumerable.Repeat(c, tex.height).ToArray();
+            tex.SetPixels(columnId, 0, 1, tex.height, colors);
         }
     }
 }

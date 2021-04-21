@@ -23,6 +23,7 @@ namespace PowerUtilities
 
         //[Header("Terrain")]
         public Vector3 terrainSize = new Vector3(1000,600,1000);
+        public bool isGammaOn;
         //[Min(0)]public int updateTerrainId;
         public Terrain updateTerrainTile;
         public List<Terrain> generatedTerrainList;
