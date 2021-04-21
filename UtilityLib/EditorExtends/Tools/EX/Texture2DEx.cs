@@ -98,7 +98,7 @@ namespace PowerUtilities
                     var blockWidth = resolution + (isHeightmap && x < count - 1 ? 1 : 0);
                     var blockHeight = resolution + (isHeightmap && y < count - 1 ? 1 : 0);
 
-                    var newTex = newTexs[texId++] = new Texture2D(texWidth, texHeight, TextureFormat.R16, false);
+                    var newTex = newTexs[texId++] = new Texture2D(texWidth, texHeight);
                     newTex.Fill(Color.black);
 
 
