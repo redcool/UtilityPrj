@@ -1,7 +1,8 @@
-#if !defined(PBR_LIT_FORWARD_PASS_HLSL)
-#define PBR_LIT_FORWARD_PASS_HLSL
+#if !defined(POWER_LIT_FORWARD_PASS_HLSL)
+#define POWER_LIT_FORWARD_PASS_HLSL
 
-#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+#include "PowerLitInput.hlsl"
+#include "Lighting.hlsl"
 
 struct Attributes{
     float4 pos:POSITION;
@@ -14,8 +15,8 @@ struct Attributes{
 
 struct Varyings{
     float4 pos : SV_POSITION;
-    float2 uv:TEXCOORD0;
-    float3 uv1:TEXCOORD1; // sh,lightmap
+    float4 uv:TEXCOORD0; // xy : uv, zw: uv1 for lightmap uv
+    // float uv1:TEXCOORD1; // sh,lightmap
     float4 tSpace0:TEXCOORD2;
     float4 tSpace1:TEXCOORD3;
     float4 tSpace2:TEXCOORD4;
@@ -42,58 +43,67 @@ Varyings vert(Attributes input){
     output.tSpace1 = float4(worldTangent.y,worldBinormal.y,worldNormal.y,worldPos.y);
     output.tSpace2 = float4(worldTangent.z,worldBinormal.z,worldNormal.z,worldPos.z);
 
-    output.uv = TRANSFORM_TEX(input.uv,_BaseMap);
+    output.uv.xy = TRANSFORM_TEX(input.uv.xy,_BaseMap);
+    // OUTPUT_LIGHTMAP_UV(input.uv1,unity_LightmapST,output.uv1);
+    output.uv.zw = input.uv1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
     float4 clipPos = TransformWorldToHClip(worldPos);
 
     float fogFactor = ComputeFogFactor(clipPos.z);
     float3 vertexLight = VertexLighting(worldPos,worldNormal);
     output.vertexLightAndFogFactor = float4(vertexLight,fogFactor);
 
-    OUTPUT_LIGHTMAP_UV(input.uv1,unity_LightmapST,output.uv1);
-
 
     output.pos = clipPos;
+    output.shadowCoord = TransformWorldToShadowCoord(worldPos); 
 
     return output;
 }
 
-InputData GetInputData(Varyings input,half3 normalTS){
+void InitInputData(Varyings input,SurfaceInputData siData,inout InputData data){
     float3 worldPos = float3(input.tSpace0.w,input.tSpace1.w,input.tSpace2.w);
-    float3 normal = float3(
-        dot(normalTS,float3(input.tSpace0.x,input.tSpace1.x,input.tSpace2.x)),
-        dot(normalTS,float3(input.tSpace0.y,input.tSpace1.y,input.tSpace2.y)),
-        dot(normalTS,float3(input.tSpace0.z,input.tSpace1.z,input.tSpace2.z))
-    );
-    float3 viewDir = SafeNormalize(_WorldSpaceCameraPos - worldPos);
-    float4 shadowCoord = (float4)0;
-    float fogFactor = input.vertexLightAndFogFactor.w;
-    float3 vertexLight = input.vertexLightAndFogFactor.xyz;
-    float3 bakedGI = SampleSH(normal);
-    
-    InputData data = (InputData)0;
+    float3 normalTS = siData.surfaceData.normalTS;
+    float3 normal = normalize(float3(
+        dot(normalTS,input.tSpace0.xyz),
+        dot(normalTS,input.tSpace1.xyz),
+        dot(normalTS,input.tSpace2.xyz)
+    ));
+
     data.positionWS = worldPos;
     data.normalWS = normal;
-    data.viewDirectionWS = viewDir;
-    data.shadowCoord = shadowCoord;
-    data.fogCoord = fogFactor;
-    data.vertexLighting = vertexLight;
-    data.bakedGI = bakedGI;
+    data.viewDirectionWS = SafeNormalize(_WorldSpaceCameraPos - worldPos);
+    data.shadowCoord = TransformWorldToShadowCoord(worldPos,input.shadowCoord);
+
+    data.fogCoord = input.vertexLightAndFogFactor.w;
+    data.vertexLighting = input.vertexLightAndFogFactor.xyz;
+    data.bakedGI = CalcLightmapAndSH(normal,input.uv.zw,siData.lightmapSH);
     data.normalizedScreenSpaceUV = (float2)0;
-    data.shadowMask = 0;
-    return data;
+    data.shadowMask = SampleShadowMask(input.uv.zw);
+}
+
+float4 fragTest(Varyings input,SurfaceInputData data){
+    // return SampleLightmap(input.uv.zw).xyzx;
+    // return MainLightRealtimeShadow(data.inputData.shadowCoord,true);
+    // return SampleShadowMask(input.uv.zw).xyzx;
+    return SampleSH(float4(data.inputData.normalWS,1)).xyzx;
+    return data.inputData.bakedGI.xyzx;
 }
 
 float4 frag(Varyings input):SV_Target{
     UNITY_SETUP_INSTANCE_ID(input);
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-    SurfaceData surfaceData = GetSurfaceData(input.uv);
-    InputData inputData = GetInputData(input,surfaceData.normalTS);
-    float4 color = UniversalFragmentPBR(inputData,surfaceData);
-    color.rgb = MixFog(color.rgb,inputData.fogCoord);
+    SurfaceInputData data = (SurfaceInputData)0;
+    InitSurfaceInputData(input.uv,data/*inout*/);
+    InitInputData(input,data,data.inputData/*inout*/);
+
+return fragTest(input,data);
+
+    // float4 color = UniversalFragmentPBR(data.inputData,data.surfaceData);
+    float4 color = CalcPBR(data);
+    color.rgb = MixFog(color.rgb,data.inputData.fogCoord);
     // color.a = OutputAlpha(color.a,_SurfaceType)
 
     return color;
 }
 
-#endif //PBR_LIT_FORWARD_PASS_HLSL
+#endif //POWER_LIT_FORWARD_PASS_HLSL
