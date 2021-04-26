@@ -9,7 +9,7 @@
 float4 TransformWorldToShadowCoord(float3 worldPos,float4 vertexShadowCoord){
     if(!_MainLightShadowCascadeOn)
         return vertexShadowCoord;
-
+    
     float cascadeId = ComputeCascadeIndex(worldPos);
     float4 shadowCoord = mul(_MainLightWorldToShadow[cascadeId],float4(worldPos,1));
     return float4(shadowCoord.xyz,cascadeId);
@@ -106,7 +106,7 @@ float4 CalcShadowMask(InputData inputData){
     // #else
     //     half4 shadowMask = half4(1, 1, 1, 1);
     // #endif
-    
+
     float4 shadowMask = (float4)1;
     if(_LightmapOn){
         if(_Shadows_ShadowMaskOn){

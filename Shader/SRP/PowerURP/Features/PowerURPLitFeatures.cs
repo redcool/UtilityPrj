@@ -10,7 +10,7 @@ public class PowerURPLitFeatures : ScriptableRendererFeature
     public struct Settings
     {
         [Header("Main Light Shadow")]
-        public bool _MainLightShadowCascadeOn;
+        [NonSerialized]public bool _MainLightShadowCascadeOn;
 
         public bool _LightmapOn;
 
@@ -23,9 +23,12 @@ public class PowerURPLitFeatures : ScriptableRendererFeature
         public Settings settings;
         public void UpdateParams(CommandBuffer cmd)
         {
-            cmd.SetGlobalInt(nameof(settings._MainLightShadowCascadeOn), settings._MainLightShadowCascadeOn ? 1 : 0);
+            var asset = UniversalRenderPipeline.asset;
+
+            cmd.SetGlobalInt(nameof(settings._MainLightShadowCascadeOn), asset.shadowCascadeCount>1 ? 1 : 0);
             cmd.SetGlobalInt(nameof(settings._LightmapOn),settings._LightmapOn ? 1 : 0);
             cmd.SetGlobalInt(nameof(settings._Shadows_ShadowMaskOn),settings._Shadows_ShadowMaskOn ? 1 : 0);
+
         }
 
         public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)

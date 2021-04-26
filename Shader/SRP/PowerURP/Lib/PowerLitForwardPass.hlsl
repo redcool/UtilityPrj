@@ -71,7 +71,7 @@ void InitInputData(Varyings input,SurfaceInputData siData,inout InputData data){
     data.positionWS = worldPos;
     data.normalWS = normal;
     data.viewDirectionWS = SafeNormalize(_WorldSpaceCameraPos - worldPos);
-    data.shadowCoord = TransformWorldToShadowCoord(worldPos,input.shadowCoord);
+    data.shadowCoord = TransformWorldToShadowCoord(worldPos,input.shadowCoord); // transform to shadow or use input.shadowCoord
 
     data.fogCoord = input.vertexLightAndFogFactor.w;
     data.vertexLighting = input.vertexLightAndFogFactor.xyz;
@@ -81,8 +81,9 @@ void InitInputData(Varyings input,SurfaceInputData siData,inout InputData data){
 }
 
 float4 fragTest(Varyings input,SurfaceInputData data){
+    // return _MainLightShadowCascadeOn;
     // return SampleLightmap(input.uv.zw).xyzx;
-    // return MainLightRealtimeShadow(data.inputData.shadowCoord,true);
+    return MainLightRealtimeShadow(data.inputData.shadowCoord,true);
     // return SampleShadowMask(input.uv.zw).xyzx;
     return SampleSH(float4(data.inputData.normalWS,1)).xyzx;
     return data.inputData.bakedGI.xyzx;
@@ -96,7 +97,7 @@ float4 frag(Varyings input):SV_Target{
     InitSurfaceInputData(input.uv,data/*inout*/);
     InitInputData(input,data,data.inputData/*inout*/);
 
-return fragTest(input,data);
+// return fragTest(input,data);
 
     // float4 color = UniversalFragmentPBR(data.inputData,data.surfaceData);
     float4 color = CalcPBR(data);
