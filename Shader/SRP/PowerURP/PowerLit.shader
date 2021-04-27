@@ -52,6 +52,16 @@ Shader "URP/PowerLit"
         {
             /*
             no dir lightmap
+powerUrpLit
+1 GI计算与Lit保持一致
+2 shadowcaster算法保持一致
+3 clip,blend,depth,cullMode暴露出来
+4 shadow receiver
+5 lightmap
+6 shadow cascade 
+7 multi lights(vertex,fragment)
+todo:
+multi lights shadows
 
             */
             blend [_SrcMode][_DstMode]

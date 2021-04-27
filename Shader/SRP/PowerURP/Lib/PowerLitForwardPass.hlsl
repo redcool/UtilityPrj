@@ -49,7 +49,7 @@ Varyings vert(Attributes input){
     float4 clipPos = TransformWorldToHClip(worldPos);
 
     float fogFactor = ComputeFogFactor(clipPos.z);
-    float3 vertexLight = VertexLighting(worldPos,worldNormal);
+    float3 vertexLight = VertexLighting(worldPos,worldNormal,IsAdditionalLightVertex());
     output.vertexLightAndFogFactor = float4(vertexLight,fogFactor);
 
 
@@ -81,12 +81,14 @@ void InitInputData(Varyings input,SurfaceInputData siData,inout InputData data){
 }
 
 float4 fragTest(Varyings input,SurfaceInputData data){
-    // return _MainLightShadowCascadeOn;
     // return SampleLightmap(input.uv.zw).xyzx;
-    return MainLightRealtimeShadow(data.inputData.shadowCoord,true);
+    // return MainLightRealtimeShadow(data.inputData.shadowCoord,false);
     // return SampleShadowMask(input.uv.zw).xyzx;
-    return SampleSH(float4(data.inputData.normalWS,1)).xyzx;
-    return data.inputData.bakedGI.xyzx;
+    // return SampleSH(float4(data.inputData.normalWS,1)).xyzx;
+    // return data.inputData.bakedGI.xyzx;
+    // return dot(CalcCascadeId(data.inputData.positionWS),0.25); // show cascade id
+    // return data.inputData.vertexLighting.xyzx;
+    return 0;
 }
 
 float4 frag(Varyings input):SV_Target{
@@ -96,7 +98,6 @@ float4 frag(Varyings input):SV_Target{
     SurfaceInputData data = (SurfaceInputData)0;
     InitSurfaceInputData(input.uv,data/*inout*/);
     InitInputData(input,data,data.inputData/*inout*/);
-
 // return fragTest(input,data);
 
     // float4 color = UniversalFragmentPBR(data.inputData,data.surfaceData);

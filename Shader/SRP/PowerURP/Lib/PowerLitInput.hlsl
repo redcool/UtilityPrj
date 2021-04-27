@@ -112,7 +112,7 @@ void InitSurfaceData(float2 uv,inout SurfaceData data){
 void InitSurfaceInputData(float2 uv,inout SurfaceInputData data){
     InitSurfaceData(uv,data.surfaceData /*inout*/);
     data.isAlphaPremultiply = _AlphaPremultiply;
-    data.isShadowOn = _ShadowOn;
+    data.isShadowOn = _ShadowOn && _MainLightShadowOn;
     data.lightmapSH = _LightmapSH;
 }
 

@@ -2,6 +2,17 @@
 #define SHADOWS_HLSL
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
+float CalcCascadeId(float3 positionWS){
+    float3 fromCenter0 = positionWS - _CascadeShadowSplitSpheres0.xyz;
+    float3 fromCenter1 = positionWS - _CascadeShadowSplitSpheres1.xyz;
+    float3 fromCenter2 = positionWS - _CascadeShadowSplitSpheres2.xyz;
+    float3 fromCenter3 = positionWS - _CascadeShadowSplitSpheres3.xyz;
+    float4 distances2 = float4(dot(fromCenter0, fromCenter0), dot(fromCenter1, fromCenter1), dot(fromCenter2, fromCenter2), dot(fromCenter3, fromCenter3));
+
+    half4 weights = half4(distances2 < _CascadeShadowSplitSphereRadii);
+    return 4-dot(weights,1);
+}
+
 /**
     Retransform worldPos to shadowCoord when _MainLightShadowCascade is true
     otherwise use vertex shadow coord
@@ -9,7 +20,7 @@
 float4 TransformWorldToShadowCoord(float3 worldPos,float4 vertexShadowCoord){
     if(!_MainLightShadowCascadeOn)
         return vertexShadowCoord;
-    
+
     float cascadeId = ComputeCascadeIndex(worldPos);
     float4 shadowCoord = mul(_MainLightWorldToShadow[cascadeId],float4(worldPos,1));
     return float4(shadowCoord.xyz,cascadeId);

@@ -6,6 +6,19 @@
 #include "Shadows.hlsl"
 #include "GI.hlsl"
 
+float3 VertexLighting(float3 worldPos,float3 normal,bool isLightOn){
+    float3 c = (float3)0;
+    if(isLightOn){
+        uint count = GetAdditionalLightsCount();
+        for(int i=0;i<count;i++){
+            Light light = GetAdditionalLight(i,worldPos);
+            float3 lightColor = light.color * light.distanceAttenuation;
+            c += LightingLambert(lightColor,light.direction,normal);
+        }
+    }
+    return c;
+}
+
 /***
 // Light 
 ***/
@@ -75,6 +88,15 @@ float3 CalcPBRLighting(BRDFData brdfData,float3 lightColor,float3 lightDir,float
     return brdf * radiance;
 }
 
+float3 CalcAdditionalPBRLighting(BRDFData brdfData,InputData inputData,float4 shadowMask){
+    uint lightCount = GetAdditionalLightsCount();
+    float3 c = (float3)0;
+    for(uint i=0;i<lightCount;i++){
+        Light light = GetAdditionalLight(i,inputData.positionWS,shadowMask);
+        c+= CalcPBRLighting(brdfData,light.color,light.direction,light.distanceAttenuation * light.shadowAttenuation,inputData.normalWS,inputData.viewDirectionWS);
+    }
+    return c;
+}
 
 float4 CalcPBR(SurfaceInputData data){
     SurfaceData surfaceData = data.surfaceData;
@@ -86,10 +108,19 @@ float4 CalcPBR(SurfaceInputData data){
     float4 shadowMask = CalcShadowMask(inputData);
     Light mainLight = GetMainLight(inputData.shadowCoord,inputData.positionWS,shadowMask,data.isShadowOn);
 
-    // MixRealtimeAndBakedGI(mainLight,inputData.normalWS,inputData.bakedGI);
+    MixRealtimeAndBakedGI(mainLight,inputData.normalWS,inputData.bakedGI);
+    
     half3 color = CalcGI(brdfData,inputData.bakedGI,surfaceData.occlusion,inputData.normalWS,inputData.viewDirectionWS);
     color += CalcPBRLighting(brdfData,mainLight.color,mainLight.direction,mainLight.distanceAttenuation * mainLight.shadowAttenuation,inputData.normalWS,inputData.viewDirectionWS);
     color += surfaceData.emission;
+
+    if(IsAdditionalLightVertex()){
+        color += inputData.vertexLighting * brdfData.diffuse;
+    }
+
+    if(IsAdditionalLightPixel()){
+        color += CalcAdditionalPBRLighting(brdfData,inputData,shadowMask);
+    }
 
     return float4(color,surfaceData.alpha);
 }
