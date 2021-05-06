@@ -283,7 +283,6 @@ namespace PowerUtilities
             {
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.heightMapCountInRow)));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.terrainSize)));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(inst.isGammaOn)));
                 // generate tile terrains
                 var disabled = inst.splitedHeightmapList == null || inst.splitedHeightmapList.Count == 0;
                 EditorGUI.BeginDisabledGroup(disabled);
@@ -297,7 +296,7 @@ namespace PowerUtilities
                     EditorGUILayout.LabelField("Terrains");
                     if (GUILayout.Button("Generate Terrains"))
                     {
-                        inst.generatedTerrainList = TerrainTools.GenerateTerrainsByHeightmaps(inst.transform, inst.splitedHeightmapList, inst.heightMapCountInRow, inst.terrainSize, inst.materialTemplate,inst.isGammaOn);
+                        inst.generatedTerrainList = TerrainTools.GenerateTerrainsByHeightmaps(inst.transform, inst.splitedHeightmapList, inst.heightMapCountInRow, inst.terrainSize, inst.materialTemplate);
                         inst.tileX = inst.heightMapCountInRow;
                         inst.tileZ = inst.generatedTerrainList.Count / inst.tileX;
                         TerrainTools.AutoSetNeighbours(inst.generatedTerrainList.ToArray(), inst.tileX, inst.tileZ);
@@ -422,7 +421,7 @@ namespace PowerUtilities
 
 
 
-        void GenerateTerrainById(List<Terrain> terrains, List<Texture2D> heightmaps, int heightmapId,bool isGammaOn)
+        void GenerateTerrainById(List<Terrain> terrains, List<Texture2D> heightmaps, int heightmapId)
         {
             if (heightmaps == null || heightmapId < 0 || heightmapId >= heightmaps.Count)
                 return;
@@ -437,7 +436,7 @@ namespace PowerUtilities
             if (!terrain)
                 return;
 
-            terrain.terrainData.ApplyHeightmap(heightmap,isGammaOn);
+            terrain.terrainData.ApplyHeightmap(heightmap);
         }
 
         void GenerateTerrainTile(List<Terrain> terrains,List<Texture2D> heightmaps,Terrain terrain)
@@ -448,7 +447,7 @@ namespace PowerUtilities
             var id = terrains.FindIndex((t) => t == terrain);
             if (id < 0 || id >= terrains.Count)
                 return;
-            GenerateTerrainById(terrains, heightmaps, id,inst.isGammaOn);
+            GenerateTerrainById(terrains, heightmaps, id);
         }
 
     }

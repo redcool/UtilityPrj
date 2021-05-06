@@ -81,8 +81,9 @@ namespace PowerUtilities
             {
                 return new[] { tex };
             }
-
+#if UNITY_EDITOR
             tex.SetReadable(true);
+#endif
 
             var texWidth = resolution + (isHeightmap ? 1 : 0);
             var texHeight = resolution + (isHeightmap ? 1 : 0);
@@ -98,7 +99,7 @@ namespace PowerUtilities
                     var blockWidth = resolution + (isHeightmap && x < count - 1 ? 1 : 0);
                     var blockHeight = resolution + (isHeightmap && y < count - 1 ? 1 : 0);
 
-                    var newTex = newTexs[texId++] = new Texture2D(texWidth, texHeight);
+                    var newTex = newTexs[texId++] = new Texture2D(texWidth, texHeight,TextureFormat.R16,false,true);
                     newTex.Fill(Color.black);
 
 

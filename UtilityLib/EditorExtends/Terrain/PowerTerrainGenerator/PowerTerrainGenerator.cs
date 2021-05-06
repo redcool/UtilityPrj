@@ -9,7 +9,7 @@ namespace PowerUtilities
 
     /// <summary>
     /// Generate Terrains by Heightmaps 
-    /// function : 
+    /// features : 
     /// 1 split heightmaps to tile heightmaps
     /// 2 generate terrain tile by heightmaps
     /// </summary>
@@ -23,7 +23,6 @@ namespace PowerUtilities
 
         //[Header("Terrain")]
         public Vector3 terrainSize = new Vector3(1000,600,1000);
-        public bool isGammaOn;
         //[Min(0)]public int updateTerrainId;
         public Terrain updateTerrainTile;
         public List<Terrain> generatedTerrainList;
@@ -57,8 +56,8 @@ namespace PowerUtilities
 
         //[Header("Save Options")]
         public bool isCreateSubFolder = true;
-        public string terrainDataSavePath = "Assets/";
-        public string prefabSavePath = "Assets/";
+        public string terrainDataSavePath = "Assets/Terrain";
+        public string prefabSavePath = "Assets/Terrain";
         public int tileX;
         public int tileZ;
     }
