@@ -3,7 +3,7 @@ Shader "URP/PowerLit"
     Properties
     {
         [Header(MainTexture)]
-        [MainTexture]_BaseMap("_BaseMap",2d) = ""{}
+        [MainTexture]_BaseMap("_BaseMap",2d) = "white"{}
         [MainColor][hdr]_Color("_Color",color) = (1,1,1,1)
         _NormalMap("_NormalMap",2d) ="bump"{}
         _NormalScale("_NormalScale",float) = 1
@@ -87,7 +87,7 @@ multi lights shadows
             #pragma multi_compile_fog
 
             // #pragma multi_compile _ LIGHTMAP_ON
-            #pragma multi_compile _ SHADOWS_SHADOWMASK
+            // #pragma multi_compile _ SHADOWS_SHADOWMASK
             // #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
             
             #include "Lib/PowerLitInput.hlsl"
