@@ -75,7 +75,7 @@ namespace PowerUtilities
         /// <param name="tex"></param>
         /// <param name="resolution"></param>
         /// <returns></returns>
-        public static Texture2D[] SplitTexture(this Texture2D tex, int resolution, Action<float> onProgress, bool isHeightmap)
+        public static Texture2D[] SplitTexture(this Texture2D tex, int resolution, Action<float> onProgress, bool isHeightmap,TextureFormat tileTextureFormat = TextureFormat.R8,bool isMipChain=false,bool isLinear=true)
         {
             if (tex.width <= resolution)
             {
@@ -99,7 +99,7 @@ namespace PowerUtilities
                     var blockWidth = resolution + (isHeightmap && x < count - 1 ? 1 : 0);
                     var blockHeight = resolution + (isHeightmap && y < count - 1 ? 1 : 0);
 
-                    var newTex = newTexs[texId++] = new Texture2D(texWidth, texHeight,TextureFormat.R16,false,true);
+                    var newTex = newTexs[texId++] = new Texture2D(texWidth, texHeight,tileTextureFormat, isMipChain, isLinear);
                     newTex.Fill(Color.black);
 
 
