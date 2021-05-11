@@ -20,7 +20,7 @@ float _Cutoff;
 float _EmissionOn;
 float4 _EmissionColor;
 float _AlphaPremultiply;
-float _ShadowOn;
+float isReceiveShadow;
 float _LightmapSH;
 CBUFFER_END
 
@@ -37,7 +37,7 @@ UNITY_DOTS_INSTANCING_START(MaterialPropertyMetadata)
     UNITY_DOTS_INSTANCED_PROP(float,_EmissionOn)
     UNITY_DOTS_INSTANCED_PROP(float4,_EmissionColor)
     UNITY_DOTS_INSTANCED_PROP(float,_AlphaPremultiply)
-    UNITY_DOTS_INSTANCED_PROP(float,_ShadowOn)
+    UNITY_DOTS_INSTANCED_PROP(float,isReceiveShadow)
     UNITY_DOTS_INSTANCED_PROP(float,_LightmapSH)
 UNITY_DOTS_INSTANCING_END(MaterialPropertyMetadata)
 
@@ -52,7 +52,7 @@ UNITY_DOTS_INSTANCING_END(MaterialPropertyMetadata)
 #define _EmissionOn UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float,Metadata__EmissionOn)
 #define _EmissionColor UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float4,Metadata__EmissionColor)
 #define _AlphaPremultiply UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float,Metadata__AlphaPremultiply)
-#define _ShadowOn UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float,Metadata__ShadowOn)
+#define isReceiveShadow UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float,Metadata__ShadowOn)
 #define _LightmapSH UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float,Metadata__LightmapSH)
 #endif
 
@@ -112,7 +112,7 @@ void InitSurfaceData(float2 uv,inout SurfaceData data){
 void InitSurfaceInputData(float2 uv,inout SurfaceInputData data){
     InitSurfaceData(uv,data.surfaceData /*inout*/);
     data.isAlphaPremultiply = _AlphaPremultiply;
-    data.isShadowOn = _ShadowOn && _MainLightShadowOn;
+    data.isReceiveShadow = isReceiveShadow && _MainLightShadowOn;
     data.lightmapSH = _LightmapSH;
 }
 

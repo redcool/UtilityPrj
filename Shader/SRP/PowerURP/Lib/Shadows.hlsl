@@ -50,8 +50,8 @@ real SampleShadowmapRealtime(TEXTURE2D_SHADOW_PARAM(ShadowMap, sampler_ShadowMap
     return BEYOND_SHADOW_FAR(shadowCoord) ? 1.0 : attenuation;
 }
 
-float MainLightRealtimeShadow(float4 shadowCoord,bool isShadowOn){
-    if(!isShadowOn)
+float MainLightRealtimeShadow(float4 shadowCoord,bool isReceiveShadow){
+    if(!isReceiveShadow)
         return 1;
     
     ShadowSamplingData samplingData = GetMainLightShadowSamplingData();
@@ -66,34 +66,41 @@ float MixShadow(float realtimeShadow,float bakedShadow,float shadowFade,bool isM
     return lerp(realtimeShadow,bakedShadow,shadowFade);
 }
 
-float MainLightShadow(float4 shadowCoord,float3 worldPos,float4 shadowMask,float4 occlusionProbeChannels,bool isShadowOn){
-    float realtimeShadow = MainLightRealtimeShadow(shadowCoord,isShadowOn);
+half GetShadowFade1(float3 positionWS)
+{
+    float3 camToPixel = positionWS - _WorldSpaceCameraPos;
+    float distanceCamToPixel2 = dot(camToPixel, camToPixel);
+
+    //half fade = saturate(distanceCamToPixel2 * _MainLightShadowParams.z + _MainLightShadowParams.w);
+    half fade = saturate(distanceCamToPixel2 * 0.4 + -9);
+    return fade * fade;
+}
+
+float MainLightShadow(float4 shadowCoord,float3 worldPos,float4 shadowMask,float4 occlusionProbeChannels,bool isReceiveShadow){
+    float realtimeShadow = MainLightRealtimeShadow(shadowCoord,isReceiveShadow);
 
     float bakedShadow = 1;
-    #if defined(CALCULATE_BAKED_SHADOWS)
+    bool isShadowMaskOn = IsShadowMaskOn();
+    // #if defined(CALCULATE_BAKED_SHADOWS)
+    if(isShadowMaskOn){
         bakedShadow = BakedShadow(shadowMask,occlusionProbeChannels);
-    #endif
+    }
+    // #endif
 
     float shadowFade = 1;
-    if(isShadowOn){
-        shadowFade = GetShadowFade(worldPos);
+    if(isReceiveShadow){
+        shadowFade = GetShadowFade1(worldPos);
     }
     
-    #if defined(_MAIN_LIGHT_SHADOWS_CASCADE) && defined(CALCULATE_BAKED_SHADOWS)
+    if(IsMainLightShadowCascadeOn() && isShadowMaskOn){
         // shadowCoord.w represents shadow cascade index
         // in case we are out of shadow cascade we need to set shadow fade to 1.0 for correct blending
         // it is needed when realtime shadows gets cut to early during fade and causes disconnect between baked shadow
         shadowFade = shadowCoord.w == 4 ? 1.0h : shadowFade;
-    #endif
-    // return MixRealtimeAndBakedShadows(realtimeShadow,bakedShadow,shadowFade);
+    }
+    // #endif
 
-    #if defined(CALCULATE_BAKED_SHADOWS)
-        bool isMixShadow = true;
-    #else
-        bool isMixShadow = false;
-    #endif
-
-    return MixShadow(realtimeShadow,bakedShadow,shadowFade,isMixShadow);
+    return MixShadow(realtimeShadow,bakedShadow,shadowFade,false);
 }
 
 float4 SampleShadowMask(float2 shadowMaskUV){

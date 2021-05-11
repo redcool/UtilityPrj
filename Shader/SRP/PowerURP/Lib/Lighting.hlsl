@@ -9,7 +9,7 @@
 float3 VertexLighting(float3 worldPos,float3 normal,bool isLightOn){
     float3 c = (float3)0;
     if(isLightOn){
-        uint count = GetAdditionalLightsCount();
+        int count = GetAdditionalLightsCount();
         for(int i=0;i<count;i++){
             Light light = GetAdditionalLight(i,worldPos);
             float3 lightColor = light.color * light.distanceAttenuation;
@@ -23,12 +23,12 @@ float3 VertexLighting(float3 worldPos,float3 normal,bool isLightOn){
 // Light 
 ***/
 
-Light GetMainLight(float4 shadowCoord,float3 worldPos,float4 shadowMask,bool isShadowOn){
+Light GetMainLight(float4 shadowCoord,float3 worldPos,float4 shadowMask,bool isReceiveShadow){
     Light light;
     light.direction = _MainLightPosition.xyz;
     light.color = _MainLightColor.rgb;
     light.distanceAttenuation = unity_LightData.z; // unity_LightData.z is 1 when not culled by the culling mask, otherwise 0.
-    light.shadowAttenuation = MainLightShadow(shadowCoord,worldPos,shadowMask,_MainLightOcclusionProbes,isShadowOn);
+    light.shadowAttenuation = MainLightShadow(shadowCoord,worldPos,shadowMask,_MainLightOcclusionProbes,isReceiveShadow);
     return light;
 }
 
@@ -106,8 +106,8 @@ float4 CalcPBR(SurfaceInputData data){
     InitBRDFData(data,surfaceData.alpha/*inout*/,brdfData/*out*/);
 
     float4 shadowMask = CalcShadowMask(inputData);
-    Light mainLight = GetMainLight(inputData.shadowCoord,inputData.positionWS,shadowMask,data.isShadowOn);
-
+    Light mainLight = GetMainLight(inputData.shadowCoord,inputData.positionWS,shadowMask,data.isReceiveShadow);
+    
     MixRealtimeAndBakedGI(mainLight,inputData.normalWS,inputData.bakedGI);
     
     half3 color = CalcGI(brdfData,inputData.bakedGI,surfaceData.occlusion,inputData.normalWS,inputData.viewDirectionWS);

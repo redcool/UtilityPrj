@@ -5,7 +5,7 @@ Shader "URP/PowerLit"
         [Header(MainTexture)]
         [MainTexture]_BaseMap("_BaseMap",2d) = "white"{}
         [MainColor][hdr]_Color("_Color",color) = (1,1,1,1)
-        _NormalMap("_NormalMap",2d) ="bump"{}
+        [Normal]_NormalMap("_NormalMap",2d) ="bump"{}
         _NormalScale("_NormalScale",float) = 1
 
         [Header(PBRMask)]
@@ -20,7 +20,7 @@ Shader "URP/PowerLit"
         [hdr]_EmissionColor("_EmissionColor",Color) = (1,1,1,1)
 
         [Header(Shadow)]
-        [Toggle]_ShadowOn("_ShadowOn",int) = 1
+        [Toggle]isReceiveShadow("isReceiveShadow",int) = 1
 
         [Header(GI)]
         _LightmapSH("_LightmapSH",range(0,1)) = 0.5
@@ -60,8 +60,18 @@ powerUrpLit
 5 lightmap
 6 shadow cascade 
 7 multi lights(vertex,fragment)
-todo:
+8 shadowMask 
+
+Todo:
 multi lights shadows
+detail map
+wind
+snow
+rain
+sphere fog
+box projection
+
+
 
             */
             blend [_SrcMode][_DstMode]
@@ -86,10 +96,6 @@ multi lights shadows
             #pragma multi_compile_instancing
             #pragma multi_compile_fog
 
-            // #pragma multi_compile _ LIGHTMAP_ON
-            // #pragma multi_compile _ SHADOWS_SHADOWMASK
-            // #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
-            
             #include "Lib/PowerLitInput.hlsl"
             #include "Lib/PowerLitForwardPass.hlsl"
             ENDHLSL
@@ -109,5 +115,23 @@ multi lights shadows
 
             ENDHLSL
         }
+
+        Pass{
+            Name "Meta"
+            Tags{"LightMode"="Meta"}
+            cull off
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+
+            #pragma multi_compile_instancing
+            #pragma multi_compile _ DOTS_INSTANCING_ON
+
+            #include "Lib/PowerLitInput.hlsl"
+            #include "Lib/PowerLitMetaPass.hlsl"
+            ENDHLSL
+        }
+
     }
+    CustomEditor "PowerLitShaderGUI"
 }
