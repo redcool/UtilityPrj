@@ -240,7 +240,7 @@
 
 #endif
 
-        public static List<Terrain> GenerateTerrainsByHeightmaps(Transform rootTr, List<Texture2D> heightmaps, int countInRow, Vector3 terrainSize, Material materialTemplate,bool isGammaOn)
+        public static List<Terrain> GenerateTerrainsByHeightmaps(Transform rootTr, List<Texture2D> heightmaps, int countInRow, Vector3 terrainSize, Material materialTemplate)
         {
             if (heightmaps == null)
                 return null;
@@ -273,7 +273,7 @@
                     terrainList.Add(t);
 
                     t.terrainData = new TerrainData();
-                    t.terrainData.ApplyHeightmap(heightmaps[heightMapId++],isGammaOn);
+                    t.terrainData.ApplyHeightmap(heightmaps[heightMapId++]);
                     t.terrainData.size = terrainSize;
 
                     t.transform.SetParent(terrainRootGo.transform, false);

@@ -75,7 +75,7 @@ namespace PowerUtilities
         /// <param name="tex"></param>
         /// <param name="resolution"></param>
         /// <returns></returns>
-        public static Texture2D[] SplitTexture(this Texture2D tex, int resolution, Action<float> onProgress, bool isHeightmap,TextureFormat tileTextureFormat = TextureFormat.R8,bool isMipChain=false,bool isLinear=true)
+        public static Texture2D[] SplitTexture(this Texture2D tex, int resolution, Action<float> onProgress, bool isHeightmap,TextureFormat tileTextureFormat = TextureFormat.RGBA32,bool isMipChain=false,bool isLinear=true)
         {
             if (tex.width <= resolution)
             {

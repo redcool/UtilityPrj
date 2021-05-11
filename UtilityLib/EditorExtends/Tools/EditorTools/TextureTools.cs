@@ -50,7 +50,7 @@ namespace PowerUtilities
         /// <param name="resolution"></param>
         /// <param name="countInRow"></param>
         /// <returns></returns>
-        public static List<Texture2D> SplitTextures(Texture2D[] textures, TextureResolution resolution, ref int countInRow,Action<float> onProgress,bool isHeightmap)
+        public static List<Texture2D> SplitTextures(Texture2D[] textures, TextureResolution resolution, ref int countInRow,Action<float> onProgress,bool isHeightmap, TextureFormat textureFormat= TextureFormat.R8, bool isMipChain=false, bool isLinear=true)
         {
             if (textures == null || textures.Length == 0)
                 return null;
@@ -73,7 +73,7 @@ namespace PowerUtilities
 
                 if (tex.width > res)
                 {
-                    var texs = tex.SplitTexture(res,onProgress,isHeightmap);
+                    var texs = tex.SplitTexture(res,onProgress,isHeightmap,textureFormat,isMipChain,isLinear);
                     textureList.AddRange(texs);
                 }
                 else

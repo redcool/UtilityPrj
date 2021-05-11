@@ -370,7 +370,7 @@ namespace PowerUtilities
                         inst.controlMaps = inst.controlMaps.Where(t => t).ToArray();
                         inst.splitedControlMaps = TextureTools.SplitTextures(inst.controlMaps, inst.controlMapResolution, ref inst.controlMapCountInRow,(progress)=> {
                             EditorUtility.DisplayProgressBar("Spliat ControlMaps", "Spliat ControlMaps", progress);
-                        },false);
+                        },false, TextureFormat.RGBA32);
                         EditorUtility.ClearProgressBar();
                     }
                     if (GUILayout.Button("Save ControlMaps"))
