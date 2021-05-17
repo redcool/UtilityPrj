@@ -19,14 +19,10 @@
     int _AdditionalLightMode;
 // CBUFFER_END
 
-bool IsAdditionalLightVertex(){
-    return _AdditionalLightMode == LIGHT_MODE_VERTEX;
-}
-bool IsAdditionalLightPixel(){
-    return _AdditionalLightMode == LIGHT_MODE_PIXEL;
-}
-bool IsShadowMaskOn(){ return _Shadows_ShadowMaskOn;}
-bool IsLightmapOn(){ return _LightmapOn;}
-bool IsMainLightShadowCascadeOn(){return _MainLightShadowCascadeOn;}
+inline bool IsAdditionalLightVertex(){ return _AdditionalLightMode == LIGHT_MODE_VERTEX; }
+inline bool IsAdditionalLightPixel(){ return _AdditionalLightMode == LIGHT_MODE_PIXEL; }
+inline bool IsShadowMaskOn(){ return _Shadows_ShadowMaskOn;}
+inline bool IsLightmapOn(){ return _LightmapOn;}
+inline bool IsMainLightShadowCascadeOn(){return _MainLightShadowCascadeOn;}
 
 #endif //RENDERING_DATA_HLSL

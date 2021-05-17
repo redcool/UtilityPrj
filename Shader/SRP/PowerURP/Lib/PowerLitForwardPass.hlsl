@@ -88,6 +88,7 @@ float4 fragTest(Varyings input,SurfaceInputData data){
     // return data.inputData.bakedGI.xyzx;
     // return dot(CalcCascadeId(data.inputData.positionWS),0.25); // show cascade id
     // return data.inputData.vertexLighting.xyzx;
+    return IsShadowMaskOn();
     return 0;
 }
 

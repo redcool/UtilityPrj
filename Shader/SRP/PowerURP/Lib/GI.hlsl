@@ -5,7 +5,7 @@
 
 float3 SampleLightmap(float2 lightmapUV){
     // #if defined(LIGHTMAP_ON)
-    if(_LightmapOn){
+    if(IsLightmapOn()){
         #if defined(UNITY_LIGHTMAP_FULL_HDR)
             bool encodedLightmap = false;
         #else

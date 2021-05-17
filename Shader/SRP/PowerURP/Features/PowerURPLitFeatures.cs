@@ -14,9 +14,9 @@ public class PowerURPLitFeatures : ScriptableRendererFeature
         [NonSerialized] public bool _MainLightShadowCascadeOn;
         [NonSerialized] public bool _AdditionalVertexLightOn;
 
-        [Tooltip("lightmap used?")]public bool _LightmapOn;
+        [Tooltip("enabled lightmap ?")]public bool _LightmapOn;
 
-        [Tooltip("shadowMask on?")]public bool _Shadows_ShadowMaskOn;
+        [Tooltip("enable shadowMask ?")]public bool _Shadows_ShadowMaskOn;
     }
 
 

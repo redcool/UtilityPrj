@@ -104,15 +104,13 @@ float MainLightShadow(float4 shadowCoord,float3 worldPos,float4 shadowMask,float
 }
 
 float4 SampleShadowMask(float2 shadowMaskUV){
-    // #if defined(LIGHTMAP_ON) && defined(SHADOWS_SHADOWMASK)
     /**
      unity_ShadowMask,samplerunity_ShadowMask,shadowMaskuv [], unity_LightmapIndex.x]
      */
-     if(_LightmapOn && _Shadows_ShadowMaskOn){
+     if(IsLightmapOn() && IsShadowMaskOn()){
         float4 mask = SAMPLE_TEXTURE2D_LIGHTMAP(SHADOWMASK_NAME,SHADOWMASK_SAMPLER_NAME,shadowMaskUV SHADOWMASK_SAMPLE_EXTRA_ARGS);
         return mask;
      }
-    // #endif
     return 1;
 }
 
@@ -126,8 +124,8 @@ float4 CalcShadowMask(InputData inputData){
     // #endif
 
     float4 shadowMask = (float4)1;
-    if(_LightmapOn){
-        if(_Shadows_ShadowMaskOn){
+    if(IsLightmapOn()){
+        if(IsShadowMaskOn()){
             shadowMask = inputData.shadowMask;
         }else{
             shadowMask = unity_ProbesOcclusion;
