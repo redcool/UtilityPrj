@@ -1,30 +1,29 @@
 #if UNITY_EDITOR
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
-using System;
-
-public class CustomEditorDrawer<T> : Editor where T : class
+namespace PowerUtilities
 {
-    public bool showDefaultUI;
+    using System.Collections;
+    using System.Collections.Generic;
+    using UnityEngine;
+    using UnityEditor;
+    using System;
 
-    public override void OnInspectorGUI()
+    public abstract class CustomEditorDrawer<T> : Editor where T : class
     {
-        if(showDefaultUI)
-            base.OnInspectorGUI();
+        public bool showDefaultUI;
 
-        var inst = target as T;
-        serializedObject.UpdateIfRequiredOrScript();
-        DrawInspectorUI(inst);
+        public override void OnInspectorGUI()
+        {
+            if (showDefaultUI)
+                base.OnInspectorGUI();
 
-        serializedObject.ApplyModifiedProperties();
-    }
+            var inst = target as T;
+            serializedObject.UpdateIfRequiredOrScript();
+            DrawInspectorUI(inst);
 
-    public virtual void DrawInspectorUI(T inst)
-    {
-        
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        public abstract void DrawInspectorUI(T inst);
     }
 }
-
 #endif
