@@ -72,20 +72,21 @@ Shader "DRP/BakedLit"
 
                 // atten ,diffuse atten * shadowmask atten
                 float atten = saturate(dot(i.normal,_WorldSpaceLightPos0.xyz));
+#if defined(LIGHTMAP_ON)
                 atten *= SampleShadowMask(i.uv1);
-
+#endif
                 // light 
                 float3 lightColor = _LightColor0.xyz * atten;
 
                 float4 col = 0;
                 // diffuse 
                 col.xyz = lightColor * baseColor.xyz;
-                
+#if defined(LIGHTMAP_ON)               
                 // lightmap 
                 half4 bakedColorTex = UNITY_SAMPLE_TEX2D(unity_Lightmap, i.uv1.xy);
                 half3 bakedColor = DecodeLightmap(bakedColorTex);
                 col.xyz += baseColor.xyz * bakedColor;
-                
+#endif                
                 col.a = baseColor.a;
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, col);
