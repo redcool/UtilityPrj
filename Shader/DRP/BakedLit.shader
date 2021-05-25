@@ -22,9 +22,9 @@ Shader "DRP/BakedLit"
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
 
-            // #pragma multi_compile_fwdbase
-            #pragma multi_compile _ SHADOWS_SHADOWMASK
-            #pragma multi_compile _ LIGHTMAP_ON
+            #pragma multi_compile_fwdbase
+            // #pragma multi_compile _ SHADOWS_SHADOWMASK
+            // #pragma multi_compile _ LIGHTMAP_ON
 
             #include "UnityCG.cginc"
             #include "AutoLight.cginc"
@@ -34,7 +34,6 @@ Shader "DRP/BakedLit"
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
                 float2 uv1:TEXCOORD1;
-                SHADOW_COORDS(2)
                 float3 normal:NORMAL;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -47,6 +46,7 @@ Shader "DRP/BakedLit"
                 float2 uv1:TEXCOORD2;
                 float3 normal:TEXCOORD3;
                 float3 worldPos:TEXCOORD4;
+                SHADOW_COORDS(5)
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
