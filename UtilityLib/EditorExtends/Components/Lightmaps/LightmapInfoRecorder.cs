@@ -112,8 +112,11 @@ public class LightmapInfoRecorder : MonoBehaviour
 
     public void RecordLightmapInfos()
     {
+        if (!rootGo)
+            rootGo = gameObject;
+
         renderers = rootGo.GetComponentsInChildren<MeshRenderer>()
-            .Where(item => GameObjectUtility.AreStaticEditorFlagsSet(item.gameObject, StaticEditorFlags.ContributeGI))
+            .Where(item => GameObjectUtility.AreStaticEditorFlagsSet(item.gameObject, StaticEditorFlags.LightmapStatic))
             .ToArray();
         RecordLightmapInfos(renderers, out lightmapUVs, out lightmapIds);
     }
