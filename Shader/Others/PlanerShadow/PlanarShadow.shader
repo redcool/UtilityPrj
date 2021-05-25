@@ -77,7 +77,9 @@ Shader "Unlit/PlanarShadow"
         {
             Tags{"Queue"="Transparent"}
             zwrite off
-            blend srcAlpha oneMinusSrcAlpha
+            // ztest always
+            blend srcAlpha oneMinusSrcAlpha 
+            offset -1,-1
 
             CGPROGRAM
             #pragma vertex vert
