@@ -88,6 +88,9 @@ public class LightmapInfoRecorder : MonoBehaviour
   
     public static void RecordLightmapInfos(MeshRenderer[] renderers, out Vector4[] lightmapUVs,out int[] lightmapIds)
     {
+        if (renderers == null)
+            throw new Exception("Renderers is Null !");
+
         lightmapUVs = new Vector4[renderers.Length];
         lightmapIds = new int[renderers.Length];
 
@@ -109,6 +112,9 @@ public class LightmapInfoRecorder : MonoBehaviour
         for (int i = 0; i < renderers.Length; i++)
         {
             var item = renderers[i];
+            if (!item)
+                continue;
+
             item.lightmapIndex = lightmapIds[i];
             item.lightmapScaleOffset = lightmapUVs[i];
         }
@@ -119,16 +125,16 @@ public class LightmapInfoRecorder : MonoBehaviour
         if (!rootGo)
             rootGo = gameObject;
         
-        MeshRenderer[] renderers = rootGo.GetComponentsInChildren<MeshRenderer>();
+        renderers = rootGo.GetComponentsInChildren<MeshRenderer>();
         if (renderers != null && renderers.Length > 0)
         {
 #if UNITY_EDITOR
             renderers = renderers.Where
                 (item => GameObjectUtility.AreStaticEditorFlagsSet(item.gameObject,
-                    StaticEditorFlags.LightmapStatic))
+                    StaticEditorFlags.ContributeGI))
                 .ToArray();
 #endif
-            RecordLightmapInfos(this.renderers, out lightmapUVs, out lightmapIds);
+            RecordLightmapInfos(renderers, out lightmapUVs, out lightmapIds);
         }
     }
 
