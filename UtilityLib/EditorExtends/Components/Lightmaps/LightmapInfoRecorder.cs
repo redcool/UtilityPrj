@@ -83,7 +83,9 @@ public class LightmapInfoRecorder : MonoBehaviour
         if(isAutoLoad)
             ApplyLightmapInfos(renderers,lightmapUVs,lightmapIds);
     }
-
+    
+#if UNITY_EDITOR
+  
     public static void RecordLightmapInfos(MeshRenderer[] renderers, out Vector4[] lightmapUVs,out int[] lightmapIds)
     {
         lightmapUVs = new Vector4[renderers.Length];
@@ -96,7 +98,9 @@ public class LightmapInfoRecorder : MonoBehaviour
             lightmapIds[i] = item.lightmapIndex;
         }
     }
-
+    
+#endif
+    
     public static void ApplyLightmapInfos(MeshRenderer[] renderers,Vector4[] lightmapUVs,int [] lightmapIds)
     {
         if (renderers == null)
@@ -114,11 +118,18 @@ public class LightmapInfoRecorder : MonoBehaviour
     {
         if (!rootGo)
             rootGo = gameObject;
-
-        renderers = rootGo.GetComponentsInChildren<MeshRenderer>()
-            .Where(item => GameObjectUtility.AreStaticEditorFlagsSet(item.gameObject, StaticEditorFlags.LightmapStatic))
-            .ToArray();
-        RecordLightmapInfos(renderers, out lightmapUVs, out lightmapIds);
+        
+        MeshRenderer[] renderers = rootGo.GetComponentsInChildren<MeshRenderer>();
+        if (renderers != null && renderers.Length > 0)
+        {
+#if UNITY_EDITOR
+            renderers = renderers.Where
+                (item => GameObjectUtility.AreStaticEditorFlagsSet(item.gameObject,
+                    StaticEditorFlags.LightmapStatic))
+                .ToArray();
+#endif
+            RecordLightmapInfos(this.renderers, out lightmapUVs, out lightmapIds);
+        }
     }
 
     public void ApplyLightmapInfos()
