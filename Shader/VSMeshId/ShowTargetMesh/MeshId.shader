@@ -7,7 +7,7 @@ Shader "Unlit/VertexAnim"
         _Progress("_Progress",float) = 0
         _Dir("_Dir",vector) = (0,1,0,0)
         _MeshId("_MeshId",range(0,255)) = 0
-        _Offset("_Offset",float) = 0
+        _OffsetX("_Offsetx",float) = 0
     }
     SubShader
     {
@@ -50,6 +50,7 @@ Shader "Unlit/VertexAnim"
             float _Progress;
             float3 _Dir;
             float _MeshId;
+            float _OffsetX;
 
             v2f vert (appdata v)
             {
@@ -59,6 +60,7 @@ Shader "Unlit/VertexAnim"
                 float vc = abs(v.color.x * 255 -_MeshId);
                 // float colorId = step(vc,0)/255;
                 // v.vertex.xyz += _Progress * _Dir * v.color.x;
+                v.vertex.x += _OffsetX;
                 
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
