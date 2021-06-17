@@ -54,13 +54,13 @@ Shader "Unlit/MeshId"
 
             v2f vert (appdata v)
             {
+                v2f o;
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
 
                 float vc = abs(v.color.x * 255 -_MeshId);
                 v.vertex.x += _OffsetX;
                 
-                v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 UNITY_TRANSFER_FOG(o,o.vertex);
