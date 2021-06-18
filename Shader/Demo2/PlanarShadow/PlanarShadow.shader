@@ -6,6 +6,7 @@ Shader "Unlit/PlanarShadow"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _PlaneHeight("_PlaneHeight",float) = 0
+        _Offset("_Offset",float) = 0
     }
     SubShader
     {
@@ -62,7 +63,9 @@ Shader "Unlit/PlanarShadow"
         Pass
         {
             zwrite off
-            ztest always
+            blend srcAlpha oneMinusSrcAlpha
+            cull front
+            // ztest always
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -88,19 +91,21 @@ Shader "Unlit/PlanarShadow"
             float4 _MainTex_ST;
 
             float _PlaneHeight;
+            float _Offset;
 
-            float4 PlanarShadowPos(float4 worldPos,float planeHeight,float4 lightDir){
+            float4 PlanarShadowPos(float4 worldPos,float planeHeight,float4 lightDir,float offsetAlongLightDir){
                 lightDir = -normalize(lightDir);
                 float cosTheta = -lightDir.y;
                 float adjLen = worldPos.y - planeHeight;
                 float hypotenuse = adjLen/cosTheta;
                 worldPos += lightDir * hypotenuse;
+                worldPos.xz += lightDir.xz * offsetAlongLightDir;
                 return float4(worldPos.x,planeHeight - lerp(1,0,cosTheta),worldPos.z,1);
             }
 
             v2f vert (appdata v)
             {
-                float4 worldPos = PlanarShadowPos(mul(unity_ObjectToWorld,v.vertex),_PlaneHeight,normalize(_WorldSpaceLightPos0));
+                float4 worldPos = PlanarShadowPos(mul(unity_ObjectToWorld,v.vertex),_PlaneHeight,normalize(_WorldSpaceLightPos0),_Offset);
 
                 v2f o;
                 o.vertex = UnityWorldToClipPos(float4(worldPos.xyz,0));
@@ -111,7 +116,7 @@ Shader "Unlit/PlanarShadow"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                return 1;
+                return 0.3;
                 // // sample the texture
                 // fixed4 col = tex2D(_MainTex, i.uv);
                 // // apply fog
