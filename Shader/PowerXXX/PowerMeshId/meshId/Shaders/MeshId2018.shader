@@ -1,4 +1,4 @@
-Shader "Unlit/MeshId"
+Shader "Unlit/MeshId2018"
 {
     Properties
     {
@@ -47,28 +47,22 @@ Shader "Unlit/MeshId"
             sampler2D _MainTex;
             UNITY_DECLARE_TEX2DARRAY(_TexArr);
 
-            UNITY_INSTANCING_BUFFER_START(Props)
+            UNITY_INSTANCING_BUFFER_START(Props2018)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _MainTex_ST)
                 UNITY_DEFINE_INSTANCED_PROP(float, _MeshId)
                 UNITY_DEFINE_INSTANCED_PROP(float, _OffsetX)
                 UNITY_DEFINE_INSTANCED_PROP(float, _TexArrOn)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _TexArr_ST)
                 UNITY_DEFINE_INSTANCED_PROP(float,_Depth)
-            UNITY_INSTANCING_BUFFER_END(Props)
+            UNITY_INSTANCING_BUFFER_END(Props2018)
 
-            #define _MainTex_ST UNITY_ACCESS_INSTANCED_PROP(Props,_MainTex_ST)
-            #define _OffsetX UNITY_ACCESS_INSTANCED_PROP(Props,_OffsetX)
-            #define _MeshId UNITY_ACCESS_INSTANCED_PROP(Props,_MeshId)
-            #define _TexArrOn UNITY_ACCESS_INSTANCED_PROP(Props,_TexArrOn)
-            #define _TexArr_ST UNITY_ACCESS_INSTANCED_PROP(Props,_TexArr_ST)
-            #define _Depth UNITY_ACCESS_INSTANCED_PROP(Props,_Depth)
-
-            // float _TexArrOn;
-            // float4 _MainTex_ST;
-            // float4 _TexArr_ST;
-            // float _MeshId;
-            // float _OffsetX;
-            // float _Depth;
+            // in 2018 ,same macro name not support, so plus prefix _
+            #define __MainTex_ST UNITY_ACCESS_INSTANCED_PROP(Props2018,_MainTex_ST)
+            #define __OffsetX UNITY_ACCESS_INSTANCED_PROP(Props2018,_OffsetX)
+            #define __MeshId UNITY_ACCESS_INSTANCED_PROP(Props2018,_MeshId)
+            #define __TexArrOn UNITY_ACCESS_INSTANCED_PROP(Props2018,_TexArrOn)
+            #define __TexArr_ST UNITY_ACCESS_INSTANCED_PROP(Props2018,_TexArr_ST)
+            #define __Depth UNITY_ACCESS_INSTANCED_PROP(Props2018,_Depth)
 
             v2f vert (appdata v)
             {
@@ -76,15 +70,15 @@ Shader "Unlit/MeshId"
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
 
-                float vc = abs((v.color.x * 255) -_MeshId);
-                v.vertex.x += _OffsetX;
+                float vc = abs((v.color.x * 255) -__MeshId);
+                v.vertex.x += __OffsetX;
                 
                 o.vertex = UnityObjectToClipPos(v.vertex);
 
-                if(_TexArrOn){
-                    o.uv.xyz = float3(TRANSFORM_TEX(v.uv, _TexArr),_Depth);
+                if(__TexArrOn){
+                    o.uv.xyz = float3(v.uv *__TexArr_ST.xy +__TexArr_ST.zw ,__Depth);
                 }else{
-                    o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex);
+                    o.uv.xy = v.uv * __MainTex_ST.xy + __MainTex_ST.zw;
                 }
                 UNITY_TRANSFER_FOG(o,o.vertex);
                 o.color = vc;
@@ -94,9 +88,10 @@ Shader "Unlit/MeshId"
 
             fixed4 frag (v2f i) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(i);
                 // return i.color.xyzx;
                 float4 col = 0;
-                if(_TexArrOn){
+                if(__TexArrOn){
                     col = UNITY_SAMPLE_TEX2DARRAY(_TexArr, i.uv.xyz);
                 }else{
                     col = tex2D(_MainTex, i.uv.xy);
