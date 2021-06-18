@@ -6,6 +6,7 @@ Shader "Unlit/MeshId_2dArray"
 
         [IntRange]_MeshId("_MeshId",range(0,255)) = 0
         _OffsetX("_Offsetx",float) = 0
+        [IntRange]_Depth("_Depth",range(0,255)) = 0
     }
     SubShader
     {

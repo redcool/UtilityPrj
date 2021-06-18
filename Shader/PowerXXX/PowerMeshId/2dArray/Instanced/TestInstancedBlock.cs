@@ -6,16 +6,20 @@ using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
 [CustomEditor(typeof(TestInstancedBlock))]
-public class TestInstancedBlockEditor : CustomEditorDrawer<TestInstancedBlock>
+public class TestInstancedBlockEditor : Editor
 {
-    public override void DrawInspectorUI(TestInstancedBlock inst)
+
+    public override void OnInspectorGUI()
     {
-        
+        base.OnInspectorGUI();
+
+        var inst = target as TestInstancedBlock;
         if (GUILayout.Button("Update"))
         {
             inst.UpdateBlock();
         }
     }
+
 }
 
 

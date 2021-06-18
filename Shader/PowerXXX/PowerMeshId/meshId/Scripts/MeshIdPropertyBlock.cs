@@ -1,57 +1,61 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+namespace PowerUtilities {
+    using System.Collections;
+    using System.Collections.Generic;
+    using UnityEngine;
 
 #if UNITY_EDITOR
-using UnityEditor;
-using System.Linq;
+    using UnityEditor;
+    using System.Linq;
 
-[CustomEditor(typeof(MeshIdPropertyBlock)),CanEditMultipleObjects]
-public class MeshIdPropertyBlockEditor : Editor
-{
-    public override void OnInspectorGUI()
+    [CustomEditor(typeof(MeshIdPropertyBlock)), CanEditMultipleObjects]
+    public class MeshIdPropertyBlockEditor : Editor
     {
-        base.OnInspectorGUI();
-
-        
-        if (GUILayout.Button("update"))
+        public override void OnInspectorGUI()
         {
-            var q = targets.Select(obj => obj as MeshIdPropertyBlock);
-            foreach (var item in q)
+            base.OnInspectorGUI();
+
+
+            if (GUILayout.Button("update"))
             {
-                item.UpdateInstancedProperties();
+                var q = targets.Select(obj => obj as MeshIdPropertyBlock);
+                foreach (var item in q)
+                {
+                    item.UpdateInstancedProperties();
+                }
             }
         }
     }
-}
 #endif
 
-[ExecuteAlways]
-public class MeshIdPropertyBlock : MonoBehaviour
-{
-    public int meshId;
-    public int depth;
-    public float offsetX;
 
-    public static MaterialPropertyBlock block;
-    Renderer render;
-
-    void Awake()
+    [ExecuteAlways]
+    public class MeshIdPropertyBlock : MonoBehaviour
     {
-        UpdateInstancedProperties();
+        public int meshId;
+        public int depth;
+        public float offsetX;
+
+        public static MaterialPropertyBlock block;
+        Renderer render;
+
+        void Awake()
+        {
+            UpdateInstancedProperties();
+        }
+
+        public void UpdateInstancedProperties()
+        {
+            if (block == null)
+                block = new MaterialPropertyBlock();
+
+            if (!render)
+                render = GetComponent<Renderer>();
+
+            block.SetFloat("_MeshId", meshId);
+            block.SetFloat("_Depth", depth);
+            block.SetFloat("_OffsetX", offsetX);
+            render.SetPropertyBlock(block);
+        }
     }
 
-    public void UpdateInstancedProperties()
-    {
-        if (block == null)
-            block = new MaterialPropertyBlock();
-
-        if(!render)
-            render = GetComponent<Renderer>();
-
-        block.SetFloat("_MeshId", meshId);
-        block.SetFloat("_Depth",depth);
-        block.SetFloat("_OffsetX", offsetX);
-        render.SetPropertyBlock(block);
-    }
 }
