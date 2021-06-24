@@ -50,6 +50,9 @@ Shader "ZX/FX/PowerVFXShader"
 		[Toggle]_DissolveByCustomData("Dissolve By customData.z -> uv1.x ?",int)=0
 		_Cutoff ("AlphaTest cutoff", Range(0,1)) = 0.5
 
+		[Header(PixelDissolve)]
+		[Toggle]_PixelDissolveOn("_PixelDissolveOn",float) = 0
+
 		[Header(DissolveEdge)]
 		[Toggle(DISSOLVE_EDGE_ON)]_DissolveEdgeOn("Dissolve Edge On?",int)=0
 		_EdgeWidth("EdgeWidth",range(0,0.3)) = 0.1
@@ -69,11 +72,11 @@ Shader "ZX/FX/PowerVFXShader"
 		_BlendIntensity("Blend Intensity",range(0,10)) = 0.5
 
 		[Header(Fresnal)]
-		[Toggle(FRESNAL_ON)]_FresnalOn("Fresnal On?",int)=0
-		[HDR]_FresnalColor("Fresnal Color",color) = (1,1,1,1)
-		_FresnalPower("Fresnal Power",range(0,1)) = 0.5
-		[Toggle]_FresnalTransparentOn("Fresnal Transparent?",range(0,1)) = 0
-		_FresnalTransparent("_FresnalTransparent",range(0,1)) = 0
+		[Toggle(FRESNAL_ON)]_FresnelOn("_FresnelOn?",int)=0
+		[HDR]_FresnelColor("_FresnelColor",color) = (1,1,1,1)
+		_FresnelPower("_FresnelPower",range(0,1)) = 0.5
+		[Toggle]_FresnelTransparentOn("_FresnelTransparentOn",range(0,1)) = 0
+		_FresnelTransparent("_FresnelTransparent",range(0,1)) = 0
 		
 		[Header(EnvReflection)]
 		[Toggle(ENV_REFLECT)]_EnvReflectOn("EnvReflect On?",int)=0
@@ -93,26 +96,18 @@ Shader "ZX/FX/PowerVFXShader"
 
 		Pass
 		{
-			//Tags{ "LightMode" = "ForwardBase" }
-			Lighting Off 
 			ZWrite[_ZWriteMode]
-			Blend [_SrcMode][_DstMode] //,srcAlpha oneMinusSrcAlpha
+			Blend [_SrcMode][_DstMode]
 			Cull[_CullMode]
 			CGPROGRAM
             #pragma multi_compile_instancing
-			
-			#pragma multi_compile _ DISTORTION_ON
-			#pragma multi_compile _ DISSOLVE_ON
-			#pragma multi_compile _ DISSOLVE_EDGE_ON
-			#pragma multi_compile _ OFFSET_ON
-			#pragma multi_compile _ FRESNAL_ON
 			#pragma multi_compile _ ENV_REFLECT
 
 			#pragma vertex vert
 			#pragma fragment frag
 
 			#include "UnityCG.cginc"
-			#include "PowerVFX.cginc"
+			#include "PowerVFXCore.cginc"
 
 			ENDCG
 		}
