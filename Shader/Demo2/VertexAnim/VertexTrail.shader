@@ -1,17 +1,16 @@
-Shader "Unlit/VertexAnim2"
+Shader "Unlit/VertexTrail"
 {
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-        _Progress("_Progress",range(0,10)) = 0
-        _Dir("_Dir",vector) = (0,1,0,0)
-        _AlphaRadius("_AlphaRadius",float) = 3
+        _WaveSpeed("_WaveSpeed",float) = 1
+        _WaveScale("_WaveScale",float) = 1
+        _TrailIntensity("_TrailIntensity",float) = 1
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" "queue"="transparent"}
+        Tags { "RenderType"="Opaque" }
         LOD 100
-        blend srcAlpha oneMinusSrcAlpha
 
         Pass
         {
@@ -22,12 +21,13 @@ Shader "Unlit/VertexAnim2"
             #pragma multi_compile_fog
 
             #include "UnityCG.cginc"
+            #include "../Lib/NodeLib.cginc"
 
             struct appdata
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
-                float3 color:COLOR;
+                float3 normal:NORMAL;
             };
 
             struct v2f
@@ -35,26 +35,34 @@ Shader "Unlit/VertexAnim2"
                 float2 uv : TEXCOORD0;
                 UNITY_FOG_COORDS(1)
                 float4 vertex : SV_POSITION;
-                float4 color:TEXCOORD2;
             };
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
 
-            float _Progress;
-            float3 _Dir;
-            float _AlphaRadius;
+            float _WaveSpeed,_WaveScale;
+            float _TrailIntensity;
+
+            void CalcVertexTrail(inout float3 worldPos,float3 dir,float waveScale,float waveSpeed,float3 normal){
+                float n = 0;
+                float2 uv = worldPos.xz + _Time.y * waveSpeed;
+                Unity_GradientNoise_float(uv,waveScale,n/**/);
+                float dirAtten = saturate(dot(normal,dir));
+                // dirAtten = smoothstep(0.1,0.9,dirAtten);
+                worldPos += dir * n * dirAtten * _TrailIntensity;
+            }
 
             v2f vert (appdata v)
             {
-                v.vertex.xyz += v.color.x *_Progress *  _Dir;
-
                 v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
+                float4 worldPos = mul(unity_ObjectToWorld,v.vertex);
+                float3 worldNormal = UnityObjectToWorldNormal(v.normal);
+                float3 dir = -unity_ObjectToWorld._13_23_33;
+                CalcVertexTrail(worldPos.xyz/**/,dir,_WaveScale,_WaveSpeed,worldNormal);
+
+                o.vertex = UnityWorldToClipPos(worldPos);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 UNITY_TRANSFER_FOG(o,o.vertex);
-                o.color.xyz = v.color;
-                o.color.a = 1- clamp(max(length(v.vertex.xyz)/_AlphaRadius,0.00001),0,1);
                 return o;
             }
 
@@ -62,8 +70,6 @@ Shader "Unlit/VertexAnim2"
             {
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
-                col.w = i.color.w;
-                // return col.w;
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
