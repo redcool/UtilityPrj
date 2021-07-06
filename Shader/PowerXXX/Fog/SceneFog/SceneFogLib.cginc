@@ -1,7 +1,6 @@
 #if !defined(SCENE_FOG_LIB_CGINC)
 #define SCENE_FOG_LIB_CGINC
 
-// float4 unity_FogColor;
 
 sampler2D _SceneFogMap;
 sampler2D _FogMainNoiseMap,_FogDetailNoiseMap;
@@ -11,6 +10,7 @@ float4 _FogNoiseTilingOffset;
 
 float _SceneFogOn;
 float _SceneHeightFogOn;
+float4 _SceneFogBottomColor,_SceneFogTopColor;
 
 float4 CalcFogFactor(float3 worldPos){
     float3 worldUV = (worldPos - _SceneMin)/(_SceneMax - _SceneMin);
@@ -34,7 +34,7 @@ float4 CalcFogColor(float3 worldUV){
 
     // noiseMap.xyz *= saturate(lerp(2,0.9,(worldUV.y + detailNoiseMap.y*0.2)))  * _SceneHeightFogOn;
 
-    return noiseMap * unity_FogColor;
+    return noiseMap * lerp(_SceneFogBottomColor,_SceneFogTopColor,worldUV.y);
 }
 
 #define UNITY_FOG_COORDS(idx) float4 fogCoord:TEXCOORD##idx;

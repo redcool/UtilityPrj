@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -30,6 +31,7 @@ public class SceneFog : MonoBehaviour
     public Vector4 fogNoiseTilingOffset= new Vector4(1, 1,1,0);
     public Vector3 sceneMin = new Vector3(-200,-10,-200);
     public Vector3 sceneMax = new Vector3(200,10,200);
+    public Color sceneFogBottomColor = Color.gray,sceneFogTopColor = Color.white;
     public bool sceneHeightFogOn = false;
     public bool sceneFogOn = true;
 
@@ -45,5 +47,8 @@ public class SceneFog : MonoBehaviour
 
         Shader.SetGlobalFloat("_SceneFogOn",sceneFogOn?1:0);
         Shader.SetGlobalFloat("_SceneHeightFogOn",sceneHeightFogOn?1:0);
+
+        Shader.SetGlobalColor("_SceneFogBottomColor",sceneFogBottomColor);
+        Shader.SetGlobalColor("_SceneFogTopColor",sceneFogTopColor);
     }
 }
