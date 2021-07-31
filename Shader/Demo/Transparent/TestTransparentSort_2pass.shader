@@ -14,6 +14,7 @@ Shader "Unlit/TestTransparentSort_2Pass"
         {
             blend srcAlpha oneMinusSrcAlpha
             cull front
+            zwrite off
 
             CGPROGRAM
             #pragma vertex vert
@@ -50,8 +51,7 @@ Shader "Unlit/TestTransparentSort_2Pass"
             {
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
-                col.r=1;
-
+col.r = 1;
                 return col;
             }
             ENDCG
@@ -61,6 +61,7 @@ Shader "Unlit/TestTransparentSort_2Pass"
         Pass
         {
             blend srcAlpha oneMinusSrcAlpha
+            // zwrite off
 
             CGPROGRAM
             #pragma vertex vert
