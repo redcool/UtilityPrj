@@ -6,12 +6,6 @@ Shader "Unlit/Raymarch1"
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
-        _Value("_Value",float) = 0
-
-        _Color0("_Color0",color) = (1,0,0,0)
-        _Color1("_Color1",color) = (0,1,0,0)
-        _Color2("_Color2",color) = (0,0,1,0)
     }
     SubShader
     {
@@ -41,15 +35,11 @@ Shader "Unlit/Raymarch1"
                 float3 worldPos:TEXCOORD3;
             };
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
 
             v2f vert (appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
                 o.worldPos = mul(unity_ObjectToWorld,v.vertex);
                 return o;
             }
