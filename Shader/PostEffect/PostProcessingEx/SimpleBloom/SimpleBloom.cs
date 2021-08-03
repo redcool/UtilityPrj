@@ -8,8 +8,8 @@
     using UnityEngine.Rendering.PostProcessing;
 
     [Serializable]
-    [PostProcess(typeof(SimpleBloomRenderer2), PostProcessEvent.AfterStack, "Custom/SimpleBloom2")]
-    public sealed class SimpleBloom2 : PostProcessEffectSettings
+    [PostProcess(typeof(SimpleBloomRenderer), PostProcessEvent.AfterStack, "Custom/SimpleBloom")]
+    public sealed class SimpleBloom : PostProcessEffectSettings
     {
         [Range(0,10)]
         public FloatParameter intensity = new FloatParameter { value = 1 };
@@ -36,17 +36,17 @@
         //}
     }
 
-    public sealed class SimpleBloomRenderer2 : PostProcessEffectRenderer<SimpleBloom2>
+    public sealed class SimpleBloomRenderer : PostProcessEffectRenderer<SimpleBloom>
     {
         const int GRAB_ILLUM_PASS = 0;
         const int BOX_DOWN = 1;
         const int BOX_UP = 2;
         const int COMBINE_PASS = 3;
 
-        RenderTexture[] textures = new RenderTexture[16];
+        RenderTexture[] textures = new RenderTexture[7];
         public override void Render(PostProcessRenderContext context)
         {
-            var sheet = context.propertySheets.Get(Shader.Find("Hidden/Custom/SimpleBloom2"));
+            var sheet = context.propertySheets.Get(Shader.Find("Hidden/Custom/SimpleBloom"));
 
             var knee = settings.threshold * settings.softThreshold;
             Vector4 filter;
@@ -65,14 +65,13 @@
             var buffer0 = textures[0] = RenderTexture.GetTemporary(w, h, 0, format);
             context.command.BlitFullscreenTriangle(context.source, buffer0, sheet, GRAB_ILLUM_PASS);
 
-
             //pass 1
             int i = 1;
             for (i = 1; i < settings.iterators; i++)
             {
                 w /= 2;
                 h /= 2;
-                if (h < 2)
+                if (h < 32)
                     break;
 
                 //blur1
@@ -86,12 +85,14 @@
             {
                 var buffer1 = textures[i];
                 textures[i] = null;
+                sheet.properties.SetTexture("_BloomTex",buffer0);
                 context.command.BlitFullscreenTriangle(buffer0, buffer1, sheet, BOX_UP);
                 RenderTexture.ReleaseTemporary(buffer0);
                 buffer0 = buffer1;
             }
 
             //context.command.Blit(buffer0, context.destination);
+            //RenderTexture.ReleaseTemporary(buffer0);
             //return;
 
             //pass 2

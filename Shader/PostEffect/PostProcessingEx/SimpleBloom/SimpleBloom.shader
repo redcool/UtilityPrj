@@ -1,4 +1,4 @@
-﻿Shader "Hidden/Custom/SimpleBloom2"
+﻿Shader "Hidden/Custom/SimpleBloom"
 {
     HLSLINCLUDE
 
@@ -60,16 +60,21 @@
 		}
 //2
 		Pass{
-			blend one one
+			// Blend one One
 
 			HLSLPROGRAM
 			#pragma vertex VertDefault
 			#pragma fragment Frag
 			//float _BlurSize;
 
+			TEXTURE2D_SAMPLER2D(_BloomTex,sampler_BloomTex);
+			float4 _BloomTex_TexelSize;
+
 			float4 Frag(VaryingsDefault i) :SV_Target{
 				float4 col = SampleBox(_MainTex,sampler_MainTex,_MainTex_TexelSize,i.texcoord,0.5);
-				return col;
+				// float4 bloom = SampleBox(_BloomTex, sampler_BloomTex, _BloomTex_TexelSize, i.texcoord, 0.5);
+				float4 bloom = SAMPLE_TEXTURE2D(_BloomTex,sampler_BloomTex,i.texcoord);
+				return col+bloom;
 			}
 			ENDHLSL
 		}
