@@ -43,7 +43,7 @@
         const int BOX_UP = 2;
         const int COMBINE_PASS = 3;
 
-        RenderTexture[] textures = new RenderTexture[7];
+        RenderTexture[] textures = new RenderTexture[16];
         public override void Render(PostProcessRenderContext context)
         {
             var sheet = context.propertySheets.Get(Shader.Find("Hidden/Custom/SimpleBloom"));
@@ -65,13 +65,13 @@
             var buffer0 = textures[0] = RenderTexture.GetTemporary(w, h, 0, format);
             context.command.BlitFullscreenTriangle(context.source, buffer0, sheet, GRAB_ILLUM_PASS);
 
-            //pass 1
+            //pass 1,downsample
             int i = 1;
             for (i = 1; i < settings.iterators; i++)
             {
                 w /= 2;
                 h /= 2;
-                if (h < 32)
+                if (h < 2)
                     break;
 
                 //blur1
@@ -80,15 +80,25 @@
 
                 buffer0 = buffer1;
             }
-
+            
+            // upsample
+            var lastId = i-1;
             for (i -= 2;  i>= 0; i--)
             {
                 var buffer1 = textures[i];
-                textures[i] = null;
-                sheet.properties.SetTexture("_BloomTex",buffer0);
+                if (lastId < textures.Length)
+                {
+                    sheet.properties.SetTexture("_BloomTex", textures[lastId]);
+                    lastId--;
+                }
                 context.command.BlitFullscreenTriangle(buffer0, buffer1, sheet, BOX_UP);
-                RenderTexture.ReleaseTemporary(buffer0);
+                //textures[i] = null;
+                //RenderTexture.ReleaseTemporary(buffer0);
                 buffer0 = buffer1;
+            }
+            for (i = 0; i < settings.iterators; i++)
+            {
+                RenderTexture.ReleaseTemporary(textures[i]);
             }
 
             //context.command.Blit(buffer0, context.destination);

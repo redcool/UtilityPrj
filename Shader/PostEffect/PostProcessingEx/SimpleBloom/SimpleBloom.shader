@@ -8,7 +8,9 @@
         TEXTURE2D_SAMPLER2D(_MainTex, sampler_MainTex);
 		float4 _MainTex_TexelSize;
 
-		TEXTURE2D_SAMPLER2D(_SourceTex, sampler_SourceTex);
+		// TEXTURE2D_SAMPLER2D(_SourceTex, sampler_SourceTex);
+		TEXTURE2D_SAMPLER2D(_BloomTex,sampler_BloomTex);
+		float4 _BloomTex_TexelSize;
 
 		float3 Prefilter(float3 c,half4 filter) {
 			float brightness = Gray(c);
@@ -60,19 +62,16 @@
 		}
 //2
 		Pass{
-			// Blend one One
+			// Blend one One //, error on ios
 
 			HLSLPROGRAM
 			#pragma vertex VertDefault
 			#pragma fragment Frag
-			//float _BlurSize;
-
-			TEXTURE2D_SAMPLER2D(_BloomTex,sampler_BloomTex);
-			float4 _BloomTex_TexelSize;
 
 			float4 Frag(VaryingsDefault i) :SV_Target{
 				float4 col = SampleBox(_MainTex,sampler_MainTex,_MainTex_TexelSize,i.texcoord,0.5);
-				// float4 bloom = SampleBox(_BloomTex, sampler_BloomTex, _BloomTex_TexelSize, i.texcoord, 0.5);
+				// return col;
+				// float4 col = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.texcoord);
 				float4 bloom = SAMPLE_TEXTURE2D(_BloomTex,sampler_BloomTex,i.texcoord);
 				return col+bloom;
 			}
@@ -83,10 +82,6 @@
 			HLSLPROGRAM
 			#pragma vertex VertDefault
 			#pragma fragment Frag
-
-			TEXTURE2D_SAMPLER2D(_BloomTex,sampler_BloomTex);
-			float4 _BloomTex_TexelSize;
-
 
 			float4 _BloomColor;
 			float _Intensity;
