@@ -14,4 +14,8 @@ float SlideLine(float v,float progress){
     float t = abs(v - progress);
     return smoothstep(0.01,0.001,t);
 }
+
+float AntLine(float2 uv,float lineCycle,float speed,float lineSize){
+    return frac( (sin(dot(uv,float2(lineCycle,lineCycle)) +_Time.y*speed)) * lineSize);
+}
 #endif //SPLINE_LIB_CGINC
