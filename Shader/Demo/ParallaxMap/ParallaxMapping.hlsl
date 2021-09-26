@@ -6,7 +6,7 @@
     float3 b = normalize(cross(input.normal,input.tangent.xyz)) * input.tangent.w;\
     float3x3 rotation = float3x3(input.tangent.xyz,b,input.normal)
 
-float2 ParallaxMapOffset(float heightScale,float3 viewTS,float2 uv,float height){
+float2 ParallaxMapOffset(float heightScale,float3 viewTS,float height){
     return (height-0.5)* heightScale * normalize(viewTS).xy * 0.5;
 }
 
