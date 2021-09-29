@@ -1,0 +1,68 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWStructuredBuffer<float4> RWSHBuffer;
+TextureCube _Cubemap;
+SamplerState sampler_Cubemap;
+
+#define PI 3.1415
+#define Y0(v) (1.0 / 2.0) * sqrt(1.0 / PI)
+#define Y1(v) sqrt(3.0 / (4.0 * PI)) * v.z
+#define Y2(v) sqrt(3.0 / (4.0 * PI)) * v.y
+#define Y3(v) sqrt(3.0 / (4.0 * PI)) * v.x
+#define Y4(v) 1.0/2 *  sqrt(15/PI) * v.x * v.z
+#define Y5(v) 1.0/2 * sqrt(15/PI) * v.z * v.y
+#define Y6(v) 1.0/4 * sqrt(5/PI) * (-v.x*v.x - v.z * v.z + 2 * v.y * v.y)
+#define Y7(v) 1.0/2 * sqrt(15/PI) * v.x * v.y
+#define Y8(v) 1.0/4*sqrt(15/PI) * (v.x*v.x-v.z*v.z)
+
+
+#define DEGREE 9
+
+float4 UniformSampleSphere(float2 uv){
+    float phi = 2 * PI * uv.x;
+    float cosTheta = 1 - 2*uv.y;
+    float sinTheta = sqrt(1 - cosTheta * cosTheta);
+
+    float3 h;
+    h.x = sinTheta * cos(phi);
+    h.y = sinTheta * sin(phi);
+    h.z = cosTheta;
+    float pdf = 1.0/(4*PI);
+    return float4(h,pdf);
+}
+
+float hash(float3 p){
+    p = frac(p * 0.318 + 0.1);
+    p *= 17.0;
+    return frac( p.x * p.y * p.z *(p.x + p.y + p.z));
+}
+
+[numthreads(DEGREE,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    int sampleNum = 1000;
+    float weight = 4 * PI;
+    float factor = weight / sampleNum;
+    float4 a = 0;
+    float4 coefs[DEGREE] = {a,a,a,a,a,a,a,a,a,};
+
+    for(int i=0;i<sampleNum;i++){
+        float x = hash(i);
+        float y = hash(i +id.x);
+        float2 uv = float2(x,y);
+        float3 p = UniformSampleSphere(uv).xyz;
+        p = normalize(p);
+
+        float h[DEGREE] = {
+            Y0(p),Y1(p),Y2(p),Y3(p),Y4(p),Y5(p),Y6(p),Y7(p),Y8(p),
+        };
+        float4 c = _Cubemap.SampleLevel(sampler_Cubemap,p,0);
+        for(int t = 0;t < DEGREE;t++){
+            coefs[t] += h[t] * c;
+        }
+    }
+    RWSHBuffer[id.x] = factor * coefs[id.x];
+}
