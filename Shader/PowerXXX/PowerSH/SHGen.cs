@@ -19,11 +19,12 @@ public class SHGenEditor : Editor
         if (GUILayout.Button("Bake SH 16"))
         {
 
-            using (var buf = inst.CalcSH((int)inst.shType, inst.shGenShader))
+            using (var buf = inst.CalcSH(SHGen.DEGREE, inst.shGenShader))
             {
                 inst.bakedSHDatas = new Vector4[16];
                 buf.GetData(inst.bakedSHDatas);
             }
+            inst.OnEnable();
         }
         GUILayout.EndVertical();
     }
@@ -32,11 +33,7 @@ public class SHGenEditor : Editor
 
 public class SHGen : MonoBehaviour
 {
-    public enum SH_TYPE
-    {
-        SH9 = 2,SH16 = 3
-    }
-    public SH_TYPE shType = SH_TYPE.SH9;
+    public const int DEGREE = 3;
     public ComputeShader shGenShader;
     public Cubemap cubemap;
     public bool outputSHDatas;
@@ -60,10 +57,9 @@ public class SHGen : MonoBehaviour
     }
 
     // Start is called before the first frame update
-    void OnEnable()
+    public void OnEnable()
     {
-        var degree = (int)shType;
-        var n = (degree + 1) * (degree + 1);
+        var n = (DEGREE + 1) * (DEGREE + 1);
         var buf = new ComputeBuffer(n, 16);
 
         if (bakedSHDatas != null && bakedSHDatas.Length == 16)
