@@ -78,6 +78,34 @@ float Gray(float3 rgb){
 	return dot(float3(0.07,0.7,0.2),rgb);
 }
 
+float2 PolarUV(float2 mainUV,float2 center,float lenScale,float lenOffset,float rotOffset){
+	float2 uv = mainUV-center;
+
+	float r = sqrt(uv.x*uv.x+uv.y*uv.y)*lenScale+lenOffset;
+	float t = atan2(uv.y,uv.x) + rotOffset;
+	return float2(t,r);
+}
+
+float2 Twirl(float2 uv,float2 center,float scale,float2 offset){
+	float2 dir = uv - center;
+	float len = length(dir) * scale;
+
+	float2 nuv = float2(
+		dot(float2(cos(len),-sin(len)),dir),
+		dot(float2(sin(len),cos(len)),dir)
+	);
+	
+	return nuv + center + offset;
+}
+
+
+
+
+
+
+
+
+
 //input
 
 float3 _Camera_Position() { return _WorldSpaceCameraPos; }
@@ -214,6 +242,20 @@ void Unity_SimpleNoise_float(float2 UV, float Scale, out float Out)
 	t += unity_valueNoise(float2(UV.x*Scale / freq, UV.y*Scale / freq))*amp;
 
 	Out = t;
+}
+
+void Unity_Dither_float4(float4 In, float4 ScreenPosition, out float4 Out)
+{
+    float2 uv = ScreenPosition.xy * _ScreenParams.xy;
+    float DITHER_THRESHOLDS[16] =
+    {
+        1.0 / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 17.0,
+        13.0 / 17.0,  5.0 / 17.0, 15.0 / 17.0,  7.0 / 17.0,
+        4.0 / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0,
+        16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0
+    };
+    uint index = (uint(uv.x) % 4) * 4 + uint(uv.y) % 4;
+    Out = In - DITHER_THRESHOLDS[index];
 }
 
 #endif
