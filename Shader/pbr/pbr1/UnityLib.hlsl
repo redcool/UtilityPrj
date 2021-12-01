@@ -1,5 +1,5 @@
-#if !defined(FORWARD_PASS_HLSL)
-#define FORWARD_PASS_HLSL
+#if !defined(UNITY_LIB_HLSL)
+#define UNITY_LIB_HLSL
 
 
 #define TRANSFORM_TEX(tex, name) ((tex.xy) * name##_ST.xy + name##_ST.zw)
@@ -37,6 +37,10 @@ float4 TransformObjectToHClip(float3 objectPos){
     return mul(UNITY_MATRIX_VP,mul(UNITY_MATRIX_M,float4(objectPos,1)));
 }
 
+float4 TransformWorldToHClip(float3 worldPos){
+    return mul(unity_MatrixVP,float4(worldPos,1));
+}
+
 float3 TransformObjectToWorldNormal(float3 normal){
     return mul(float4(normal,1),UNITY_MATRIX_I_M);
 }
@@ -55,7 +59,7 @@ float3 GetWorldSpaceViewDir(float3 worldPos){
 }
 
 float3 GetWorldSpaceLightDir(float3 worldPos){
-    return _MainLightPosition.xyz - worldPos;
+    return _MainLightPosition.xyz;// - worldPos;
 }
 
 float4 unity_SHAr;
@@ -138,4 +142,9 @@ float D_GGXNoPI(float NdotH, float a2)
     float s = (NdotH * a2 - NdotH) * NdotH + 1.0;
     return a2/ (s * s);
 }
-#endif // FORWARD_PASS_HLSL
+
+float Pow4(float x){
+    float a = x*x;
+    return a*a;
+}
+#endif // UNITY_LIB_HLSL

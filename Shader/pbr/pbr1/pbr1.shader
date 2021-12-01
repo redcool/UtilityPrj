@@ -18,7 +18,7 @@ Shader "Unlit/pbr1"
             #pragma fragment frag
             // make fog work
             #pragma multi_compile_fog
-            #include "ForwardPass.hlsl"
+            #include "UnityLib.hlsl"
 
             struct appdata
             {
