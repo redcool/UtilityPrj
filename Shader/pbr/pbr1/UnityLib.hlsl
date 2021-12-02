@@ -147,4 +147,13 @@ float Pow4(float x){
     float a = x*x;
     return a*a;
 }
+
+float3 DecodeHDREnvironment(float4 encodedIrradiance, float4 decodeInstructions)
+{
+    // Take into account texture alpha if decodeInstructions.w is true(the alpha value affects the RGB channels)
+    float alpha = max(decodeInstructions.w * (encodedIrradiance.a - 1.0) + 1.0, 0.0);
+
+    // If Linear mode is not supported we can skip exponent part
+    return (decodeInstructions.x * pow(alpha, decodeInstructions.y)) * encodedIrradiance.rgb;
+}
 #endif // UNITY_LIB_HLSL

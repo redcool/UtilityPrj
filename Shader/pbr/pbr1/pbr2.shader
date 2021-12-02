@@ -39,7 +39,7 @@ Shader "Hidden/pbr2"
             {
                 v2f o;
                 float3 worldPos = TransformObjectToWorld(v.vertex);
-                o.vertex = TransformWorldToHClip(v.vertex);
+                o.vertex = TransformWorldToHClip(worldPos);
                 o.uv = v.uv;
                 half3 normal = TransformObjectToWorldNormal(v.normal);
                 o.tSpace0 = float4(0,0,normal.x,worldPos.x);
@@ -51,7 +51,9 @@ Shader "Hidden/pbr2"
 
             sampler2D _MainTex;
             half _Smoothness,_Metallic;
+
             samplerCUBE unity_SpecCube0;
+            float4 unity_SpecCube0_HDR;
 
             half4 frag (v2f i) : SV_Target
             {
@@ -61,7 +63,7 @@ Shader "Hidden/pbr2"
 
                 float3 worldPos = float3(i.tSpace0.w,i.tSpace1.w,i.tSpace2.w);
                 half3 n = normalize(float3(i.tSpace0.z,i.tSpace1.z,i.tSpace2.z));
-                half3 v = (GetWorldSpaceViewDir(worldPos));
+                half3 v = normalize(GetWorldSpaceViewDir(worldPos));
                 half3 l = GetWorldSpaceLightDir(worldPos);
                 half3 h = normalize(v+l);
                 half3 reflectDir = reflect(-v,n);
@@ -74,21 +76,24 @@ Shader "Hidden/pbr2"
                 half smoothness = _Smoothness;
                 half roughness = 1 - smoothness;
 
-                #define HALF_MIN 6.103515625e-5  // 2^-14, the same value for 10, 11 and 16-bit: https://www.khronos.org/opengl/wiki/Small_Float_Formats
+#define HALF_MIN 6.103515625e-5  // 2^-14, the same value for 10, 11 and 16-bit: https://www.khronos.org/opengl/wiki/Small_Float_Formats
 #define HALF_MIN_SQRT 0.0078125  // 2^-7 == sqrt(HALF_MIN), useful for ensuring HALF_MIN after x^2
 
-                half a = max(roughness * roughness,0.0078);
-                half a2 = max(a * a,0.000001);
+                half a = max(roughness * roughness,HALF_MIN_SQRT);
+                half a2 = max(a * a,HALF_MIN);
 
 
-half3 specColor = lerp(0.04,albedo,metallic);
+                half3 diffColor = albedo * (1 - metallic);
+                half3 specColor = lerp(0.04,albedo,metallic);
+
                 half fresnel = Pow4(1 - nv);
                 half3 sh = SampleSH(n) ;
-                half3 giDiff = sh * albedo;
+                half3 giDiff = sh * diffColor;
 
                 half mip = roughness * (1.7 - 0.7*roughness) * 6;
-                half3 envColor = texCUBElod(unity_SpecCube0,float4(reflectDir,mip));
-                
+                half4 envColor = texCUBElod(unity_SpecCube0,float4(reflectDir,mip));
+                envColor.xyz = DecodeHDREnvironment(envColor, unity_SpecCube0_HDR);
+ 
                 half surfaceReduction = 1/(a2+1);
                 half grazingTerm = saturate(smoothness + metallic);
                 half3 giSpec = envColor * surfaceReduction * lerp(specColor,grazingTerm,fresnel);
@@ -96,13 +101,10 @@ half3 specColor = lerp(0.04,albedo,metallic);
                 float4 col = 0;
                 col.xyz = giDiff + giSpec;
 
-                half3 diffColor = albedo * (1 - metallic);
-
                 half specTerm = D_GGXNoPI(nh,a2);
-
-                half radiance = nl * _MainLightColor.xyz;
+                
+                half3 radiance = nl * _MainLightColor.xyz;
                 col.xyz += (diffColor + specColor*specTerm) * radiance;
-
                 return col;
             }
             ENDHLSL
