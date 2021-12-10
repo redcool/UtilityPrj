@@ -143,6 +143,17 @@ float D_GGXNoPI(float NdotH, float a2)
     return a2/ (s * s);
 }
 
+float MinimalistCookTorrance(float nh,float lh,float rough,float rough2){
+    float d = nh * nh * (rough2-1) + 1.00001f;
+    float lh2 = lh * lh;
+    float spec = rough2/((d*d) * max(0.1,lh2) * (rough*4+2)); // approach sqrt(rough2)
+    
+    #if defined (SHADER_API_MOBILE) || defined (SHADER_API_SWITCH)
+        spec = clamp(spec,0,100);
+    #endif
+    return spec;
+}
+
 float Pow4(float x){
     float a = x*x;
     return a*a;

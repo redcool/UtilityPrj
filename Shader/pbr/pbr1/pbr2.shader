@@ -71,6 +71,7 @@ Shader "Hidden/pbr2"
                 half nl = saturate(dot(n,l));
                 half nv = saturate(dot(n,v));
                 half nh = saturate(dot(n,h));
+                half lh = saturate(dot(l,h));
 
                 half metallic =_Metallic;
                 half smoothness = _Smoothness;
@@ -101,7 +102,7 @@ Shader "Hidden/pbr2"
                 float4 col = 0;
                 col.xyz = giDiff + giSpec;
 
-                half specTerm = D_GGXNoPI(nh,a2);
+                half specTerm = MinimalistCookTorrance(nh,lh,a,a2);//D_GGXNoPI(nh,a2);
                 
                 half3 radiance = nl * _MainLightColor.xyz;
                 col.xyz += (diffColor + specColor*specTerm) * radiance;
