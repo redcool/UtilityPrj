@@ -1,9 +1,22 @@
 #if !defined(UNITY_LIB_HLSL)
 #define UNITY_LIB_HLSL
 
-
 #define TRANSFORM_TEX(tex, name) ((tex.xy) * name##_ST.xy + name##_ST.zw)
 
+
+#define HALF_MIN 6.103515625e-5  // 2^-14, the same value for 10, 11 and 16-bit: https://www.khronos.org/opengl/wiki/Small_Float_Formats
+#define HALF_MIN_SQRT 0.0078125  // 2^-7 == sqrt(HALF_MIN), useful for ensuring HALF_MIN after x^2
+
+
+float4 _MainLightPosition;
+half4 _MainLightColor;
+
+float3 _WorldSpaceCameraPos;
+
+
+//==============================
+//  Transform
+//==============================
 float4x4 unity_ObjectToWorld;
 float4x4 unity_WorldToObject;
 #if !defined(USING_STEREO_MATRICES)
@@ -45,15 +58,6 @@ float3 TransformObjectToWorldNormal(float3 normal){
     return mul(float4(normal,1),UNITY_MATRIX_I_M);
 }
 
-
-
-
-float4 _MainLightPosition;
-half4 _MainLightColor;
-
-float3 _WorldSpaceCameraPos;
-
-
 float3 GetWorldSpaceViewDir(float3 worldPos){
     return _WorldSpaceCameraPos - worldPos;
 }
@@ -62,6 +66,11 @@ float3 GetWorldSpaceLightDir(float3 worldPos){
     return _MainLightPosition.xyz;// - worldPos;
 }
 
+
+
+//==============================
+//  sh
+//==============================
 float4 unity_SHAr;
 float4 unity_SHAg;
 float4 unity_SHAb;
@@ -137,6 +146,23 @@ half3 SampleSH(half3 normalWS)
     return max(half3(0, 0, 0), SampleSH9(SHCoefficients, normalWS));
 }
 
+//==============================
+//  ibl
+//==============================
+float3 DecodeHDREnvironment(float4 encodedIrradiance, float4 decodeInstructions)
+{
+    // Take into account texture alpha if decodeInstructions.w is true(the alpha value affects the RGB channels)
+    float alpha = max(decodeInstructions.w * (encodedIrradiance.a - 1.0) + 1.0, 0.0);
+
+    // If Linear mode is not supported we can skip exponent part
+    return (decodeInstructions.x * pow(alpha, decodeInstructions.y)) * encodedIrradiance.rgb;
+}
+
+
+
+//==============================
+//  lighting
+//==============================
 float D_GGXNoPI(float NdotH, float a2)
 {
     float s = (NdotH * a2 - NdotH) * NdotH + 1.0;
@@ -159,12 +185,71 @@ float Pow4(float x){
     return a*a;
 }
 
-float3 DecodeHDREnvironment(float4 encodedIrradiance, float4 decodeInstructions)
+//==============================
+//  Unpack from normal map
+//==============================
+half3 UnpackNormalRGB(half4 packedNormal, half scale = 1.0)
 {
-    // Take into account texture alpha if decodeInstructions.w is true(the alpha value affects the RGB channels)
-    float alpha = max(decodeInstructions.w * (encodedIrradiance.a - 1.0) + 1.0, 0.0);
-
-    // If Linear mode is not supported we can skip exponent part
-    return (decodeInstructions.x * pow(alpha, decodeInstructions.y)) * encodedIrradiance.rgb;
+    half3 normal;
+    normal.xyz = packedNormal.rgb * 2.0 - 1.0;
+    normal.xy *= scale;
+    return normal;
 }
+
+half3 UnpackNormalRGBNoScale(half4 packedNormal)
+{
+    return packedNormal.rgb * 2.0 - 1.0;
+}
+
+half3 UnpackNormalAG(half4 packedNormal, half scale = 1.0)
+{
+    half3 normal;
+    normal.xy = packedNormal.ag * 2.0 - 1.0;
+    normal.z = max(1.0e-16, sqrt(1.0 - saturate(dot(normal.xy, normal.xy))));
+
+    // must scale after reconstruction of normal.z which also
+    // mirrors UnpackNormalRGB(). This does imply normal is not returned
+    // as a unit length vector but doesn't need it since it will get normalized after TBN transformation.
+    // If we ever need to blend contributions with built-in shaders for URP
+    // then we should consider using UnpackDerivativeNormalAG() instead like
+    // HDRP does since derivatives do not use renormalization and unlike tangent space
+    // normals allow you to blend, accumulate and scale contributions correctly.
+    normal.xy *= scale;
+    return normal;
+}
+
+// Unpack normal as DXT5nm (1, y, 0, x) or BC5 (x, y, 0, 1)
+half3 UnpackNormalmapRGorAG(half4 packedNormal, half scale = 1.0)
+{
+    // Convert to (?, y, 0, x)
+    packedNormal.a *= packedNormal.r;
+    return UnpackNormalAG(packedNormal, scale);
+}
+
+half3 UnpackNormal(half4 packedNormal)
+{
+#if defined(UNITY_ASTC_NORMALMAP_ENCODING)
+    return UnpackNormalAG(packedNormal, 1.0);
+#elif defined(UNITY_NO_DXT5nm)
+    return UnpackNormalRGBNoScale(packedNormal);
+#else
+    // Compiler will optimize the scale away
+    return UnpackNormalmapRGorAG(packedNormal, 1.0);
+#endif
+}
+
+half3 UnpackNormalScale(half4 packedNormal, half bumpScale)
+{
+#if defined(UNITY_ASTC_NORMALMAP_ENCODING)
+    return UnpackNormalAG(packedNormal, bumpScale);
+#elif defined(UNITY_NO_DXT5nm)
+    return UnpackNormalRGB(packedNormal, bumpScale);
+#else
+    return UnpackNormalmapRGorAG(packedNormal, bumpScale);
+#endif
+}
+half3 UnpackScaleNormal(half4 pn,half scale){
+    return UnpackNormalScale(pn,scale);
+}
+//============================
 #endif // UNITY_LIB_HLSL
