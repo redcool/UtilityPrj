@@ -31,7 +31,10 @@ Shader "Unlit/ViewportToWorldPos"
             float4x4 unity_MatrixInvVP;
 
             /**
-                
+                z :
+                clip space: [-w,w]
+                nds: [-1,1]
+                viewport : [0,1]
             */
             float4 ClipToViewportPos(float4 clipPos){
                 //  clipPos [-w,w]
