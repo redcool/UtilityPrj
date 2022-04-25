@@ -13,10 +13,16 @@ Shader "Unlit/SobelEdge"
                 half2(-1,0),half2(0,0),half2(1,0),
                 half2(-1,-1),half2(0,-1),half2(1,-1)
             };
-            const static half sobels[9]={
+            const static half SobelEdgeKernel[9]={
                 -1,0,1,
                 -2,0,2,
                 -1,0,1
+            };
+
+            const static half ContractKernel[9]={
+                0,-1,0,
+                -1,5,-1,
+                0,-1,0
             };
 
             half SampleEdge(sampler2D tex,half2 uv,half2 texelSize){
@@ -34,6 +40,15 @@ Shader "Unlit/SobelEdge"
                 half gy = c[0] + 2*c[3]+c[6]-c[2]-2*c[5]-c[8];
                 half g = abs(gx)+abs(gy);
                 return g;
+            }
+
+            half3 SampleContract(sampler2D tex,half2 uv,half2 texelSize){
+                half3 result = 0;
+                for(int i=0;i<9;i++){
+                    half3 c = tex2D(tex,uv+ UVOffsets[i] * texelSize);
+                    result += c * ContractKernel[i];
+                }
+                return result;
             }
     ENDCG
     SubShader
@@ -79,7 +94,8 @@ Shader "Unlit/SobelEdge"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                return SampleEdge(_MainTex,i.uv,_MainTex_TexelSize);
+                return tex2D(_MainTex,i.uv);
+                return SampleContract(_MainTex,i.uv,_MainTex_TexelSize).xyzx;
             }
             ENDCG
         }
