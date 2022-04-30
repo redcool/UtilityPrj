@@ -13,12 +13,14 @@ Properties {
     _Exposure("Exposure", Range(0, 8)) = 1.3
 
     [Header(Noise)]
+    [Toggle(CLOUD_ON)]_CloudOn("_CloudOn",int) = 0
     _NoiseTex("_NoiseTex",3d) = ""{}
     _Scale("Scale",float) = 1
     _Speed("Speed",float) = 1
     _Distribution("_Distribution",vector) = (0.2,0.4,1,1)
     _CloudIntensity("_CloudIntensity",float) = 1
     _CloudDir("_CloudDir",vector) = (1,1,1,1)
+    _CloudDisappearHeight("_CloudDisappearHeight",range(0,1)) = 0.1
 }
 
 SubShader {
@@ -35,6 +37,7 @@ SubShader {
         #include "Lighting.cginc"
 
         #pragma multi_compile _SUNDISK_NONE _SUNDISK_SIMPLE _SUNDISK_HIGH_QUALITY
+        #pragma multi_compile _ CLOUD_ON
 
         uniform half _Exposure;     // HDR exposure
         uniform half3 _GroundColor;
@@ -43,11 +46,14 @@ SubShader {
         uniform half3 _SkyTint;
         uniform half _AtmosphereThickness;
         //cloud
+    // #if defined(CLOUD_ON)
         float _Scale,_Speed;
         sampler3D _NoiseTex;
         float2 _Distribution;
         float3 _CloudDir;
         float _CloudIntensity;
+        float _CloudDisappearHeight;
+    // #endif
 
     #if defined(UNITY_COLORSPACE_GAMMA)
         #define GAMMA 2
@@ -173,7 +179,7 @@ SubShader {
         #if SKYBOX_SUNDISK != SKYBOX_SUNDISK_NONE
             half3   sunColor        : TEXCOORD3;
         #endif
-            float3 localPos:TEXCOORD4;
+            float4 localPos:TEXCOORD4;
             UNITY_VERTEX_OUTPUT_STEREO
         };
 
@@ -375,11 +381,11 @@ SubShader {
 
         half Cloud(float3 localPos){
             float4 noise = tex3D(_NoiseTex,localPos * _Scale + _CloudDir * _Time.x * _Speed);
-            float pl = saturate(dot(1-noise.xyz,_WorldSpaceLightPos0.xyz) *0.5+0.5);
+            float noiseAtten = dot(1-noise.xyz,_WorldSpaceLightPos0.xyz) *0.5+0.5;
             // pl = smoothstep(0,0.5,pl);
             float cloud = smoothstep(_Distribution.x,_Distribution.y,1 - noise.x) * _CloudIntensity;
-
-            return saturate(cloud * saturate(localPos.y) * pl);
+            cloud *= smoothstep(0.,0.3,localPos.y - _CloudDisappearHeight) * noiseAtten;
+            return saturate(cloud);
         }
 
         half4 frag (v2f IN) : SV_Target
@@ -412,8 +418,11 @@ SubShader {
         #if defined(UNITY_COLORSPACE_GAMMA) && !SKYBOX_COLOR_IN_TARGET_COLOR_SPACE
             col = LINEAR_2_OUTPUT(col);
         #endif
+
+        #if defined(CLOUD_ON)
             float up = saturate(dot(float3(0,1,0),_WorldSpaceLightPos0.xyz));
             col += Cloud(IN.localPos) * lerp(IN.skyColor,1,up);
+        #endif
 
             return half4(col,1.0);
 
