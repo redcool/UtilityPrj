@@ -17,7 +17,8 @@ Shader "Unlit/TestScreenToWorldPos"
                 uv.y = 1-uv.y;
             #endif
 
-            // half4 p = half4(uv*2-1,depth,1);
+            half4 p = half4(uv*2-1,depth,1);
+            
             // p = mul(invP,p);
             // p /= p.w;
             // p = mul(invV,p);
