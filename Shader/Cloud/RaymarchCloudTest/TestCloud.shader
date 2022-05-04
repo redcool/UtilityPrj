@@ -14,6 +14,8 @@ Shader "Unlit/TestCloud"
         _Color2("_Color2",color ) = (0.,0.4,0.7,1)
         _ColorOffset2("_ColorOffset2",range(0,1)) = 0
         _DarknessThreshold("_DarknessThreshold",range(0,1)) = 0.1
+
+        _shapeNoiseWeights("_shapeNoiseWeights",vector) = (4,19,-3,-18)
     }
     HLSLINCLUDE
     #include "Packages\com.unity.render-pipelines.universal\ShaderLibrary\Core.hlsl"
@@ -89,6 +91,7 @@ float sdBox( half3 p, half3 b )
             half4 _Color1,_Color2;
             half _ColorOffset1,_ColorOffset2;
             half _DarknessThreshold;
+            half4 _shapeNoiseWeights;
 
             v2f vert (appdata v)
             {
@@ -129,7 +132,7 @@ float sdBox( half3 p, half3 b )
                 half hp2 = saturate(remap(heightPercent, 1, gMax, 0, 1));
 
                 hp = (hp2  + hp) * 0.5;
-                float4 _shapeNoiseWeights = float4(4,19,-3,-18);
+                // float4 _shapeNoiseWeights = float4(4,19,-3,-18);
                 float4 normalizedShapeWeights = _shapeNoiseWeights / dot(_shapeNoiseWeights, 1);
                 float shapeFBM = dot(shapeNoise, normalizedShapeWeights) * hp;
 // return shapeFBM;
@@ -143,17 +146,17 @@ float sdBox( half3 p, half3 b )
                 return distance(p , half3(0,0,0)) - 1;
             }
 
-            half3 Lightmarch(half3 pos,half dist){
+            half3 Lightmarch(half3 pos){
 
                 const half lightAbsorption = 1;
 
                 half3 lightDir = _MainLightPosition.xyz;
                 half2 distBox = RayBoxDist(_BoundMin,_BoundMax,pos,1/lightDir).y;
-                half stepSize = distBox/10;
+                half stepSize = distBox/8;
                 half sumDensity=0;
-                [loop]for(int i=0;i<2;i++){
+                [loop]for(int i=0;i<1;i++){
                     pos += lightDir * stepSize;
-                    sumDensity += SampleDensity(pos);
+                    sumDensity += max(0,SampleDensity(pos));
                 }
                 
                 // return lerp(_Color1,_Color2,sumDensity/8);
@@ -163,7 +166,7 @@ float sdBox( half3 p, half3 b )
 
                 half3 cloudColor = lerp(_Color1,_MainLightColor,saturate(transmit * _ColorOffset1));
                 cloudColor = lerp(_Color2,cloudColor,saturate(pow(transmit * _ColorOffset2,3)));
-                return lerp(transmit,cloudColor,_DarknessThreshold);
+                return lerp(cloudColor,transmit,_DarknessThreshold);
             }
 
             half4 Raymarch(half3 rayPos,half3 rayDir,half distLimit){
@@ -178,8 +181,8 @@ float sdBox( half3 p, half3 b )
                         half density = pow(SampleDensity(p),5);
                         
                         if(density > 0){
-                            half3 lightTransmit = Lightmarch(p,dist);
-                        lightDensity += lightTransmit * sum * density * 1;
+                            half3 lightTransmit = Lightmarch(p);
+                            lightDensity += lightTransmit * sum * density;
 
                             sum *= exp(-density * 1);
 
