@@ -13,7 +13,6 @@ Shader "Unlit/TestCloud"
 
         _Color2("_Color2",color ) = (0.,0.4,0.7,1)
         _ColorOffset2("_ColorOffset2",range(0,1)) = 0
-        _DarknessThreshold("_DarknessThreshold",range(0,1)) = 0.1
 
         _shapeNoiseWeights("_shapeNoiseWeights",vector) = (4,19,-3,-18)
     }
@@ -90,7 +89,6 @@ float sdBox( half3 p, half3 b )
 
             half4 _Color1,_Color2;
             half _ColorOffset1,_ColorOffset2;
-            half _DarknessThreshold;
             half4 _shapeNoiseWeights;
 
             v2f vert (appdata v)
@@ -166,7 +164,7 @@ float sdBox( half3 p, half3 b )
 
                 half3 cloudColor = lerp(_Color1,_MainLightColor,saturate(transmit * _ColorOffset1));
                 cloudColor = lerp(_Color2,cloudColor,saturate(pow(transmit * _ColorOffset2,3)));
-                return lerp(cloudColor,transmit,_DarknessThreshold);
+                return cloudColor;
             }
 
             half4 Raymarch(half3 rayPos,half3 rayDir,half distLimit){
