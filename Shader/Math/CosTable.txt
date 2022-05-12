@@ -1,0 +1,47 @@
+        static float mc(float x,int c)
+        {
+            double sum = 0;
+            for (int n = 0; n < c; n++)
+            {
+                sum += Math.Pow(-1, n) * Math.Pow(x, 2 * n) / Factorial(2 * n);
+            }
+            return (float)sum;
+        }
+
+        static float[] cosTable = new float[1000];
+        static void SetupCosTable()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                cosTable[i] = (float)Math.Cos(i / 500.0*3.14);
+            }
+        }
+
+        static float FastCos(double radians)
+        {
+            radians %= 6.28f;
+            int id = (int)(radians / 6.28f * 1000);
+            return cosTable[id];
+        }
+
+        static void Main(string[] args)
+        {
+            //Func<int, Func<int, int>> f = Currying((int a, int b) => a * b);
+            //var a = f(2)(3);
+
+            //Console.WriteLine(a);
+
+            //Console.WriteLine(Factorial(4));
+
+            //Console.WriteLine(mc(45/180f*3.14f,3));
+
+            SetupCosTable();
+
+            for (int i = 0; i < 360; i+=10)
+            {
+            Console.WriteLine(Math.Cos(i * 3.14/180));
+            Console.WriteLine(FastCos(i*3.14/180));
+
+            }
+
+        }
