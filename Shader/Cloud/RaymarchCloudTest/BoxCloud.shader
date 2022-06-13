@@ -1,4 +1,4 @@
-Shader "Unlit/TestCloud"
+Shader "Unlit/BoxCloud"
 {
     Properties
     {
