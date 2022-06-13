@@ -1,3 +1,4 @@
+using GameUtilsFramework;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,14 +8,24 @@ public class PlayerControl : MonoBehaviour
     public float speed = 4;
     public float rotateLerpSpeed = 0.2f;
 
+    [Header("Anim")]
+    public bool useRootMotion;
+    public float animSpeed = 1;
+
+    [Header("Shoot")]
     public GameObject bulletPrefab;
     public Transform GunDir;
+    public float shootInterval = 0.5f;
+
+
 
     Camera cam;
     Animator anim;
 
     TopdownPlayerInput playerInput;
 
+
+    float bulletLastTime;
 
     // Start is called before the first frame update
     void Start()
@@ -32,12 +43,19 @@ public class PlayerControl : MonoBehaviour
 
         var hv = playerInput.movement;
 
+
+        //hv.x = AnimatorTools.QuantifyInputValue(hv.x);
+        //hv.y = AnimatorTools.QuantifyInputValue(hv.y);
+
         var moveDir = new Vector3(hv.x, 0, hv.y);
         float leftTurnRate = 0;
         if (hv.sqrMagnitude > 0)
         {
-            moveDir.Normalize();
-            transform.Translate(moveDir * speed * Time.deltaTime, Space.World);
+            if (!useRootMotion)
+            {
+                moveDir.Normalize();
+                transform.Translate(moveDir * speed * Time.deltaTime, Space.World);
+            }
         }
         else
         {
@@ -48,6 +66,18 @@ public class PlayerControl : MonoBehaviour
         UpdateMoveAnim(moveDir, leftTurnRate);
 
         UpdateFire();
+    }
+
+    private void OnAnimatorMove()
+    {
+        if (! useRootMotion)
+            return;
+
+        if (playerInput.movement.sqrMagnitude == 0)
+            return;
+
+        var deltaPos = anim.deltaPosition;
+        transform.position += deltaPos;
     }
 
     float CalcLeftTurnRate(Vector3 targetForwardDir)
@@ -63,8 +93,9 @@ public class PlayerControl : MonoBehaviour
         return leftTurnRate;
     }
 
-    private void UpdateMoveAnim(Vector3 moveDir,float leftTurnRate)
+    private void UpdateMoveAnim(Vector3 moveDir, float leftTurnRate)
     {
+        anim.speed = animSpeed;
 
         // move
         var speedX = Vector3.Dot(moveDir, transform.right) + leftTurnRate;
@@ -75,7 +106,7 @@ public class PlayerControl : MonoBehaviour
         if (Mathf.Abs(speedZ) < 0.001)
             speedZ = 0;
 
-        anim.SetFloat("SpeedX", speedX , 0.1f, Time.deltaTime);
+        anim.SetFloat("SpeedX", speedX, 0.1f, Time.deltaTime);
         anim.SetFloat("SpeedZ", speedZ, 0.1f, Time.deltaTime);
     }
 
@@ -95,17 +126,28 @@ public class PlayerControl : MonoBehaviour
     }
 
 
-    float bulletLastTime;
+
     void UpdateFire()
     {
-        anim.SetBool("IsFire", playerInput.fire);
-        anim.SetLayerWeight(1, Mathf.Lerp(anim.GetLayerWeight(1),playerInput.fire?1:0,Time.deltaTime * 10));
+        var canShoot = playerInput.fire && (Time.time - bulletLastTime) > shootInterval;
+        anim.SetBool("IsFire", canShoot);
 
-        if (playerInput.fire && Time.time - bulletLastTime > 1)
+        var fireLayerId = anim.GetLayerIndex("Fire");
+        if (anim.GetLayerWeight(fireLayerId) < 1)
+            anim.SetLayerWeight(fireLayerId, 1);
+
+        if (canShoot)
         {
-            var b = Instantiate(bulletPrefab, GunDir.position, GunDir.rotation);
-            b.GetComponent<Rigidbody>().AddForce(b.transform.forward * 100, ForceMode.Impulse);
-            Destroy(b, 1);
+            bulletLastTime = Time.time;
+
+            ShootABullet();
         }
+    }
+
+    private void ShootABullet()
+    {
+        var b = Instantiate(bulletPrefab, GunDir.position, GunDir.rotation);
+        b.GetComponent<Rigidbody>().AddForce(b.transform.forward * 100, ForceMode.Impulse);
+        Destroy(b, 1);
     }
 }

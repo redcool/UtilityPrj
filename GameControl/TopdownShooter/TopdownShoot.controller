@@ -54,7 +54,7 @@ AnimatorController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Test
+  m_Name: TopdownShoot
   serializedVersion: 5
   m_AnimatorParameters:
   - m_Name: SpeedX
@@ -62,19 +62,19 @@ AnimatorController:
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 0}
+    m_Controller: {fileID: 9100000}
   - m_Name: SpeedZ
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 0}
+    m_Controller: {fileID: 9100000}
   - m_Name: IsFire
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 0}
+    m_Controller: {fileID: 9100000}
   m_AnimatorLayers:
   - serializedVersion: 5
     m_Name: Base Layer
@@ -108,7 +108,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Fire
-  m_Speed: 2
+  m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 8702658210547680864}
@@ -139,7 +139,7 @@ BlendTree:
   - serializedVersion: 2
     m_Motion: {fileID: -203655887218126122, guid: f63019287bc581a4ebae86c631b55471,
       type: 3}
-    m_Threshold: 0
+    m_Threshold: 0.09375
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
@@ -148,7 +148,7 @@ BlendTree:
   - serializedVersion: 2
     m_Motion: {fileID: -203655887218126122, guid: a9f76f7f631d76d4687cc1b4eade5bd7,
       type: 3}
-    m_Threshold: 0.09375
+    m_Threshold: 0.17578125
     m_Position: {x: -1, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
@@ -157,7 +157,7 @@ BlendTree:
   - serializedVersion: 2
     m_Motion: {fileID: -203655887218126122, guid: f3be5064617f63a408873fe99fa50d8d,
       type: 3}
-    m_Threshold: 0.1875
+    m_Threshold: 0.2578125
     m_Position: {x: 1, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
@@ -166,7 +166,7 @@ BlendTree:
   - serializedVersion: 2
     m_Motion: {fileID: -203655887218126122, guid: ac0eb632eff691f4ca02ca4a1c8beecd,
       type: 3}
-    m_Threshold: 0.28125
+    m_Threshold: 0.33984375
     m_Position: {x: 0, y: -1}
     m_TimeScale: 1
     m_CycleOffset: 0
@@ -175,7 +175,7 @@ BlendTree:
   - serializedVersion: 2
     m_Motion: {fileID: -203655887218126122, guid: e5b274befea2bbc4581b1f87e7323e88,
       type: 3}
-    m_Threshold: 0.375
+    m_Threshold: 0.421875
     m_Position: {x: 0, y: 1}
     m_TimeScale: 1
     m_CycleOffset: 0
@@ -184,7 +184,7 @@ BlendTree:
   - serializedVersion: 2
     m_Motion: {fileID: -203655887218126122, guid: e375b683fb5b1b14687dc8e98e217f18,
       type: 3}
-    m_Threshold: 0.46875
+    m_Threshold: 0.50390625
     m_Position: {x: -1, y: 1}
     m_TimeScale: 1
     m_CycleOffset: 0
@@ -193,7 +193,7 @@ BlendTree:
   - serializedVersion: 2
     m_Motion: {fileID: -203655887218126122, guid: 5a50c3fdbc97f244a970e7fff9085b89,
       type: 3}
-    m_Threshold: 0.5625
+    m_Threshold: 0.5859375
     m_Position: {x: 1, y: 1}
     m_TimeScale: 1
     m_CycleOffset: 0
@@ -202,7 +202,7 @@ BlendTree:
   - serializedVersion: 2
     m_Motion: {fileID: -203655887218126122, guid: 2edd0c7407a622b48a9142a0a5bf72e1,
       type: 3}
-    m_Threshold: 0.65625
+    m_Threshold: 0.66796875
     m_Position: {x: -1, y: -1}
     m_TimeScale: 1
     m_CycleOffset: 0
@@ -219,7 +219,7 @@ BlendTree:
     m_Mirror: 0
   m_BlendParameter: SpeedX
   m_BlendParameterY: SpeedZ
-  m_MinThreshold: 0
+  m_MinThreshold: 0.09375
   m_MaxThreshold: 0.75
   m_UseAutomaticThresholds: 1
   m_NormalizedBlendValues: 0
@@ -241,7 +241,7 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.25
+  m_TransitionDuration: 0.2115385
   m_TransitionOffset: 0
   m_ExitTime: 0.75
   m_HasExitTime: 0
@@ -301,6 +301,27 @@ AnimatorStateMachine:
   m_ExitPosition: {x: 800, y: 120, z: 0}
   m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
   m_DefaultState: {fileID: 5642792812129812188}
+--- !u!114 &7464636016198170463
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8dbfda76e7bad94c910a777c5b607d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  keyValues:
+  - stateName: IsFire
+    value: 0
+    isTrigger: 0
+    when: 0
+  messageDir: 0
+  enterFunctionNames: []
+  updateFunctionNames: []
+  exitFunctionNames: []
 --- !u!1101 &8702658210547680864
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -318,10 +339,10 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.25
+  m_TransitionDuration: 0.17692305
   m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
+  m_ExitTime: 0.29230767
+  m_HasExitTime: 1
   m_HasFixedDuration: 1
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
