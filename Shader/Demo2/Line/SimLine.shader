@@ -73,6 +73,19 @@ Shader "Unlit/SimLine"
 
                 return e1;
             }
+            fixed4 fragCircle (v2f i) : SV_Target
+            {
+                float3 n = normalize(i.worldNormal );
+                float3 t = normalize(i.worldTangent);
+                float3 b = normalize(i.worldBitangent);
+                float3 n1 = normalize(cross(ddy(i.worldPos),ddx(i.worldPos)));
+                
+                float nn = (1-dot(n,n1))*100;
+                float l1 = smoothstep(.2,.9,nn);
+                float l2 = smoothstep(.4,.8,nn);
+                return abs(l1- l2);
+                
+            }
             ENDCG
         }
     }
